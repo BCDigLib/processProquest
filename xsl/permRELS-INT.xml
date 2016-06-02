@@ -1,0 +1,28 @@
+<rdf:RDF xmlns:islandora="http://islandora.ca/ontology/relsint#" xmlns:islandora-embargo="info:islandora/islandora-system:def/scholar#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="info:fedora/######/PDF">
+        <islandora-embargo:embargo-until>indefinite</islandora-embargo:embargo-until>
+        <islandora:isViewableByUser>admin</islandora:isViewableByUser>
+        <islandora:isViewableByUser>fedoraAdmin</islandora:isViewableByUser>
+        <islandora:isViewableByRole>administrator</islandora:isViewableByRole>
+    </rdf:Description>
+    <rdf:Description rdf:about="info:fedora/######/ARCHIVE">
+        <islandora:isViewableByUser>admin</islandora:isViewableByUser>
+        <islandora:isViewableByUser>fedoraAdmin</islandora:isViewableByUser>
+        <islandora:isViewableByRole>administrator</islandora:isViewableByRole>
+    </rdf:Description>
+    <rdf:Description rdf:about="info:fedora/######/ARCHIVE-PDF">
+        <islandora:isViewableByUser>admin</islandora:isViewableByUser>
+        <islandora:isViewableByUser>fedoraAdmin</islandora:isViewableByUser>
+        <islandora:isViewableByRole>administrator</islandora:isViewableByRole>
+    </rdf:Description>
+    <rdf:Description rdf:about="info:fedora/######/FULL_TEXT">
+        <islandora:isViewableByUser>admin</islandora:isViewableByUser>
+        <islandora:isViewableByUser>fedoraAdmin</islandora:isViewableByUser>
+        <islandora:isViewableByRole>administrator</islandora:isViewableByRole>
+    </rdf:Description>
+    <rdf:Description rdf:about="info:fedora/######/PREVIEW">
+        <islandora:isViewableByUser>admin</islandora:isViewableByUser>
+        <islandora:isViewableByUser>fedoraAdmin</islandora:isViewableByUser>
+        <islandora:isViewableByRole>administrator</islandora:isViewableByRole>
+    </rdf:Description>
+</rdf:RDF>
