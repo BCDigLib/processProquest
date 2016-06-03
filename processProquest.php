@@ -68,22 +68,12 @@ class processProquest {
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
         $localdirFTP = $this->settings['ftp']['localdir'];
         
-        $this->ftp->ftp_chdir($fetchdirFTP);
-        
-        /**
-         *  $etdFiles will return false for no matches or
-         * for a session timeout
-         * If 90 seconds elapses, session has timed out
-         * and should be flagged.
-         */
-        $start = microtime(true);
+        if ($fetchdirFTP != "")
+        {
+            $this->ftp->ftp_chdir($fetchdirFTP);            
+        }
         
         $etdFiles = $this->ftp->ftp_nlist("etdadmin_upload*");
-        
-        $finish = microtime(true);
-        $check = $finish - $start;
-
-        echo $check;
 
         
         foreach ($etdFiles as $filename) {
