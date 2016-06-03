@@ -4,7 +4,7 @@
  * Description of proquestFTP
  *
  */
-error_reporting(E_ALL);
+//error_reporting(E_ALL);
 
 class proquestFTP {
     public $conn; 
