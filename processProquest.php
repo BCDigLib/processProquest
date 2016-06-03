@@ -249,6 +249,7 @@ class processProquest {
         
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
+        $message = "The following ETDs were ingested\n\n";
         
         foreach ($this->localFiles as $directory => $submission) {
                         
@@ -476,8 +477,18 @@ class processProquest {
                 $this->repository->ingestObject($object);
 
                 $pidcount++;
+                $message .= $submission['PID'] . "\t";
+                if (isset($submission['EMBARGO']))
+                {
+                    $message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                } else{
+                    $message .= "NO EMBARGO" . "\t";
+                }
+                $message .= $submission['LABEL'] . "\n";
+
                 
         }
+        mail($this->settings['notify']['email'],"Message from processProquest",$message);
     }
 
 }
