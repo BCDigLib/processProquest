@@ -64,6 +64,8 @@ class processProquest {
      * @param type $settings
      */
     function getFiles() {
+
+	echo "Fetching files...\n";
         
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
         $localdirFTP = $this->settings['ftp']['localdir'];
@@ -79,7 +81,8 @@ class processProquest {
         foreach ($etdFiles as $filename) {
 
             $etdDir = $localdirFTP . substr($filename,0,strlen($filename)-4);
-            
+
+            echo "Creating temp storage directory: " . $etdDir . "\n";            
             mkdir($etdDir, 0755);
             $localFile = $etdDir . "/" .$filename;
             $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
@@ -94,8 +97,10 @@ class processProquest {
                                 
                 if (preg_match('/0016/', $file)) { // ETD or Metadata 0016 is BC code
                     if (substr($file,strlen($file)-3) === 'pdf') {
+			// Add debug note here??
                         $this->localFiles[$etdDir]['ETD'] = $file;
                     } elseif (substr($file,strlen($file)-3) === 'xml') {
+			// Add debug note here??
                         $this->localFiles[$etdDir]['METADATA'] = $file;
                     } else {
                         /**
@@ -139,21 +144,26 @@ class processProquest {
              * Generate MODS Metadata first
              * Done for every submission regardless of permissions
              */
-            
+            echo "Processing " . $directory . "\n";
+
             $metadata = new DOMDocument();
             $metadata->load($directory . '//' . $submission['METADATA']);
 
             $xpath = new DOMXpath($metadata);
 
             // Get Permissions 
-            $oaElements = $xpath->query($this->settings['xslt']['oa']);
+       
+	    $oaElements = $xpath->query($this->settings['xslt']['oa']);
             if ($oaElements->length === 0 )
             {
                 $openaccess = 0;
+		        echo "No OA agreement found\n";
             } elseif ($oaElements->item(0)->C14N() === '0') {
                 $openaccess = 0;
+		        echo "No OA agreement found\n";
             } else {
                 $openaccess = $oaElements->item(0)->C14N();
+		        echo "OA agreement found\n";
             }
 
             $this->localFiles[$directory]['OA'] = $openaccess;
@@ -171,12 +181,15 @@ class processProquest {
             {
                 $embargo = 'indefinite';
                 $this->localFiles[$directory]['EMBARGO'] = $embargo;
+		        echo "Embargo date is " . $embargo . "\n";
             }
             
             // Load to DOM so we can extract data from MODS
             // Pass PID to XSLT so we can add handle value to MODS
             $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
             
+	        echo "Record PID is " . $pid . "\n";
+
             $this->localFiles[$directory]['PID'] = $pid;
             $xslt->setParameter('mods', 'handle', $pid);
             $mods = $xslt->transformToDoc($metadata );
@@ -184,7 +197,9 @@ class processProquest {
             // Use mods:titleInfo for Fedora Label
             $fedoraLabel = $label->transformToXml($mods);
             $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
-            
+
+	        echo "Title is " . $fedoraLabel . "\n";            
+
             $xpathAuthor = new DOMXpath($mods);
             $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);      
             $author = $authorElements->item(0)->C14N();
@@ -236,15 +251,20 @@ class processProquest {
      * 
      */
     function ingest() {
-        
+        echo "Now ingesting files...\n";
+ 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
         $message = "The following ETDs were ingested\n\n";
         
         foreach ($this->localFiles as $directory => $submission) {
+
+	    echo "Now processing " . $directory. "\n";
                         
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
+
+		    echo "Supplementary files found but not processing\n";
             }
 
                 $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);    
@@ -252,10 +272,12 @@ class processProquest {
                 $object->label = $this->localFiles[$directory]['LABEL'];
                 
                 $object->owner = 'fedoraAdmin';
-                /**
-                 * Generate RELS-EXT
-                 */
+               
+		 echo "Fedora object created\n";
 
+		 /**
+          * Generate RELS-EXT
+          */
 
                 // POLICY Get Parent POLICY to add to all ingested records
                 $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
@@ -263,6 +285,7 @@ class processProquest {
                 $collection = GRADUATE_THESES;
                 if (isset($this->localFiles[$directory]['EMBARGO']))
                 {
+		            echo "Adding to Graduate Theses (Restricted) collection\n";
                     $collection = GRADUATE_THESES_RESTRICTED;
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                 }
@@ -276,7 +299,9 @@ class processProquest {
                 $object->state = 'I';
 
                 $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
-                /**
+                echo "Adding XACML policy\n";  
+
+               /**
                  * MODS Datastream
                  */
                 $dsid = 'MODS';
@@ -288,7 +313,8 @@ class processProquest {
                 $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['MODS']);
                 
                 $object->ingestDatastream($datastream);
-                
+                echo "Ingested MODS datastream\n";
+
                 /**
                  * Original Proquest Metadata will be saved as ARCHIVE
                  * Original filename is used as label for identification 
@@ -307,7 +333,8 @@ class processProquest {
                 $datastream->state = 'I';
                 
                 $object->ingestDatastream($datastream);
-                
+                echo "Ingested ARCHIVE datastream\n"; 
+
                 /**
                  * PDF will always be loaded as ARCHIVE-PDF DSID
                  * regardless of embargo - splash paged PDF will 
@@ -325,7 +352,8 @@ class processProquest {
                 $datastream->state = 'I';
                 
                 $object->ingestDatastream($datastream);
-                
+		        echo "Ingested ARCHIVE-PDF datastream\n";
+
                 /**
                  * PDF with splash page
                  */   
@@ -339,30 +367,45 @@ class processProquest {
                 $splashxslt = $this->settings['xslt']['splash'];
                 
                 $command = "$executable -xml $source -xsl $splashxslt -pdf $splashtemp";
-                exec($command);
-                
+                exec($command, $output, $return);
+
+		if (!$return) {
+		   echo "PDF splash page created successfully\n";
+		} else {
+		   echo "PDF splash page creation unsuccessful. Exiting...\n";
+		   break;
+		}
+ 
                 $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
+
                 
                 /**
                  * Load Splash to PDF if under embargo
                  */
 
-               $executable = '/usr/bin/pdftk';
+                $executable = '/usr/bin/pdftk';
                     
-               $concattemp = $directory . "/concatted.pdf";
-               $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
+                $concattemp = $directory . "/concatted.pdf";
+                $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
                     
-               $command = "$executable $splashtemp $pdf cat output $concattemp";
-               exec($command);
-                    
-               $datastream->label = 'PDF Datastream';
-               $datastream->mimeType = 'application/pdf';
-               $datastream->setContentFromFile($concattemp);
-                    
-               $datastream->checksumType = 'SHA-256';
-                    
-               $object->ingestDatastream($datastream);
+                $command = "$executable $splashtemp $pdf cat output $concattemp";
+                exec($command, $output, $return);
 
+                if (!$return) {
+                    echo "Splash page concatenated successfully\n";
+                } else {
+                    echo "Splash page concatenation unsuccessful. Exiting...\n";
+                    break;
+                }     
+
+                $datastream->label = 'PDF Datastream';
+                $datastream->mimeType = 'application/pdf';
+                $datastream->setContentFromFile($concattemp);
+                    
+                $datastream->checksumType = 'SHA-256';
+                    
+                $object->ingestDatastream($datastream);
+                echo "Ingested PDF with splash page\n";
       
                 /**
                  * FULL_TEXT
@@ -375,8 +418,16 @@ class processProquest {
                 $fttemp = $directory . "/fulltext.txt";
                 
                 $command = "$executable $source $fttemp";
-                exec($command);
-               
+
+                exec($command, $output, $return);
+
+                if (!$return) {
+                    echo "FULL TEXT datastream generated successfully\n";
+                } else {
+                    echo "FULL TEXT generation unsuccessful. Exiting...\n";
+                    break;
+                }               
+
                 $datastream = $object->constructDatastream($dsid);
                              
                 $datastream->label = 'FULL_TEXT';
@@ -391,8 +442,10 @@ class processProquest {
                 $datastream->setContentFromString($sanitized);
                 
                 $object->ingestDatastream($datastream);
-                
-                /**
+             
+                echo "Ingested FULL TEXT datastream\n";   
+     
+          /**
                  * TN
                  */   
                 $dsid = "TN";
@@ -402,8 +455,16 @@ class processProquest {
                 $executable = '/usr/bin/convert';
 
                 $command = "$executable $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
-                exec($command);
-               
+
+                exec($command, $output, $return);
+
+                if (!$return) {
+                    echo "TN datastream generated successfully\n";
+                } else {
+                    echo "TN generation unsuccessful. Exiting...\n";
+                    break;
+                }              
+
                 $datastream = $object->constructDatastream($dsid);
                              
                 $datastream->label = 'TN';
@@ -411,6 +472,8 @@ class processProquest {
                 $datastream->setContentFromFile($directory . "//thumbnail.jpg");
                 
                 $object->ingestDatastream($datastream);
+
+                echo "Ingested TN datastream\n";
                 
                 /**
                  * PREVIEW
@@ -422,8 +485,16 @@ class processProquest {
                 $executable = '/usr/bin/convert';
 
                 $command = "$executable $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
-                exec($command);
-               
+
+                exec($command, $output, $return);
+
+                if (!$return) {
+                    echo "PREVIEW datastream generated successfully\n";
+                } else {
+                    echo "PREVIEW generation unsuccessful. Exiting...\n";
+                    break;
+                }              
+ 
                 $datastream = $object->constructDatastream($dsid);
                              
                 $datastream->label = 'PREVIEW';
@@ -431,10 +502,12 @@ class processProquest {
                 $datastream->setContentFromFile($directory . "//preview.jpg");
                 
                 $object->ingestDatastream($datastream);                
-                
+                echo "Ingested PREVIEW datastream\n";
+ 
                 // POLICY
                 $object->ingestDatastream($policy);  
-                
+                echo "Ingested XACML datastream\n";
+
                 /**
                 * Check if OA
                 * Set Embargo is there is one
@@ -462,7 +535,9 @@ class processProquest {
                     $datastream->setContentFromString($relsint);
 
                     $object->ingestDatastream($datastream);
-                }
+                    echo "Ingested RELS-INT datastream\n";   
+
+            }
 
                 $this->repository->ingestObject($object);
 
@@ -475,6 +550,10 @@ class processProquest {
                     $message .= "NO EMBARGO" . "\t";
                 }
                 $message .= $submission['LABEL'] . "\n";
+
+		// JJM
+		sleep(2);
+        echo "\n\n\n\n";
 
                 
         }
