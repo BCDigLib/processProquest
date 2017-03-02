@@ -65,7 +65,7 @@ class processProquest {
      */
     function getFiles() {
 
-	echo "Fetching files...\n";
+        echo "Fetching files...\n";
 
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
         $localdirFTP = $this->settings['ftp']['localdir'];
@@ -259,12 +259,10 @@ class processProquest {
 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $message = "The following ETDs were ingested\n\n";
+        $message = "The following ETDs were ingested:\n\n";
 
         foreach ($this->localFiles as $directory => $submission) {
-
     	        echo "Processing " . $directory. "\n";
-
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
                 echo "Supplementary files found\n";
@@ -516,17 +514,15 @@ class processProquest {
             * Set Embargo is there is one
             * Permanent?
             */
-
+            //Initialize $relsint or the script will fail
             $relsint = '';
             if ($submission['OA'] === 0) {
                 $relsint =  file_get_contents('xsl/permRELS-INT.xml');
                 $relsint = str_replace('######', $submission['PID'], $relsint);
-
             } else if (isset($submission['EMBARGO'])) {
                 $relsint =  file_get_contents('xsl/embargoRELS-INT.xml');
                 $relsint = str_replace('######', $submission['PID'], $relsint);
                 $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
-
             }
 
             if (isset($relsint) && $relsint !== '') {
@@ -556,8 +552,8 @@ class processProquest {
             }
             $message .= $submission['LABEL'] . "\n";
 
-    		// JJM
-    		sleep(5);
+            // JJM
+            sleep(2);
             echo "\n\n\n\n";
 
         }
