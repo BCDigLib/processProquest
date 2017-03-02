@@ -232,6 +232,9 @@ class processProquest {
                 $this->localFiles[$directory]['PROCESS'] = "1";
                 $this->toProcess++;
             }
+
+            echo "\n\n";
+            
         }
     }
     
@@ -247,11 +250,12 @@ class processProquest {
         $this->api_m = $this->repository->api->m; //  Management API.        
         
     }
+
     /**
      * 
      */
     function ingest() {
-        echo "Now ingesting files...\n";
+        echo "\n\nNow ingesting files...\n\n";
  
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
@@ -259,306 +263,306 @@ class processProquest {
         
         foreach ($this->localFiles as $directory => $submission) {
 
-	    echo "Now processing " . $directory. "\n";
-                        
+    	    echo "Processing " . $directory. "\n";
+                            
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
-
-		    echo "Supplementary files found but not processing\n";
+                echo "Supplementary files found\n";
             }
 
-                $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);    
+            $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);    
 
-                $object->label = $this->localFiles[$directory]['LABEL'];
-                
-                $object->owner = 'fedoraAdmin';
-               
-		 echo "Fedora object created\n";
+            $object->label = $this->localFiles[$directory]['LABEL'];
+            
+            $object->owner = 'fedoraAdmin';
+           
+	        echo "Fedora object created\n";
 
-		 /**
-          * Generate RELS-EXT
-          */
+		    /**
+            * Generate RELS-EXT
+            */
 
-                // POLICY Get Parent POLICY to add to all ingested records
-                $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
+            // POLICY Get Parent POLICY to add to all ingested records
+            $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
 
-                $collection = GRADUATE_THESES;
-                if (isset($this->localFiles[$directory]['EMBARGO']))
-                {
-		            echo "Adding to Graduate Theses (Restricted) collection\n";
-                    $collection = GRADUATE_THESES_RESTRICTED;
-                    $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
-                }
-                $object->models = array('bc-ir:graduateETDCModel');
-                $object->relationships->add(FEDORA_RELS_EXT_URI, 
-                                            'isMemberOfCollection',
-                                            $collection);
+            $collection = GRADUATE_THESES;
+            if (isset($this->localFiles[$directory]['EMBARGO'])) {
+	            echo "Adding to Graduate Theses (Restricted) collection\n";
+                $collection = GRADUATE_THESES_RESTRICTED;
+                $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
+            } else {
+                echo "Adding to Graduate Theses Collection"
+            }
+            $object->models = array('bc-ir:graduateETDCModel');
+            $object->relationships->add(FEDORA_RELS_EXT_URI, 
+                                        'isMemberOfCollection',
+                                        $collection);
 
-                $object->checksumType = 'SHA-256';
-                
-                $object->state = 'I';
+            $object->checksumType = 'SHA-256';
+            
+            $object->state = 'I';
 
-                $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
-                echo "Adding XACML policy\n";  
+            $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
+            echo "Adding XACML policy\n";  
 
-               /**
-                 * MODS Datastream
-                 */
-                $dsid = 'MODS';
-                 
-                $datastream = $object->constructDatastream($dsid, 'X');
-                             
-                $datastream->label = 'MODS Record'; //$this->localFiles[$directory]['LABEL'];
-                $datastream->mimeType = 'application/xml';
-                $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['MODS']);
-                
-                $object->ingestDatastream($datastream);
-                echo "Ingested MODS datastream\n";
-
-                /**
-                 * Original Proquest Metadata will be saved as ARCHIVE
-                 * Original filename is used as label for identification 
-                 */
-                $dsid = 'ARCHIVE';
-                 
-                $datastream = $object->constructDatastream($dsid, 'X');
-                             
-                $datastream->label = substr($this->localFiles[$directory]['METADATA'], 0, strlen($this->localFiles[$directory]['METADATA'])-4);
-
-                $datastream->mimeType = 'application/xml';
-                $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['METADATA']);
-                
-                $datastream->checksumType = 'SHA-256';
-                
-                $datastream->state = 'I';
-                
-                $object->ingestDatastream($datastream);
-                echo "Ingested ARCHIVE datastream\n"; 
-
-                /**
-                 * PDF will always be loaded as ARCHIVE-PDF DSID
-                 * regardless of embargo - splash paged PDF will 
-                 * be PDF dsid
-                 */
-                $dsid = 'ARCHIVE-PDF';
-                $datastream = $object->constructDatastream($dsid); // Default Control Group is M
-                             
-                $datastream->label = 'ARCHIVE-PDF Datastream'; //$this->localFiles[$directory]['LABEL'];
-                $datastream->mimeType = 'application/pdf';
-                $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['ETD']);
-                
-                $datastream->checksumType = 'SHA-256';
-                              
-                $datastream->state = 'I';
-                
-                $object->ingestDatastream($datastream);
-		        echo "Ingested ARCHIVE-PDF datastream\n";
-
-                /**
-                 * PDF with splash page
-                 */   
-                $dsid = "PDF";
-                $datastream = $object->constructDatastream($dsid); // Default Control Group is M
-                
-                $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
-                
-                $executable = "/usr/bin/fop -c $fop";
-                $splashtemp = $directory . "/splash.pdf";
-                $splashxslt = $this->settings['xslt']['splash'];
-                
-                $command = "$executable -xml $source -xsl $splashxslt -pdf $splashtemp";
-                exec($command, $output, $return);
-
-		if (!$return) {
-		   echo "PDF splash page created successfully\n";
-		} else {
-		   echo "PDF splash page creation unsuccessful. Exiting...\n";
-		   break;
-		}
- 
-                $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
-
-                
-                /**
-                 * Load Splash to PDF if under embargo
-                 */
-
-                $executable = '/usr/bin/pdftk';
-                    
-                $concattemp = $directory . "/concatted.pdf";
-                $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
-                    
-                $command = "$executable $splashtemp $pdf cat output $concattemp";
-                exec($command, $output, $return);
-
-                if (!$return) {
-                    echo "Splash page concatenated successfully\n";
-                } else {
-                    echo "Splash page concatenation unsuccessful. Exiting...\n";
-                    break;
-                }     
-
-                $datastream->label = 'PDF Datastream';
-                $datastream->mimeType = 'application/pdf';
-                $datastream->setContentFromFile($concattemp);
-                    
-                $datastream->checksumType = 'SHA-256';
-                    
-                $object->ingestDatastream($datastream);
-                echo "Ingested PDF with splash page\n";
-      
-                /**
-                 * FULL_TEXT
-                 */   
-                $dsid = "FULL_TEXT";
-                
-                $source = $directory . "/" . $this->localFiles[$directory]['ETD'];
-                    
-                $executable = '/usr/bin/pdftotext';
-                $fttemp = $directory . "/fulltext.txt";
-                
-                $command = "$executable $source $fttemp";
-
-                exec($command, $output, $return);
-
-                if (!$return) {
-                    echo "FULL TEXT datastream generated successfully\n";
-                } else {
-                    echo "FULL TEXT generation unsuccessful. Exiting...\n";
-                    break;
-                }               
-
-                $datastream = $object->constructDatastream($dsid);
-                             
-                $datastream->label = 'FULL_TEXT';
-                $datastream->mimeType = 'text/plain';
-                
-                // Read in FT and strip junky characters that mess up SOLR
-                $fulltext = file_get_contents($fttemp);
-                
-                $replacement = '';
-                $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
-                
-                $datastream->setContentFromString($sanitized);
-                
-                $object->ingestDatastream($datastream);
+           /**
+             * MODS Datastream
+             */
+            $dsid = 'MODS';
              
-                echo "Ingested FULL TEXT datastream\n";   
-     
-          /**
-                 * TN
-                 */   
-                $dsid = "TN";
+            $datastream = $object->constructDatastream($dsid, 'X');
+                         
+            $datastream->label = 'MODS Record'; //$this->localFiles[$directory]['LABEL'];
+            $datastream->mimeType = 'application/xml';
+            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['MODS']);
+            
+            $object->ingestDatastream($datastream);
+            echo "Ingested MODS datastream\n";
+
+            /**
+             * Original Proquest Metadata will be saved as ARCHIVE
+             * Original filename is used as label for identification 
+             */
+            $dsid = 'ARCHIVE';
+             
+            $datastream = $object->constructDatastream($dsid, 'X');
+                         
+            $datastream->label = substr($this->localFiles[$directory]['METADATA'], 0, strlen($this->localFiles[$directory]['METADATA'])-4);
+
+            $datastream->mimeType = 'application/xml';
+            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['METADATA']);
+            
+            $datastream->checksumType = 'SHA-256';
+            
+            $datastream->state = 'I';
+            
+            $object->ingestDatastream($datastream);
+            echo "Ingested ARCHIVE datastream\n"; 
+
+            /**
+             * PDF will always be loaded as ARCHIVE-PDF DSID
+             * regardless of embargo - splash paged PDF will 
+             * be PDF dsid
+             */
+            $dsid = 'ARCHIVE-PDF';
+            $datastream = $object->constructDatastream($dsid); // Default Control Group is M
+                         
+            $datastream->label = 'ARCHIVE-PDF Datastream'; //$this->localFiles[$directory]['LABEL'];
+            $datastream->mimeType = 'application/pdf';
+            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['ETD']);
+            
+            $datastream->checksumType = 'SHA-256';
+                          
+            $datastream->state = 'I';
+            
+            $object->ingestDatastream($datastream);
+	        echo "Ingested ARCHIVE-PDF datastream\n";
+
+            /**
+             * PDF with splash page
+             */   
+            $dsid = "PDF";
+            $datastream = $object->constructDatastream($dsid); // Default Control Group is M
+            
+            $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
+            
+            $executable = "/usr/bin/fop -c $fop";
+            $splashtemp = $directory . "/splash.pdf";
+            $splashxslt = $this->settings['xslt']['splash'];
+            
+            $command = "$executable -xml $source -xsl $splashxslt -pdf $splashtemp";
+            exec($command, $output, $return);
+
+    		if (!$return) {
+    		   echo "PDF splash page created successfully\n";
+    		} else {
+    		   echo "PDF splash page creation unsuccessful. Exiting...\n";
+    		   break;
+    		}
+
+            $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
+
+            
+            /**
+             * Load Splash to PDF if under embargo
+             */
+
+            $executable = '/usr/bin/pdftk';
                 
-                $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
-                    
-                $executable = '/usr/bin/convert';
-
-                $command = "$executable $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
-
-                exec($command, $output, $return);
-
-                if (!$return) {
-                    echo "TN datastream generated successfully\n";
-                } else {
-                    echo "TN generation unsuccessful. Exiting...\n";
-                    break;
-                }              
-
-                $datastream = $object->constructDatastream($dsid);
-                             
-                $datastream->label = 'TN';
-                $datastream->mimeType = 'image/jpeg';
-                $datastream->setContentFromFile($directory . "//thumbnail.jpg");
+            $concattemp = $directory . "/concatted.pdf";
+            $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
                 
-                $object->ingestDatastream($datastream);
+            $command = "$executable $splashtemp $pdf cat output $concattemp";
+            exec($command, $output, $return);
 
-                echo "Ingested TN datastream\n";
+            if (!$return) {
+                echo "Splash page concatenated successfully\n";
+            } else {
+                echo "Splash page concatenation unsuccessful. Exiting...\n";
+                break;
+            }     
+
+            $datastream->label = 'PDF Datastream';
+            $datastream->mimeType = 'application/pdf';
+            $datastream->setContentFromFile($concattemp);
                 
-                /**
-                 * PREVIEW
-                 */   
-                $dsid = "PREVIEW";
+            $datastream->checksumType = 'SHA-256';
                 
-                $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
-                    
-                $executable = '/usr/bin/convert';
+            $object->ingestDatastream($datastream);
+            echo "Ingested PDF with splash page\n";
+  
+            /**
+             * FULL_TEXT
+             */   
+            $dsid = "FULL_TEXT";
+            
+            $source = $directory . "/" . $this->localFiles[$directory]['ETD'];
+                
+            $executable = '/usr/bin/pdftotext';
+            $fttemp = $directory . "/fulltext.txt";
+            
+            $command = "$executable $source $fttemp";
 
-                $command = "$executable $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
+            exec($command, $output, $return);
 
-                exec($command, $output, $return);
+            if (!$return) {
+                echo "FULL TEXT datastream generated successfully\n";
+            } else {
+                echo "FULL TEXT generation unsuccessful. Exiting...\n";
+                break;
+            }               
 
-                if (!$return) {
-                    echo "PREVIEW datastream generated successfully\n";
-                } else {
-                    echo "PREVIEW generation unsuccessful. Exiting...\n";
-                    break;
-                }              
+            $datastream = $object->constructDatastream($dsid);
+                         
+            $datastream->label = 'FULL_TEXT';
+            $datastream->mimeType = 'text/plain';
+            
+            // Read in FT and strip junky characters that mess up SOLR
+            $fulltext = file_get_contents($fttemp);
+            
+            $replacement = '';
+            $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
+            
+            $datastream->setContentFromString($sanitized);
+            
+            $object->ingestDatastream($datastream);
+         
+            echo "Ingested FULL TEXT datastream\n";   
  
-                $datastream = $object->constructDatastream($dsid);
-                             
-                $datastream->label = 'PREVIEW';
-                $datastream->mimeType = 'image/jpeg';
-                $datastream->setContentFromFile($directory . "//preview.jpg");
+            /**
+             * TN
+             */   
+            $dsid = "TN";
+            
+            $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
                 
-                $object->ingestDatastream($datastream);                
-                echo "Ingested PREVIEW datastream\n";
- 
-                // POLICY
-                $object->ingestDatastream($policy);  
-                echo "Ingested XACML datastream\n";
+            $executable = '/usr/bin/convert';
 
-                /**
-                * Check if OA
-                * Set Embargo is there is one
-                * Permanent?
-                */
+            $command = "$executable $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
 
-                //$relsint = '';
-                if ($submission['OA'] === 0) {
-                    $relsint =  file_get_contents('xsl/permRELS-INT.xml');
-                    $relsint = str_replace('######', $submission['PID'], $relsint);
+            exec($command, $output, $return);
 
-                } elseif (isset($submission['EMBARGO'])) {
-                    $relsint =  file_get_contents('xsl/embargoRELS-INT.xml');
-                    $relsint = str_replace('######', $submission['PID'], $relsint);
-                    $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
+            if (!$return) {
+                echo "TN datastream generated successfully\n";
+            } else {
+                echo "TN generation unsuccessful. Exiting...\n";
+                break;
+            }              
 
-                }
+            $datastream = $object->constructDatastream($dsid);
+                         
+            $datastream->label = 'TN';
+            $datastream->mimeType = 'image/jpeg';
+            $datastream->setContentFromFile($directory . "//thumbnail.jpg");
+            
+            $object->ingestDatastream($datastream);
 
-                if (isset($relsint) && $relsint !== '') {
-                    $dsid = "RELS-INT";
+            echo "Ingested TN datastream\n";
+            
+            /**
+             * PREVIEW
+             */   
+            $dsid = "PREVIEW";
+            
+            $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
+                
+            $executable = '/usr/bin/convert';
 
-                    $datastream = $object->constructDatastream($dsid);
-                    $datastream->label = 'Fedora Relationship Metadata';
-                    $datastream->mimeType = 'application/rdf+xml';
-                    $datastream->setContentFromString($relsint);
+            $command = "$executable $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
 
-                    $object->ingestDatastream($datastream);
-                    echo "Ingested RELS-INT datastream\n";   
+            exec($command, $output, $return);
+
+            if (!$return) {
+                echo "PREVIEW datastream generated successfully\n";
+            } else {
+                echo "PREVIEW generation unsuccessful. Exiting...\n";
+                break;
+            }              
+
+            $datastream = $object->constructDatastream($dsid);
+                         
+            $datastream->label = 'PREVIEW';
+            $datastream->mimeType = 'image/jpeg';
+            $datastream->setContentFromFile($directory . "//preview.jpg");
+            
+            $object->ingestDatastream($datastream);                
+            echo "Ingested PREVIEW datastream\n";
+
+            // POLICY
+            $object->ingestDatastream($policy);  
+            echo "Ingested XACML datastream\n";
+
+            /**
+            * Check if OA
+            * Set Embargo is there is one
+            * Permanent?
+            */
+
+            //$relsint = '';
+            if ($submission['OA'] === 0) {
+                $relsint =  file_get_contents('xsl/permRELS-INT.xml');
+                $relsint = str_replace('######', $submission['PID'], $relsint);
+
+            } elseif (isset($submission['EMBARGO'])) {
+                $relsint =  file_get_contents('xsl/embargoRELS-INT.xml');
+                $relsint = str_replace('######', $submission['PID'], $relsint);
+                $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
 
             }
 
-                $this->repository->ingestObject($object);
+            if (isset($relsint) && $relsint !== '') {
+                $dsid = "RELS-INT";
 
-                $pidcount++;
-                $message .= $submission['PID'] . "\t";
-                if (isset($submission['EMBARGO']))
-                {
-                    $message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
-                } else{
-                    $message .= "NO EMBARGO" . "\t";
-                }
-                $message .= $submission['LABEL'] . "\n";
+                $datastream = $object->constructDatastream($dsid);
+                $datastream->label = 'Fedora Relationship Metadata';
+                $datastream->mimeType = 'application/rdf+xml';
+                $datastream->setContentFromString($relsint);
+
+                $object->ingestDatastream($datastream);
+                echo "Ingested RELS-INT datastream\n";   
+            }
+
+            $this->repository->ingestObject($object);
+
+            $pidcount++;
+            $message .= $submission['PID'] . "\t";
+
+            if (isset($submission['EMBARGO']))
+            {
+                $message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+            } else {
+                $message .= "NO EMBARGO" . "\t";
+            }
+            $message .= $submission['LABEL'] . "\n";
 
 		// JJM
-		sleep(2);
-        echo "\n\n\n\n";
-
+		sleep(5);
+        echo "\n\n";
                 
         }
-        mail($this->settings['notify']['email'],"Message from processProquest",$message);
-    }
 
+    mail($this->settings['notify']['email'],"Message from processProquest",$message);
+
+    }
 }
 ?>
