@@ -386,7 +386,6 @@ class processProquest {
             /**
              * Load Splash to PDF if under embargo
              */
-
             $executable = '/usr/bin/pdftk';
                 
             $concattemp = $directory . "/concatted.pdf";
@@ -544,6 +543,8 @@ class processProquest {
 
             $this->repository->ingestObject($object);
 
+            echo "Object ingested successfully"
+
             $pidcount++;
             $message .= $submission['PID'] . "\t";
 
@@ -555,13 +556,13 @@ class processProquest {
             }
             $message .= $submission['LABEL'] . "\n";
 
-		// JJM
-		sleep(5);
-        echo "\n\n";
+    		// JJM
+    		sleep(5);
+            echo "\n\n\n\n";
                 
         }
 
-    mail($this->settings['notify']['email'],"Message from processProquest",$message);
+        mail($this->settings['notify']['email'],"Message from processProquest",$message);
 
     }
 }
