@@ -6,7 +6,8 @@ Usage: sudo php index.php processProquest.ini
 
 Requires config file processProquest.ini with the following params:
 
-```[ftp]
+```
+[ftp]
 server     = ftp_server.example.edu
 user       = ftpUser
 password   = ftpPassword
