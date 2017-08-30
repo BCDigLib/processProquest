@@ -20,7 +20,7 @@ oa         = "/DISS_submission/DISS_repository/DISS_acceptance/text()"
 embargo    = "/DISS_submission/DISS_repository/DISS_delayed_release/text()"
 creator    = "/mods:mods/mods:name[@type='personal'][@usage='primary']/mods:displayForm/text()"
 supplement = "/DISS_submission/DISS_content/DISS_attachment"
-splash     = "path/to/splash/page/stylesheet/splash.xsl"
+splash     = "/path/to/splash/page/stylesheet/splash.xsl"
 [fedora]
 url        = "islandora_server.example.edu:8080/fedora/"
 username   = "fedoraUser";
