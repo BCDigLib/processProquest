@@ -12,7 +12,7 @@ putenv('GDFONTPATH='.$fontpath);
 
 require_once 'processProquest.php';
 
-if (!$argv){
+if (!isset($argv[1])){
     usage();
     exit(1);
 }
