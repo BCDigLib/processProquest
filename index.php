@@ -38,7 +38,8 @@ $process->ingest();
 exit(1);
 
 function usage() {
-    echo "Usage: php processProquest.php configFile\n";
+    echo "Usage: php index.php processProquest.ini\n";
+    echo "(See README.md for configuration info)"
 }
 
 ?>
