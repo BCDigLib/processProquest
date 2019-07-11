@@ -125,6 +125,7 @@ class processProquest {
                 echo "File $filename moved to ./processed on ftp server\n";
             } else {
                 echo "Error: $filename could not be moved\n";
+                break;
             }
         }
     }
