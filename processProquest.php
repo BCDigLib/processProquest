@@ -118,13 +118,6 @@ class processProquest {
             $zip->open($localFile);
             $zip->extractTo($etdDir);
             $zip->close();
-
-            if($this->ftp->ftp_rename($filename, "./processed/".$filename)) {
-                echo "File $filename moved to ./processed on ftp server\n";
-            } else {
-                echo "Error: $filename could not be moved\n";
-                break;
-            }
         }
     }
 
@@ -543,6 +536,7 @@ class processProquest {
 
             $this->repository->ingestObject($object);
 
+            # TODO: was object ingested successfully?
             echo "Object ingested successfully\n";
 
             $pidcount++;
