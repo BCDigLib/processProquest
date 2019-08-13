@@ -97,18 +97,16 @@ class processProquest {
 
                 if (preg_match('/0016/', $file)) { // ETD or Metadata 0016 is BC code
                     if (substr($file,strlen($file)-3) === 'pdf') {
-			// Add debug note here??
                         $this->localFiles[$etdDir]['ETD'] = $file;
                     } elseif (substr($file,strlen($file)-3) === 'xml') {
-			// Add debug note here??
                         $this->localFiles[$etdDir]['METADATA'] = $file;
                     } else {
                         /**
-                        * Supplementary files - could be permissions or data
-                        * Metadata will contain boolean key for permission in
-                        * DISS_file_descr element
+                         * Supplementary files - could be permissions or data
+                         * Metadata will contain boolean key for permission in
+                         * DISS_file_descr element
                          * [0] element should always be folder
-                        */
+                         */
                         $this->localFiles[$etdDir]['UNKNOWN'.$supplement] = $file;
                         $supplement++;
                     }
@@ -120,12 +118,6 @@ class processProquest {
             $zip->open($localFile);
             $zip->extractTo($etdDir);
             $zip->close();
-
-            if($this->ftp->ftp_rename($filename, "./processed/".$filename)) {
-                echo "File $filename moved to ./processed on ftp server\n";
-            } else {
-                echo "Error: $filename could not be moved\n";
-            }
         }
     }
 
@@ -157,8 +149,7 @@ class processProquest {
             $xpath = new DOMXpath($metadata);
 
             // Get Permissions
-
-	    $oaElements = $xpath->query($this->settings['xslt']['oa']);
+            $oaElements = $xpath->query($this->settings['xslt']['oa']);
             if ($oaElements->length === 0 )
             {
                 $openaccess = 0;
@@ -281,9 +272,9 @@ class processProquest {
 
 	        echo "Fedora object created\n";
 
-		        /**
-            * Generate RELS-EXT
-            */
+            /**
+             * Generate RELS-EXT
+             */
 
             // POLICY Get Parent POLICY to add to all ingested records
             $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
@@ -515,10 +506,11 @@ class processProquest {
             echo "Ingested XACML datastream\n";
 
             /**
-            * Check if OA
-            * Set Embargo is there is one
-            * Permanent?
-            */
+             * Check if OA
+             * Set Embargo is there is one
+             * Permanent?
+             */
+            
             //Initialize $relsint or the script will fail
             $relsint = '';
             if ($submission['OA'] === 0) {
@@ -544,6 +536,7 @@ class processProquest {
 
             $this->repository->ingestObject($object);
 
+            # TODO: was object ingested successfully?
             echo "Object ingested successfully\n";
 
             $pidcount++;
