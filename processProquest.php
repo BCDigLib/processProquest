@@ -552,8 +552,14 @@ class processProquest {
                 echo "Object failed to ingest\n";
 
                 $pidcount++;
-                $failure_message .= "Failed to ingest: \t";
                 $failure_message .= $submission['PID'] . "\t";
+
+                if (isset($submission['EMBARGO'])) {
+                    $failure_message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                } else {
+                    $failure_message .= "NO EMBARGO" . "\t";
+                }
+                $failure_message .= $submission['LABEL'] . "\n";
             }
 
             // JJM
