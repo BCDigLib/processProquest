@@ -243,7 +243,7 @@ class processProquest {
         $this->api = new FedoraApi($this->connection);
         $this->repository = new FedoraRepository($this->api, new simpleCache());
 
-        $this->api_m = $this->repository->api->m; //  Management API.
+        $this->api_m = $this->repository->api->m; // Fedora Management API.
 
     }
 

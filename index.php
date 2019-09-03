@@ -25,7 +25,7 @@ $process->initFTP();
 // Get zip files, unzip and store locally
 $process->getFiles();
 
-//
+// Connect to Fedora API
 $process->initFedoraConnection();
 
 // Process each  
