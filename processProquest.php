@@ -255,7 +255,9 @@ class processProquest {
 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $message = "The following ETDs were ingested:\n\n";
+        $success_message = "The following ETDs were ingested:\n\n";
+        $failure_message = "\n\nThe following ETDs failed to ingest:\n\n";
+
 
         foreach ($this->localFiles as $directory => $submission) {
     	        echo "Processing " . $directory. "\n";
@@ -534,29 +536,32 @@ class processProquest {
                 echo "Ingested RELS-INT datastream\n";
             }
 
-            $this->repository->ingestObject($object);
+            if ($this->repository->ingestObject($object)) {
+                echo "Object ingested successfully\n";
 
-            # TODO: was object ingested successfully?
-            echo "Object ingested successfully\n";
+                $pidcount++;
+                $success_message .= $submission['PID'] . "\t";
 
-            $pidcount++;
-            $message .= $submission['PID'] . "\t";
-
-            if (isset($submission['EMBARGO']))
-            {
-                $message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                if (isset($submission['EMBARGO'])) {
+                    $success_message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                } else {
+                    $success_message .= "NO EMBARGO" . "\t";
+                }
+                $success_message .= $submission['LABEL'] . "\n";
             } else {
-                $message .= "NO EMBARGO" . "\t";
+                echo "Object failed to ingest\n";
+
+                $pidcount++;
+                $failure_message .= "Failed to ingest: \t";
+                $failure_message .= $submission['PID'] . "\t";
             }
-            $message .= $submission['LABEL'] . "\n";
 
             // JJM
             sleep(2);
             echo "\n\n\n\n";
-
         }
 
-        mail($this->settings['notify']['email'],"Message from processProquest",$message);
+        mail($this->settings['notify']['email'],"Message from processProquest",$success_message . $failure_message);
 
     }
 }
