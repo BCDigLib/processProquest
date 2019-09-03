@@ -255,12 +255,14 @@ class processProquest {
 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $success_message = "The following ETDs were ingested:\n\n";
+        $processing_message = "The following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
+        $success_message = "\n\nThe following ETDs were ingested successfully:\n\n";
         $failure_message = "\n\nThe following ETDs failed to ingest:\n\n";
 
 
         foreach ($this->localFiles as $directory => $submission) {
-    	        echo "Processing " . $directory. "\n";
+    	        echo "Processing " . $directory . "\n";
+                $processing_message .= $directory . "\n";
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
                 echo "Supplementary files found\n";
@@ -567,7 +569,7 @@ class processProquest {
             echo "\n\n\n\n";
         }
 
-        mail($this->settings['notify']['email'],"Message from processProquest",$success_message . $failure_message);
+        mail($this->settings['notify']['email'],"Message from processProquest",$processing_message . $success_message . $failure_message);
 
     }
 }
