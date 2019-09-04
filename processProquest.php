@@ -265,7 +265,7 @@ class processProquest {
         foreach ($this->localFiles as $directory => $submission) {
     	   echo "Processing " . $directory . "\n";
             $processingMessage .= $directory . "\n";
-            
+
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
                 echo "Supplementary files found\n";
@@ -578,7 +578,7 @@ class processProquest {
             echo "\n\n\n\n";
         }
 
-        mail($this->settings['notify']['email'],"Message from processProquest",$processingMessage . $successMessage . $failureMessage);
+        mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
 
     }
 }
