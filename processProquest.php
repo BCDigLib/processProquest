@@ -46,7 +46,7 @@ class processProquest {
      */
     function initFTP() {
 
-        echo "Initializing FTP connection...\n"
+        echo "Initializing FTP connection...\n";
 
         $urlFTP = $this->settings['ftp']['server'];
         $userFTP = $this->settings['ftp']['user'];
@@ -115,7 +115,7 @@ class processProquest {
                 }
             }
 
-            echo "Extracting files...\n"
+            echo "Extracting files...\n";
             $zip = new ZipArchive;
 
             $zip->open($localFile);
@@ -263,7 +263,7 @@ class processProquest {
 
 
         foreach ($this->localFiles as $directory => $submission) {
-    	   echo "Processing " . $directory . "\n";
+            echo "Processing " . $directory . "\n";
             $processingMessage .= $directory . "\n";
 
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
@@ -558,7 +558,7 @@ class processProquest {
                 $directoryArray = explode('/', $directory);
                 $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
-                $this->ftp->ftp_rename($fnameFTP, './processed/' . $fnameFTP);
+                $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
             } else {
                 echo "Object failed to ingest\n";
 
@@ -571,6 +571,12 @@ class processProquest {
                     $failureMessage .= "NO EMBARGO" . "\t";
                 }
                 $failureMessage .= $submission['LABEL'] . "\n";
+
+                $faildirFTP = $this->settings['ftp']['faildir'];
+                $directoryArray = explode('/', $directory);
+                $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
+
+                $this->ftp->ftp_rename($fnameFTP, $faildirFTP . '/' . $fnameFTP);
             }
 
             // JJM
