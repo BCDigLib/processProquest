@@ -46,6 +46,8 @@ class processProquest {
      */
     function initFTP() {
 
+        echo "Initializing FTP connection...\n"
+
         $urlFTP = $this->settings['ftp']['server'];
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
@@ -55,7 +57,6 @@ class processProquest {
         $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         $this->ftp->ftp_login($userFTP, $passwordFTP);
-
     }
 
 
@@ -83,6 +84,7 @@ class processProquest {
             $etdDir = $localdirFTP . substr($filename,0,strlen($filename)-4);
 
             echo "Creating temp storage directory: " . $etdDir . "\n";
+
             mkdir($etdDir, 0755);
             $localFile = $etdDir . "/" .$filename;
             $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
@@ -113,6 +115,7 @@ class processProquest {
                 }
             }
 
+            echo "Extracting files...\n"
             $zip = new ZipArchive;
 
             $zip->open($localFile);
@@ -150,8 +153,7 @@ class processProquest {
 
             // Get Permissions
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
-            if ($oaElements->length === 0 )
-            {
+            if ($oaElements->length === 0 ) {
                 $openaccess = 0;
 		        echo "No OA agreement found\n";
             } elseif ($oaElements->item(0)->C14N() === '0') {
@@ -255,14 +257,15 @@ class processProquest {
 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $processing_message = "The following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
-        $success_message = "\n\nThe following ETDs were ingested successfully:\n\n";
-        $failure_message = "\n\nThe following ETDs failed to ingest:\n\n";
+        $processingMessage = "The following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
+        $successMessage = "\n\nThe following ETDs were ingested successfully:\n\n";
+        $failureMessage = "\n\nThe following ETDs failed to ingest:\n\n";
 
 
         foreach ($this->localFiles as $directory => $submission) {
-    	        echo "Processing " . $directory . "\n";
-                $processing_message .= $directory . "\n";
+    	   echo "Processing " . $directory . "\n";
+            $processingMessage .= $directory . "\n";
+            
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
                 echo "Supplementary files found\n";
@@ -300,8 +303,8 @@ class processProquest {
 
             $object->state = 'I';
 
-            $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
             echo "Adding XACML policy\n";
+            $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
 
             /**
              * MODS Datastream
@@ -542,14 +545,14 @@ class processProquest {
                 echo "Object ingested successfully\n";
 
                 $pidcount++;
-                $success_message .= $submission['PID'] . "\t";
+                $successMessage .= $submission['PID'] . "\t";
 
                 if (isset($submission['EMBARGO'])) {
-                    $success_message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                    $successMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
                 } else {
-                    $success_message .= "NO EMBARGO" . "\t";
+                    $successMessage .= "NO EMBARGO" . "\t";
                 }
-                $success_message .= $submission['LABEL'] . "\n";
+                $successMessage .= $submission['LABEL'] . "\n";
 
                 $processdirFTP = $this->settings['ftp']['processdir'];
                 $directoryArray = explode('/', $directory);
@@ -560,14 +563,14 @@ class processProquest {
                 echo "Object failed to ingest\n";
 
                 $pidcount++;
-                $failure_message .= $submission['PID'] . "\t";
+                $failureMessage .= $submission['PID'] . "\t";
 
                 if (isset($submission['EMBARGO'])) {
-                    $failure_message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                    $failureMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
                 } else {
-                    $failure_message .= "NO EMBARGO" . "\t";
+                    $failureMessage .= "NO EMBARGO" . "\t";
                 }
-                $failure_message .= $submission['LABEL'] . "\n";
+                $failureMessage .= $submission['LABEL'] . "\n";
             }
 
             // JJM
@@ -575,7 +578,7 @@ class processProquest {
             echo "\n\n\n\n";
         }
 
-        mail($this->settings['notify']['email'],"Message from processProquest",$processing_message . $success_message . $failure_message);
+        mail($this->settings['notify']['email'],"Message from processProquest",$processingMessage . $successMessage . $failureMessage);
 
     }
 }
