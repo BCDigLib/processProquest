@@ -253,14 +253,16 @@ class processProquest {
      *
      */
     function ingest() {
+
         echo "\n\nNow ingesting files...\n\n";
 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $processingMessage = "The following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
-        $successMessage = "\n\nThe following ETDs were ingested successfully:\n\n";
-        $failureMessage = "\n\nThe following ETDs failed to ingest:\n\n";
 
+        // Initialize messages for notification email
+        $successMessage = "The following ETDs ingested successfully:\n\n";
+        $failureMessage = "\n\nThe following ETDs failed to ingest:\n\n";
+        $processingMessage = "\n\nThe following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
 
         foreach ($this->localFiles as $directory => $submission) {
             echo "Processing " . $directory . "\n";
@@ -382,7 +384,6 @@ class processProquest {
     		}
 
             $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
-
 
             /**
              * Load Splash to PDF if under embargo
@@ -557,7 +558,7 @@ class processProquest {
                 $processdirFTP = $this->settings['ftp']['processdir'];
                 $directoryArray = explode('/', $directory);
                 $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
-
+                
                 $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
             } else {
                 echo "Object failed to ingest\n";
@@ -584,7 +585,15 @@ class processProquest {
             echo "\n\n\n\n";
         }
 
-        mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
+        // Do not show failure message in notification if no ETDs failed 
+        // (same with success message, but hopefully we won't have that problem!)
+        if ($failureMessage == "\n\nThe following ETDs failed to ingest:\n\n") {
+            mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
+        } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
+            mail($this->settings['notify']['email'],"Message from processProquest",$failureMessage . $processingMessage);
+        } else {
+            mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
+        }
 
     }
 }
