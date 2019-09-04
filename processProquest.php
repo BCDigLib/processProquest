@@ -542,6 +542,12 @@ class processProquest {
                 echo "Ingested RELS-INT datastream\n";
             }
 
+            // Get the zip filename on the FTP server of the ETD being processed. 
+            // We'll use this in the conditional below to move the ETD on the 
+            // remove server accordingly.
+            $directoryArray = explode('/', $directory);
+            $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
+
             if ($this->repository->ingestObject($object)) {
                 echo "Object ingested successfully\n";
 
@@ -556,9 +562,6 @@ class processProquest {
                 $successMessage .= $submission['LABEL'] . "\n";
 
                 $processdirFTP = $this->settings['ftp']['processdir'];
-                $directoryArray = explode('/', $directory);
-                $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
-                
                 $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
             } else {
                 echo "Object failed to ingest\n";
@@ -574,9 +577,6 @@ class processProquest {
                 $failureMessage .= $submission['LABEL'] . "\n";
 
                 $faildirFTP = $this->settings['ftp']['faildir'];
-                $directoryArray = explode('/', $directory);
-                $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
-
                 $this->ftp->ftp_rename($fnameFTP, $faildirFTP . '/' . $fnameFTP);
             }
 
