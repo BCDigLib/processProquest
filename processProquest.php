@@ -52,7 +52,7 @@ class processProquest {
 
         $this->ftp = new proquestFTP($urlFTP);
         //set session time out default is 90
-        $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 30);
+        $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         $this->ftp->ftp_login($userFTP, $passwordFTP);
 
@@ -550,6 +550,12 @@ class processProquest {
                     $success_message .= "NO EMBARGO" . "\t";
                 }
                 $success_message .= $submission['LABEL'] . "\n";
+
+                $processdirFTP = $this->settings['ftp']['processdir'];
+                $directoryArray = explode('/', $directory);
+                $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
+
+                $this->ftp->ftp_rename($fnameFTP, './processed/' . $fnameFTP);
             } else {
                 echo "Object failed to ingest\n";
 
