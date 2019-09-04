@@ -13,6 +13,8 @@ user       = ftpUser
 password   = ftpPassword
 localdir   = /path/to/tmp/output/directory
 fetchdir   = (leave blank if files are in home dir)
+processdir = /path/to/dir/on/ftp/server/for/successful/ingests
+faildir    = /path/to/dir/on/ftp/server/for/failed/ingests
 [xslt]
 xslt       = /path/to/proquest/crosswalk/Proquest_MODS.xsl
 label      = xsl/getLabel.xsl
