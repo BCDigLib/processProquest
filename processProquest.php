@@ -46,16 +46,17 @@ class processProquest {
      */
     function initFTP() {
 
+        echo "Initializing FTP connection...\n";
+
         $urlFTP = $this->settings['ftp']['server'];
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
 
         $this->ftp = new proquestFTP($urlFTP);
         //set session time out default is 90
-        $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 30);
+        $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         $this->ftp->ftp_login($userFTP, $passwordFTP);
-
     }
 
 
@@ -83,6 +84,7 @@ class processProquest {
             $etdDir = $localdirFTP . substr($filename,0,strlen($filename)-4);
 
             echo "Creating temp storage directory: " . $etdDir . "\n";
+
             mkdir($etdDir, 0755);
             $localFile = $etdDir . "/" .$filename;
             $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
@@ -113,6 +115,7 @@ class processProquest {
                 }
             }
 
+            echo "Extracting files...\n";
             $zip = new ZipArchive;
 
             $zip->open($localFile);
@@ -150,8 +153,7 @@ class processProquest {
 
             // Get Permissions
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
-            if ($oaElements->length === 0 )
-            {
+            if ($oaElements->length === 0 ) {
                 $openaccess = 0;
 		        echo "No OA agreement found\n";
             } elseif ($oaElements->item(0)->C14N() === '0') {
@@ -243,7 +245,7 @@ class processProquest {
         $this->api = new FedoraApi($this->connection);
         $this->repository = new FedoraRepository($this->api, new simpleCache());
 
-        $this->api_m = $this->repository->api->m; //  Management API.
+        $this->api_m = $this->repository->api->m; // Fedora Management API.
 
     }
 
@@ -251,14 +253,21 @@ class processProquest {
      *
      */
     function ingest() {
+
         echo "\n\nNow ingesting files...\n\n";
 
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $message = "The following ETDs were ingested:\n\n";
+
+        // Initialize messages for notification email
+        $successMessage = "The following ETDs ingested successfully:\n\n";
+        $failureMessage = "\n\nThe following ETDs failed to ingest:\n\n";
+        $processingMessage = "\n\nThe following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
 
         foreach ($this->localFiles as $directory => $submission) {
-    	        echo "Processing " . $directory. "\n";
+            echo "Processing " . $directory . "\n";
+            $processingMessage .= $directory . "\n";
+
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
                 echo "Supplementary files found\n";
@@ -296,8 +305,8 @@ class processProquest {
 
             $object->state = 'I';
 
-            $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
             echo "Adding XACML policy\n";
+            $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
 
             /**
              * MODS Datastream
@@ -375,7 +384,6 @@ class processProquest {
     		}
 
             $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
-
 
             /**
              * Load Splash to PDF if under embargo
@@ -534,29 +542,58 @@ class processProquest {
                 echo "Ingested RELS-INT datastream\n";
             }
 
-            $this->repository->ingestObject($object);
+            // Get the zip filename on the FTP server of the ETD being processed. 
+            // We'll use this in the conditional below to move the ETD on the 
+            // remove server accordingly.
+            $directoryArray = explode('/', $directory);
+            $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
-            # TODO: was object ingested successfully?
-            echo "Object ingested successfully\n";
+            if ($this->repository->ingestObject($object)) {
+                echo "Object ingested successfully\n";
 
-            $pidcount++;
-            $message .= $submission['PID'] . "\t";
+                $pidcount++;
+                $successMessage .= $submission['PID'] . "\t";
 
-            if (isset($submission['EMBARGO']))
-            {
-                $message .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                if (isset($submission['EMBARGO'])) {
+                    $successMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                } else {
+                    $successMessage .= "NO EMBARGO" . "\t";
+                }
+                $successMessage .= $submission['LABEL'] . "\n";
+
+                $processdirFTP = $this->settings['ftp']['processdir'];
+                $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
             } else {
-                $message .= "NO EMBARGO" . "\t";
+                echo "Object failed to ingest\n";
+
+                $pidcount++;
+                $failureMessage .= $submission['PID'] . "\t";
+
+                if (isset($submission['EMBARGO'])) {
+                    $failureMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                } else {
+                    $failureMessage .= "NO EMBARGO" . "\t";
+                }
+                $failureMessage .= $submission['LABEL'] . "\n";
+
+                $faildirFTP = $this->settings['ftp']['faildir'];
+                $this->ftp->ftp_rename($fnameFTP, $faildirFTP . '/' . $fnameFTP);
             }
-            $message .= $submission['LABEL'] . "\n";
 
             // JJM
             sleep(2);
             echo "\n\n\n\n";
-
         }
 
-        mail($this->settings['notify']['email'],"Message from processProquest",$message);
+        // Do not show failure message in notification if no ETDs failed 
+        // (same with success message, but hopefully we won't have that problem!)
+        if ($failureMessage == "\n\nThe following ETDs failed to ingest:\n\n") {
+            mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
+        } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
+            mail($this->settings['notify']['email'],"Message from processProquest",$failureMessage . $processingMessage);
+        } else {
+            mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
+        }
 
     }
 }
