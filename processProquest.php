@@ -87,8 +87,9 @@ class processProquest {
 
             mkdir($etdDir, 0755);
             $localFile = $etdDir . "/" .$filename;
+
+            sleep(2);
             $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
-            sleep(5);
 
             // Store location
             if(isset($this->localFiles[$etdDir])){$this->localFiles[$etdDir];}
