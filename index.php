@@ -39,7 +39,7 @@ exit(1);
 
 function usage() {
     echo "Usage: php index.php processProquest.ini\n";
-    echo "(See README.md for configuration info)"
+    echo "(See README.md for configuration info)";
 }
 
 ?>

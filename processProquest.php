@@ -87,6 +87,8 @@ class processProquest {
 
             mkdir($etdDir, 0755);
             $localFile = $etdDir . "/" .$filename;
+
+            sleep(2);
             $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
 
             // Store location
@@ -518,7 +520,7 @@ class processProquest {
              * Set Embargo is there is one
              * Permanent?
              */
-            
+
             //Initialize $relsint or the script will fail
             $relsint = '';
             if ($submission['OA'] === 0) {
@@ -542,8 +544,8 @@ class processProquest {
                 echo "Ingested RELS-INT datastream\n";
             }
 
-            // Get the zip filename on the FTP server of the ETD being processed. 
-            // We'll use this in the conditional below to move the ETD on the 
+            // Get the zip filename on the FTP server of the ETD being processed.
+            // We'll use this in the conditional below to move the ETD on the
             // remove server accordingly.
             $directoryArray = explode('/', $directory);
             $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
@@ -585,7 +587,7 @@ class processProquest {
             echo "\n\n\n\n";
         }
 
-        // Do not show failure message in notification if no ETDs failed 
+        // Do not show failure message in notification if no ETDs failed
         // (same with success message, but hopefully we won't have that problem!)
         if ($failureMessage == "\n\nThe following ETDs failed to ingest:\n\n") {
             mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
