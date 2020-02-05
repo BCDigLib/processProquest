@@ -12,28 +12,29 @@ putenv('GDFONTPATH='.$fontpath);
 
 require_once 'processProquest.php';
 
+// Requires a single parameter containing the location of an initialization file.
 if (!isset($argv[1])){
     usage();
     exit(1);
 }
 
+// Create the $process object.
 $process = new processProquest($argv[1]);
 
-// Initialize ftp connection
+// Initialize FTP connection.
 $process->initFTP();
 
-// Get zip files, unzip and store locally
+// Get zip files from FTP server, unzip and store locally.
 $process->getFiles();
 
-// Connect to Fedora API
+// Connect to Fedora through API.
 $process->initFedoraConnection();
 
-// Process each  
+// Process each zip file.
 $process->processFiles();
 
-// Ingest
+// Ingest each processed zip file into Fedora.
 $process->ingest();
-
 
 exit(1);
 

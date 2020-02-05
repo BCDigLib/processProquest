@@ -7,9 +7,12 @@ error_reporting(E_ALL);
  *
  * @author MEUSEB
  * 
- * annotations by Jesse Martinez
+ * annotations by Jesse Martinez.
  */
 
+/* 
+ * Islandora/Fedora library.
+ */
 require_once '../tuque/RepositoryConnection.php';
 require_once '../tuque/FedoraApi.php';
 require_once '../tuque/FedoraApiSerializer.php';
@@ -18,35 +21,59 @@ require_once '../tuque/RepositoryException.php';
 require_once '../tuque/FedoraRelationships.php';
 require_once '../tuque/Cache.php';
 require_once '../tuque/HttpConnection.php';
+
+/**
+ * Custom FTP connection handler.
+ */
 require_once 'proquestFTP.php';
 
+/* 
+ * BC Islandora definitions.
+ */
 define('ISLANDORA_BC_ROOT_PID', 'bc-ir:GraduateThesesCollection');
 define('ISLANDORA_BC_ROOT_PID_EMBARGO', 'bc-ir:GraduateThesesCollectionRestricted');
 define('ISLANDORA_BC_XACML_POLICY','POLICY');
 define('GRADUATE_THESES','bc-ir:GraduateThesesCollection');
 define('GRADUATE_THESES_RESTRICTED','bc-ir:GraduateThesesCollectionRestricted');
 
-
+/**
+ * Batch processes Proquest ETDs.
+ * 
+ * This class allows for the following workflow:
+ *  - Initialize FTP server connection.
+ *  - Gathers and extracts the ETD zip files from FTP server onto a local directory.
+ *  - Generates metadata files from ETD zip file contents.
+ *  - Initialize connection to Fedora file repository server.
+ *  - Ingests ETD files and metadata into Fedora, and generates various datastreams.
+ */
 class processProquest {
 
-    protected $ftp;
-    protected $localFiles;
     public $settings;
+    protected $ftp;
+    protected $localFiles; // array
     protected $connection;
     protected $api;
     protected $api_m;
     protected $repository;
     protected $toProcess = 0;
 
+    /**
+     * Class constructor. 
+     * 
+     * This builds a local '$this' object that contains various script settings. 
+     */
     public function __construct($config){
         $this->settings = parse_ini_file($config, true);
     }
 
     /**
-     *
-     * @param type $settings
+     * Initializes an FTP connection.
+     * 
+     * Calls on proquestFTP.php
      */
     function initFTP() {
+        // TODO: sanity check that proquestPHP file exists.
+        // TODO: catch errors.
 
         echo "Initializing FTP connection...\n";
 
@@ -54,74 +81,144 @@ class processProquest {
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
 
+        // Create ftp object used for connection.
         $this->ftp = new proquestFTP($urlFTP);
-        //set session time out default is 90
+
+        // Set session time out. Default is 90.
         $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
+        // Pass login credentials to login method.
         $this->ftp->ftp_login($userFTP, $passwordFTP);
     }
 
 
     /**
-     *
-     * @param type $settings
+     * Gather ETD zip files from FTP server.
+     * 
+     * Create a local directory for each zip file from FTP server and save into directory. 
+     * Local directory name is based on file name. 
+     * Next, varify that PDF and XML files exist. Also keep track of supplementary files. 
+     * Lastly, expand zip file contents into local directory. 
      */
     function getFiles() {
 
         echo "Fetching files...\n";
 
+        // Look at specific directory on FTP server for ETD files. Ex: /path/to/files
+        // TODO: handle OS directory path errors.
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
+
+        // Define local directory for file processing. Ex: /tmp/processed
+        // TODO: handle OS directory path errors.
         $localdirFTP = $this->settings['ftp']['localdir'];
 
+        // Check if the FTP file directory is root.
+        // TODO: manage when $fetchdirFTP is not an empty string!
         if ($fetchdirFTP != "")
         {
             $this->ftp->ftp_chdir($fetchdirFTP);
         }
 
+        /**
+         * Look for files that begin with a specific string. 
+         * In our specific case the file prefix is "etdadmin_upload".
+         * Save results into $etdFiles array.
+         */
+        // TODO: define "etdadmin_upload" string as a constant.
         $etdFiles = $this->ftp->ftp_nlist("etdadmin_upload*");
 
+        // TODO: check if $etdFiles is an empty array and shortcut processing.
+        // TODO: make sure file name (including extension) is more than four chars.
 
+        /**
+         * Loop through each match in $etdFiles. 
+         * There may be multiple matched files so process each individually.
+         */
         foreach ($etdFiles as $filename) {
-
+            /**
+             * Set the directory name for each ETD file. 
+             * This is based on the file name sans the file extension. 
+             * Ex: etd_file_name_1234.zip -> /tmp/processing/etd_file_name_1234
+             */
+            // TODO: are we always sure the file extension will be three chars plus period?
             $etdDir = $localdirFTP . substr($filename,0,strlen($filename)-4);
 
             echo "Creating temp storage directory: " . $etdDir . "\n";
 
+            // Create the local directory.
+            // TODO: error handling.
             mkdir($etdDir, 0755);
             $localFile = $etdDir . "/" .$filename;
 
+            // Be sure to sleep just to avoid parallel methods not completing!
             sleep(2);
+
+            /**
+             * Gets the file from the FTP server.
+             * Saves it locally to $localFile (Ex: /tmp/processing/file_name_1234).
+             * File is saved locally as a binary file.
+             */
+            // TODO: error handling.
             $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
 
-            // Store location
-            if(isset($this->localFiles[$etdDir])){$this->localFiles[$etdDir];}
+            // Store location of local directory if it hasn't been stored yet.
+            if(isset($this->localFiles[$etdDir])){
+                $this->localFiles[$etdDir];
+            }
 
-            $supplement = 0;
+            // TODO: check that we are in fact processing a zip file.
             $ziplisting = zip_open($localFile);
+            $supplement = 0;
+
+            // Go through entire zip file and process contents.
+            // TODO: error handling.
             while ($zip_entry = zip_read($ziplisting)) {
+                // Get file name.
                 $file = zip_entry_name($zip_entry);
 
-                if (preg_match('/0016/', $file)) { // ETD or Metadata 0016 is BC code
+                /** 
+                 * Match for a specific string in file.
+                 * 
+                 * Make note of expected files:
+                 *  - PDF.
+                 *  - XML.
+                 *  - all else (AKS supplementary files).
+                 * 
+                 * ETD or Metadata 0016 is BC code.
+                 */
+                // TODO: track or log non-BC files?
+                if (preg_match('/0016/', $file)) { 
+                    // Check if this is a PDF or XML file.
+                    // TODO: check that file names are more than four chars.
+                    // TODO: handle string case in comparison.
                     if (substr($file,strlen($file)-3) === 'pdf') {
                         $this->localFiles[$etdDir]['ETD'] = $file;
                     } elseif (substr($file,strlen($file)-3) === 'xml') {
                         $this->localFiles[$etdDir]['METADATA'] = $file;
                     } else {
                         /**
-                         * Supplementary files - could be permissions or data
-                         * Metadata will contain boolean key for permission in
-                         * DISS_file_descr element
-                         * [0] element should always be folder
+                         * Supplementary files - could be permissions or data.
+                         * Metadata will contain boolean key for permission in DISS_file_descr element.
+                         * [0] element should always be folder.
                          */
                         $this->localFiles[$etdDir]['UNKNOWN'.$supplement] = $file;
                         $supplement++;
                     }
                 }
+
+                /**
+                 * TODO: sanity check that both:
+                 *  - $this->localFiles[$etdDir]['ETD']
+                 *  - $this->localFiles[$etdDir]['METADATA'] 
+                 * are defined and are nonempty strings.
+                 */
             }
 
             echo "Extracting files...\n";
             $zip = new ZipArchive;
 
+            // Open and extract zip file to local directory.
+            // TODO: error handling.
             $zip->open($localFile);
             $zip->extractTo($etdDir);
             $zip->close();
@@ -129,7 +226,9 @@ class processProquest {
     }
 
     /**
-     *
+     * Generate metadata from gathered ETD files.
+     * 
+     * 
      */
     function processFiles() {
 
@@ -145,8 +244,8 @@ class processProquest {
 
         foreach ($this->localFiles as $directory => $submission) {
             /**
-             * Generate MODS Metadata first
-             * Done for every submission regardless of permissions
+             * Generate MODS Metadata first.
+             * Done for every submission regardless of permissions.
              */
             echo "Processing " . $directory . "\n";
 
@@ -240,6 +339,9 @@ class processProquest {
         }
     }
 
+    /**
+     * Initializes a connection to a Fedora file repository server.
+     */
     function initFedoraConnection() {
 
         $this->connection = new RepositoryConnection($this->settings['fedora']['url'],
