@@ -3,9 +3,11 @@
 error_reporting(E_ALL);
 
 /**
- * Description of newPHPClass
+ * Description of processProquest
  *
  * @author MEUSEB
+ * 
+ * annotations by Jesse Martinez
  */
 
 require_once '../tuque/RepositoryConnection.php';
