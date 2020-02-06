@@ -50,12 +50,12 @@ class processProquest {
 
     public $settings;
     protected $ftp;
-    protected $localFiles; // array
+    protected $localFiles;      // array
     protected $connection;
     protected $api;
     protected $api_m;
     protected $repository;
-    protected $toProcess = 0;
+    protected $toProcess = 0;   // Number of PIDs for supplementary files. 
 
     /**
      * Class constructor. 
@@ -73,7 +73,7 @@ class processProquest {
      */
     function initFTP() {
         // TODO: sanity check that proquestPHP file exists.
-        // TODO: catch errors.
+        // TODO: error handling.
 
         echo "Initializing FTP connection...\n";
 
@@ -127,7 +127,7 @@ class processProquest {
         // TODO: define "etdadmin_upload" string as a constant.
         $etdFiles = $this->ftp->ftp_nlist("etdadmin_upload*");
 
-        // TODO: check if $etdFiles is an empty array and shortcut processing.
+        // TODO: check if $etdFiles is an empty array and handle some type of error message.
         // TODO: make sure file name (including extension) is more than four chars.
 
         /**
@@ -140,7 +140,7 @@ class processProquest {
              * This is based on the file name sans the file extension. 
              * Ex: etd_file_name_1234.zip -> /tmp/processing/etd_file_name_1234
              */
-            // TODO: are we always sure the file extension will be three chars plus period?
+            // TODO: check that file names are more than four chars.
             $etdDir = $localdirFTP . substr($filename,0,strlen($filename)-4);
 
             echo "Creating temp storage directory: " . $etdDir . "\n";
@@ -182,9 +182,9 @@ class processProquest {
                  * Make note of expected files:
                  *  - PDF.
                  *  - XML.
-                 *  - all else (AKS supplementary files).
+                 *  - all else (AKA supplementary files).
                  * 
-                 * ETD or Metadata 0016 is BC code.
+                 *  The String "0016" is specific to BC.
                  */
                 // TODO: track or log non-BC files?
                 if (preg_match('/0016/', $file)) { 
@@ -232,35 +232,58 @@ class processProquest {
      */
     function processFiles() {
 
+        // TODO: check if $this->localFiles is a non-empty array.
+
+        /**
+         * Load Proquest MODS XSLT stylesheet.
+         * Ex: /path/to/proquest/crosswalk/Proquest_MODS.xsl
+         */
         $xslt = new xsltProcessor;
         $proquestxslt = new DOMDocument();
         $proquestxslt->load($this->settings['xslt']['xslt']);
         $xslt->importStyleSheet($proquestxslt);
 
+        /** 
+         * Load Fedora Label XSLT stylesheet.
+         * Ex: /path/to/proquest/xsl/getLabel.xsl
+         */
         $label = new xsltProcessor;
         $labelxslt = new DOMDocument();
         $labelxslt->load($this->settings['xslt']['label']);
         $label->importStyleSheet($labelxslt);
 
+        /**
+         * Given the array of ETD local files, generate additional metadata.
+         * This will generate:
+         *  - MODS metadata.
+         *  - OA permissions.
+         *  - Embargo settings.
+         *  - PID, title, author values.
+         */
         foreach ($this->localFiles as $directory => $submission) {
             /**
              * Generate MODS Metadata first.
-             * Done for every submission regardless of permissions.
+             * Done for every submission regardless of OA permissions.
              */
             echo "Processing " . $directory . "\n";
 
+            // Create XPath object from the ETD XML file. 
             $metadata = new DOMDocument();
             $metadata->load($directory . '//' . $submission['METADATA']);
-
             $xpath = new DOMXpath($metadata);
 
-            // Get Permissions
+            /** 
+             * Get OA permission.
+             * This looks for the existance of an "oa" node in the XPath object.
+             * Ex: /DISS_submission/DISS_repository/DISS_acceptance/text()
+             */
+            $openaccess = 0;
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
             if ($oaElements->length === 0 ) {
-                $openaccess = 0;
+                //$openaccess = 0;
 		        echo "No OA agreement found\n";
             } elseif ($oaElements->item(0)->C14N() === '0') {
-                $openaccess = 0;
+                //$openaccess = 0;
 		        echo "No OA agreement found\n";
             } else {
                 $openaccess = $oaElements->item(0)->C14N();
@@ -269,73 +292,123 @@ class processProquest {
 
             $this->localFiles[$directory]['OA'] = $openaccess;
 
+            /**
+             * Get embargo permission/dates. 
+             * This looks for the existance of an "embargo" node in the XPath object.
+             * Ex: /DISS_submission/DISS_repository/DISS_delayed_release/text()
+             */
             $embargo = 0;
             $emElements = $xpath->query($this->settings['xslt']['embargo']);
             if ($emElements->item(0) ) {
+                // Convert date string into proper PHP date object format.
                 $embargo = $emElements->item(0)->C14N();
                 $embargo = str_replace(" ","T",$embargo);
                 $embargo = $embargo . "Z";
                 $this->localFiles[$directory]['EMBARGO'] = $embargo;
             }
 
-            if ($openaccess === $embargo)
-            {
+            /**
+             * Check to see if the OA and embargo permissions match.
+             * If so, set the embargo permission/date to "indefinite".
+             */
+            // TODO: should this be a corresponding ELSEIF clause to the previous IF clause?
+            //       This looks like $embargo would only match $openaccess if they are both 0.
+            if ($openaccess === $embargo) {
                 $embargo = 'indefinite';
                 $this->localFiles[$directory]['EMBARGO'] = $embargo;
 		        echo "Embargo date is " . $embargo . "\n";
             }
 
-            // Load to DOM so we can extract data from MODS
-            // Pass PID to XSLT so we can add handle value to MODS
+            /**
+             * Fetch next PID from Fedora.
+             * Prepend PID with locally defined Fedora namespace.
+             * Ex: "bc-ir" for BC.
+             */
             $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
+            $this->localFiles[$directory]['PID'] = $pid;
 
 	        echo "Record PID is " . $pid . "\n";
 
-            $this->localFiles[$directory]['PID'] = $pid;
+            /**
+             * Insert the PID value into the Proquest MODS XSLT stylesheet.
+             * The "handle" value should be set the PID.
+             */
             $xslt->setParameter('mods', 'handle', $pid);
-            $mods = $xslt->transformToDoc($metadata );
 
-            // Use mods:titleInfo for Fedora Label
+            /**
+             * Generate MODS file.
+             * This file is generated by applying the Proquest MODS XSLT stylesheet to the ETD XML file.
+             * Additional metadata will be generated from the MODS file.
+             */
+            $mods = $xslt->transformToDoc($metadata);
+
+            /**
+             * Generate ETD title/Fedora Label.
+             * The title is generated by applying the Fedora Label XSLT stylesheet to the above generated MODS file.
+             * This uses mods:titleInfo.
+             */
             $fedoraLabel = $label->transformToXml($mods);
             $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
 
 	        echo "Title is " . $fedoraLabel . "\n";
 
+            /**
+             * Generate ETD author.
+             * This looks for the existance of an "author" node in the MODS XPath object.
+             * Ex: /mods:mods/mods:name[@type='personal'][@usage='primary']/mods:displayForm/text()
+             */
             $xpathAuthor = new DOMXpath($mods);
             $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);
             $author = $authorElements->item(0)->C14N();
 
+            /**
+             * Normalize the ETD author string. This forms the internal file name convention.
+             * Ex: Jane Anne O'Foo => Jane-Anne-OFoo
+             */
+            // TODO: Need to add unicode replacements.
             $normalizedAuthor = str_replace(array(" ",",","'",".","&apos;"), array("-","","","",""), $author);
-            // TO DO: Need to add unicode replacements
 
-            // Placeholders
+            // Create placeholder full-text text file using normalized author's name.
             $this->localFiles[$directory]['FULLTEXT'] = $normalizedAuthor . ".txt";
 
-            // Rename Proquest PDF to BC standard and update file lookup
+            // Rename Proquest PDF using normalized author's name.
+            // TODO: error handling.
             rename($directory . "/". $submission['ETD'] , $directory . "/" . $normalizedAuthor . ".pdf");
+
+            // Update local file path for ETD PDF file.
             $this->localFiles[$directory]['ETD'] = $normalizedAuthor . ".pdf";
 
-            // Save MODS and add to lookup
+            // Save MODS using normalized author's name.
+            // TODO: error handling.
             $mods->save($directory . "/" . $normalizedAuthor . ".xml");
+
+            // Update local file path for MODS file.
             $this->localFiles[$directory]['MODS'] = $normalizedAuthor . ".xml";
 
-            // Check for supplemental files
-            // UNKNOWN0 in lookup should mean there are other files
-            // also, Proquest MD will have DISS_attachment
-            // ($this->localFiles[$directory]['UNKNOWN0']) or
+            /**
+             * Check for supplemental files.
+             * This looks for the existance of an "DISS_attachment" node in the ETD XML XPath object.
+             * Ex: /DISS_submission/DISS_content/DISS_attachment
+             * 
+             * Previous comments (possibly outdated):
+             *    UNKNOWN0 in lookup should mean there are other files
+             *    also, Proquest MD will have DISS_attachment
+             *    ($this->localFiles[$directory]['UNKNOWN0']) or
+             */
             $suppxpath = new DOMXpath($metadata);
-
             $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
+
+            // Check if there are zero or more supplemental files. 
             if ($suElements->item(0) ) {
                 $this->localFiles[$directory]['PROCESS'] = "0";
             } else {
-                // keep track of how many pids we will need to grab
                 $this->localFiles[$directory]['PROCESS'] = "1";
+
+                // Keep track of how many additional PIDs will need to be generated.
                 $this->toProcess++;
             }
 
             echo "\n\n";
-
         }
     }
 
@@ -348,10 +421,12 @@ class processProquest {
                                                      $this->settings['fedora']['username'],
                                                      $this->settings['fedora']['password']);
 
+        // TODO: error handling.
         $this->api = new FedoraApi($this->connection);
         $this->repository = new FedoraRepository($this->api, new simpleCache());
 
-        $this->api_m = $this->repository->api->m; // Fedora Management API.
+        // Fedora Management API.
+        $this->api_m = $this->repository->api->m; 
 
     }
 
