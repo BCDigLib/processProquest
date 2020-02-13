@@ -228,7 +228,11 @@ class processProquest {
     /**
      * Generate metadata from gathered ETD files.
      * 
-     * 
+     * This will generate:
+     *  - OA permissions.
+     *  - Embargo settings.
+     *  - MODS metadata.
+     *  - PID, title, author values.
      */
     function processFiles() {
 
@@ -254,17 +258,8 @@ class processProquest {
 
         /**
          * Given the array of ETD local files, generate additional metadata.
-         * This will generate:
-         *  - MODS metadata.
-         *  - OA permissions.
-         *  - Embargo settings.
-         *  - PID, title, author values.
          */
         foreach ($this->localFiles as $directory => $submission) {
-            /**
-             * Generate MODS Metadata first.
-             * Done for every submission regardless of OA permissions.
-             */
             echo "Processing " . $directory . "\n";
 
             // Create XPath object from the ETD XML file. 
@@ -431,7 +426,9 @@ class processProquest {
     }
 
     /**
-     *
+     * Ingest files into Fedora
+     * 
+     * 
      */
     function ingest() {
 
@@ -440,36 +437,45 @@ class processProquest {
         $pidcount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
 
-        // Initialize messages for notification email
+        // Initialize messages for notification email.
         $successMessage = "The following ETDs ingested successfully:\n\n";
         $failureMessage = "\n\nThe following ETDs failed to ingest:\n\n";
         $processingMessage = "\n\nThe following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
 
+        // Go through each ETD local file bundle.
         foreach ($this->localFiles as $directory => $submission) {
             echo "Processing " . $directory . "\n";
             $processingMessage .= $directory . "\n";
 
+            // Check for supplemental files, and create log message.
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files
                 echo "Supplementary files found\n";
             }
 
+            // Build a Fedora object and use the generated PID for this ETD file
             $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);
 
+            // Assign the Fedora object label the ETD name/label 
             $object->label = $this->localFiles[$directory]['LABEL'];
 
+            // All Fedora objects are owned by the same generic account
             $object->owner = 'fedoraAdmin';
 
 	        echo "Fedora object created\n";
 
+
             /**
-             * Generate RELS-EXT
+             * Generate RELS-EXT datastream.
+             * 
+             * 
              */
 
-            // POLICY Get Parent POLICY to add to all ingested records
+            // Set the default Parent and Collection policies for the Fedora object.
             $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
-
             $collection = GRADUATE_THESES;
+
+            // Update the Parent and Collection policies if this ETD is embargoed.
             if (isset($this->localFiles[$directory]['EMBARGO'])) {
 	            echo "Adding to Graduate Theses (Restricted) collection\n";
                 $collection = GRADUATE_THESES_RESTRICTED;
@@ -477,83 +483,128 @@ class processProquest {
             } else {
                 echo "Adding to Graduate Theses Collection\n";
             }
+
+            // Update the Fedora object's relationship policies
             $object->models = array('bc-ir:graduateETDCModel');
             $object->relationships->add(FEDORA_RELS_EXT_URI,
                                         'isMemberOfCollection',
                                         $collection);
 
+            // Set various other Fedora obejct settings.
             $object->checksumType = 'SHA-256';
 
             $object->state = 'I';
 
             echo "Adding XACML policy\n";
+
+            // Get Parent XACML policy.
             $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
 
+
             /**
-             * MODS Datastream
+             * Build MODS Datastream.
+             * 
+             * 
              */
             $dsid = 'MODS';
 
+            // Build Fedora object MODS datastream.
             $datastream = $object->constructDatastream($dsid, 'X');
 
-            $datastream->label = 'MODS Record'; //$this->localFiles[$directory]['LABEL'];
+            // Set various MODS datastream values.
+            $datastream->label = 'MODS Record'; 
+            // OLD: $datastream->label = $this->localFiles[$directory]['LABEL'];
             $datastream->mimeType = 'application/xml';
+
+            // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
             $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['MODS']);
 
+            // Ingest MODS datastream into Fedora object.
             $object->ingestDatastream($datastream);
+
             echo "Ingested MODS datastream\n";
 
+
             /**
-             * Original Proquest Metadata will be saved as ARCHIVE
-             * Original filename is used as label for identification
+             * Build ARCHIVE MODS datastream.
+             * 
+             * Original Proquest Metadata will be saved as ARCHIVE.
+             * Original filename is used as label for identification.
              */
             $dsid = 'ARCHIVE';
 
+            // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
             $datastream = $object->constructDatastream($dsid, 'X');
 
+            // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
             $datastream->label = substr($this->localFiles[$directory]['METADATA'], 0, strlen($this->localFiles[$directory]['METADATA'])-4);
 
-            $datastream->mimeType = 'application/xml';
+            // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
             $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['METADATA']);
 
+            // Set various ARCHIVE MODS datastream values.
+            $datastream->mimeType = 'application/xml';
             $datastream->checksumType = 'SHA-256';
-
             $datastream->state = 'I';
 
+            // Ingest ARCHIVE MODS datastream into Fedora object.
             $object->ingestDatastream($datastream);
             echo "Ingested ARCHIVE datastream\n";
 
+            
             /**
-             * PDF will always be loaded as ARCHIVE-PDF DSID
-             * regardless of embargo - splash paged PDF will
-             * be PDF dsid
+             * Build ARCHIVE-PDF datastream.
+             * 
+             * PDF will always be loaded as ARCHIVE-PDF DSID regardless of embargo.
+             * Splash paged PDF will be PDF dsid.
              */
             $dsid = 'ARCHIVE-PDF';
-            $datastream = $object->constructDatastream($dsid); // Default Control Group is M
 
-            $datastream->label = 'ARCHIVE-PDF Datastream'; //$this->localFiles[$directory]['LABEL'];
+            // Default Control Group is M.
+            // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
+            $datastream = $object->constructDatastream($dsid); 
+
+            // OLD: $datastream->label = $this->localFiles[$directory]['LABEL'];
+            $datastream->label = 'ARCHIVE-PDF Datastream'; 
+            
+            // Set various ARCHIVE-PDF datastream values.
             $datastream->mimeType = 'application/pdf';
-            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['ETD']);
-
             $datastream->checksumType = 'SHA-256';
-
             $datastream->state = 'I';
 
+            // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['ETD']);
+
+            // Ingest ARCHIVE-PDF datastream into Fedora object.
             $object->ingestDatastream($datastream);
 	        echo "Ingested ARCHIVE-PDF datastream\n";
 
+
             /**
-             * PDF with splash page
+             * Build PDF datastream.
+             * 
+             * First, build splash page PDF.
+             * Then, concatenate splash page onto ETD PDF for final PDF.
              */
             $dsid = "PDF";
-            $datastream = $object->constructDatastream($dsid); // Default Control Group is M
 
+            // Default Control Group is M
+            // Build Fedora object PDF datastream.
+            $datastream = $object->constructDatastream($dsid); 
+
+            // Source file is the original Proquest XML file. 
             $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
 
+            // Use FOP (Formatting Objects Processor) to build PDF splash page.
             $executable = "/usr/bin/fop -c $fop";
+            
+            // Assign PDF splash document to ETD file's directory.
             $splashtemp = $directory . "/splash.pdf";
+
+            // Use the custom XSLT splash stylesheet to build the PDF splash document.
             $splashxslt = $this->settings['xslt']['splash'];
 
+            // Execute command and check return code.
             $command = "$executable -xml $source -xsl $splashxslt -pdf $splashtemp";
             exec($command, $output, $return);
 
@@ -564,16 +615,24 @@ class processProquest {
     		    break;
     		}
 
+            // Update ETD file's object to store splash page's file location and name.
             $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
 
             /**
-             * Load Splash to PDF if under embargo
+             * Build concatted PDF document.
+             * 
+             * Load splash page PDF to core PDF if under embargo. -- TODO: find out when/how this happens
              */
+            // Use pdftk (PDF Toolkit) to edit PDF document.
             $executable = '/usr/bin/pdftk';
 
+            // Assign concatenated PDF document to ETD file's directory.
             $concattemp = $directory . "/concatted.pdf";
+
+            // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
 
+            // Execute command and check return code.
             $command = "$executable $splashtemp $pdf cat output $concattemp";
             exec($command, $output, $return);
 
@@ -584,17 +643,24 @@ class processProquest {
                 break;
             }
 
+            // Set various PDF datastream values.
             $datastream->label = 'PDF Datastream';
             $datastream->mimeType = 'application/pdf';
-            $datastream->setContentFromFile($concattemp);
-
             $datastream->checksumType = 'SHA-256';
 
+            // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
+            $datastream->setContentFromFile($concattemp);
+
+            // Ingest PDF datastream into Fedora object.
             $object->ingestDatastream($datastream);
+
             echo "Ingested PDF with splash page\n";
 
+
             /**
-             * FULL_TEXT
+             * Build FULL_TEXT datastream.
+             * 
+             * 
              */
             $dsid = "FULL_TEXT";
 
@@ -631,8 +697,11 @@ class processProquest {
 
             echo "Ingested FULL TEXT datastream\n";
 
+
             /**
              * TN
+             * 
+             * 
              */
             $dsid = "TN";
 
@@ -661,8 +730,11 @@ class processProquest {
 
             echo "Ingested TN datastream\n";
 
+
             /**
              * PREVIEW
+             * 
+             * 
              */
             $dsid = "PREVIEW";
 
@@ -693,6 +765,7 @@ class processProquest {
             // POLICY
             $object->ingestDatastream($policy);
             echo "Ingested XACML datastream\n";
+
 
             /**
              * Check if OA
