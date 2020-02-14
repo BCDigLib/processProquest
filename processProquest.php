@@ -492,7 +492,6 @@ class processProquest {
 
             // Set various other Fedora obejct settings.
             $object->checksumType = 'SHA-256';
-
             $object->state = 'I';
 
             echo "Adding XACML policy\n";
@@ -588,10 +587,6 @@ class processProquest {
              */
             $dsid = "PDF";
 
-            // Default Control Group is M
-            // Build Fedora object PDF datastream.
-            $datastream = $object->constructDatastream($dsid); 
-
             // Source file is the original Proquest XML file. 
             $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
 
@@ -643,6 +638,10 @@ class processProquest {
                 break;
             }
 
+            // Default Control Group is M
+            // Build Fedora object PDF datastream.
+            $datastream = $object->constructDatastream($dsid); 
+
             // Set various PDF datastream values.
             $datastream->label = 'PDF Datastream';
             $datastream->mimeType = 'application/pdf';
@@ -664,13 +663,17 @@ class processProquest {
              */
             $dsid = "FULL_TEXT";
 
+            // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $source = $directory . "/" . $this->localFiles[$directory]['ETD'];
 
+            // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
             $executable = '/usr/bin/pdftotext';
+
+            // Assign FULL_TEXT document to ETD file's directory.
             $fttemp = $directory . "/fulltext.txt";
 
+            // Execute command and check return code.
             $command = "$executable $source $fttemp";
-
             exec($command, $output, $return);
 
             if (!$return) {
@@ -680,37 +683,45 @@ class processProquest {
                 break;
             }
 
+            // Build Fedora object FULL_TEXT datastream.
             $datastream = $object->constructDatastream($dsid);
 
+            // Set various FULL_TEXT datastream values.
             $datastream->label = 'FULL_TEXT';
             $datastream->mimeType = 'text/plain';
 
-            // Read in FT and strip junky characters that mess up SOLR
+            // Read in the full-text document that was just generated.
             $fulltext = file_get_contents($fttemp);
 
+            // Strip out junky characters that mess up SOLR.
             $replacement = '';
             $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
 
+            // Set FULL_TEXT datastream to be sanitized version of full-text document.
             $datastream->setContentFromString($sanitized);
 
+            // Ingest FULL_TEXT datastream into Fedora object.
             $object->ingestDatastream($datastream);
 
             echo "Ingested FULL TEXT datastream\n";
 
 
             /**
-             * TN
+             * Build Thumbnail (TN) datastream
              * 
              * 
              */
             $dsid = "TN";
 
+            // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+            // TODO: figure out what "[0]" means in this context.
             $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
 
+            // Use convert (from ImageMagick tool suite) to generate TN document.
             $executable = '/usr/bin/convert';
 
+            // Execute command and check return code.
             $command = "$executable $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
-
             exec($command, $output, $return);
 
             if (!$return) {
@@ -720,30 +731,38 @@ class processProquest {
                 break;
             }
 
+            // Build Fedora object TN datastream.
             $datastream = $object->constructDatastream($dsid);
 
+            // Set various TN datastream values.
             $datastream->label = 'TN';
             $datastream->mimeType = 'image/jpeg';
+
+            // Set TN datastream to be the generated thumbnail image.
             $datastream->setContentFromFile($directory . "//thumbnail.jpg");
 
+            // Ingest TN datastream into Fedora object.
             $object->ingestDatastream($datastream);
 
             echo "Ingested TN datastream\n";
 
 
             /**
-             * PREVIEW
+             * Build PREVIEW datastream.
              * 
              * 
              */
             $dsid = "PREVIEW";
 
+            // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+            // TODO: figure out what "[0]" means in this context.
             $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
 
+            // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
             $executable = '/usr/bin/convert';
 
+            // Execute command and check return code.
             $command = "$executable $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
-
             exec($command, $output, $return);
 
             if (!$return) {
@@ -753,16 +772,23 @@ class processProquest {
                 break;
             }
 
+            // Build Fedora object PREVIEW datastream.
             $datastream = $object->constructDatastream($dsid);
 
+            // Set various PREVIEW datastream values.
             $datastream->label = 'PREVIEW';
             $datastream->mimeType = 'image/jpeg';
+
+            // Set PREVIEW datastream to be the generated preview image.
             $datastream->setContentFromFile($directory . "//preview.jpg");
 
+            // Ingest PREVIEW datastream into Fedora object.
             $object->ingestDatastream($datastream);
+
             echo "Ingested PREVIEW datastream\n";
 
-            // POLICY
+            // Ingest POLICY datastream into Fedora object.
+            // TODO: understand why this command is down here and not in an earlier POLICY datastream section.
             $object->ingestDatastream($policy);
             echo "Ingested XACML datastream\n";
 
@@ -773,7 +799,7 @@ class processProquest {
              * Permanent?
              */
 
-            //Initialize $relsint or the script will fail
+            // Initialize $relsint or the script will fail.
             $relsint = '';
             if ($submission['OA'] === 0) {
                 $relsint =  file_get_contents('xsl/permRELS-INT.xml');
