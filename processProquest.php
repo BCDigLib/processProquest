@@ -428,7 +428,21 @@ class processProquest {
     /**
      * Ingest files into Fedora
      * 
+     * This creates and ingests the following Fedora datastreams:
+     * - RELS-EXT       (external relationship)
+     * - MODS           (updated MODS fole)
+     * - ARCHIVE        (original Proquest MODS)
+     * - ARCHIVE-PDF    (original PDF)
+     * - PDF            (updated PDF with splashpage)
+     * - FULL_TEXT      (full text of PDF)
+     * - TN             (thumbnail image of PDF)
+     * - PREVIEW        (image of PDF first page)
+     * - XACML          (access control policy)
+     * - RELS-INT       (internal relationship)
      * 
+     * Next, it ingests the completed object into Fedora.
+     * Then, tidies up ETD files on FTP server.
+     * Lastly, send out notification email.
      */
     function ingest() {
 
@@ -490,7 +504,7 @@ class processProquest {
                                         'isMemberOfCollection',
                                         $collection);
 
-            // Set various other Fedora obejct settings.
+            // Set various other Fedora object settings.
             $object->checksumType = 'SHA-256';
             $object->state = 'I';
 
@@ -627,7 +641,7 @@ class processProquest {
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
 
-            // Execute command and check return code.
+            // Execute 'pdftk' command and check return code.
             $command = "$executable $splashtemp $pdf cat output $concattemp";
             exec($command, $output, $return);
 
@@ -672,7 +686,7 @@ class processProquest {
             // Assign FULL_TEXT document to ETD file's directory.
             $fttemp = $directory . "/fulltext.txt";
 
-            // Execute command and check return code.
+            // Execute 'pdftotext' command and check return code.
             $command = "$executable $source $fttemp";
             exec($command, $output, $return);
 
@@ -720,7 +734,7 @@ class processProquest {
             // Use convert (from ImageMagick tool suite) to generate TN document.
             $executable = '/usr/bin/convert';
 
-            // Execute command and check return code.
+            // Execute 'convert' command and check return code.
             $command = "$executable $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
             exec($command, $output, $return);
 
@@ -761,7 +775,7 @@ class processProquest {
             // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
             $executable = '/usr/bin/convert';
 
-            // Execute command and check return code.
+            // Execute 'convert' command and check return code.
             $command = "$executable $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
             exec($command, $output, $return);
 
@@ -794,33 +808,52 @@ class processProquest {
 
 
             /**
-             * Check if OA
-             * Set Embargo is there is one
-             * Permanent?
+             * Build RELS-INT datastream.
+             * 
+             * This checks if there is an OA policy set for this ETD.
+             * If there is, then set Embargo date in the custom XACML policy file.
              */
 
-            // Initialize $relsint or the script will fail.
+            // $submission['OA'] is either '0' for no OA policy, or some non-zero value.
             $relsint = '';
             if ($submission['OA'] === 0) {
+                // No OA policy. 
                 $relsint =  file_get_contents('xsl/permRELS-INT.xml');
                 $relsint = str_replace('######', $submission['PID'], $relsint);
             } else if (isset($submission['EMBARGO'])) {
+                // Has an OA policy, and an embargo date.
                 $relsint =  file_get_contents('xsl/embargoRELS-INT.xml');
                 $relsint = str_replace('######', $submission['PID'], $relsint);
                 $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
             }
 
+            // TODO: handle case where there is an OA policy and no embargo date?
+
+            // Ingest datastream if we have a XACML policy set.
             if (isset($relsint) && $relsint !== '') {
                 $dsid = "RELS-INT";
 
+                // Build Fedora object RELS-INT datastream.
                 $datastream = $object->constructDatastream($dsid);
+
+                // Set various RELS-INT datastream values.
                 $datastream->label = 'Fedora Relationship Metadata';
                 $datastream->mimeType = 'application/rdf+xml';
+
+                // Set RELS-INT datastream to be the custom XACML policy file read in above.
                 $datastream->setContentFromString($relsint);
 
+                // Ingest RELS-INT datastream into Fedora object.
                 $object->ingestDatastream($datastream);
+
                 echo "Ingested RELS-INT datastream\n";
             }
+
+            /**
+             * Ingest full object into Fedora.
+             * 
+             * 
+             */
 
             // Get the zip filename on the FTP server of the ETD being processed.
             // We'll use this in the conditional below to move the ETD on the
@@ -828,12 +861,14 @@ class processProquest {
             $directoryArray = explode('/', $directory);
             $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
+            // Check if ingest was successful, and manage where to put FTP ETD file. 
             if ($this->repository->ingestObject($object)) {
                 echo "Object ingested successfully\n";
 
                 $pidcount++;
                 $successMessage .= $submission['PID'] . "\t";
 
+                // Set success status for email message.
                 if (isset($submission['EMBARGO'])) {
                     $successMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
                 } else {
@@ -841,6 +876,7 @@ class processProquest {
                 }
                 $successMessage .= $submission['LABEL'] . "\n";
 
+                // Move processed PDF file to a new directory. Ex: /path/to/files/processed
                 $processdirFTP = $this->settings['ftp']['processdir'];
                 $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
             } else {
@@ -849,6 +885,7 @@ class processProquest {
                 $pidcount++;
                 $failureMessage .= $submission['PID'] . "\t";
 
+                // Set failure status for email message.
                 if (isset($submission['EMBARGO'])) {
                     $failureMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
                 } else {
@@ -856,17 +893,22 @@ class processProquest {
                 }
                 $failureMessage .= $submission['LABEL'] . "\n";
 
+                // Move processed PDF file to a new directory. Ex: /path/to/files/failed
                 $faildirFTP = $this->settings['ftp']['faildir'];
                 $this->ftp->ftp_rename($fnameFTP, $faildirFTP . '/' . $fnameFTP);
             }
 
-            // JJM
+            // Make sure we give every processing loop enough time to complete. 
             sleep(2);
             echo "\n\n\n\n";
         }
 
-        // Do not show failure message in notification if no ETDs failed
-        // (same with success message, but hopefully we won't have that problem!)
+        /**
+         * Send email message on status of all processed ETD files.
+         * 
+         * Do not show failure message in notification if no ETDs failed.
+         * (same with success message, but hopefully we won't have that problem!)
+         */
         if ($failureMessage == "\n\nThe following ETDs failed to ingest:\n\n") {
             mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
         } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
