@@ -13,7 +13,7 @@ error_reporting(E_ALL);
 /* 
  * Islandora/Fedora library.
  */
-require_once '../tuque/RepositoryConnection.php';
+/*require_once '../tuque/RepositoryConnection.php';
 require_once '../tuque/FedoraApi.php';
 require_once '../tuque/FedoraApiSerializer.php';
 require_once '../tuque/Repository.php';
@@ -21,6 +21,17 @@ require_once '../tuque/RepositoryException.php';
 require_once '../tuque/FedoraRelationships.php';
 require_once '../tuque/Cache.php';
 require_once '../tuque/HttpConnection.php';
+*/
+
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/RepositoryConnection.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraApi.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraApiSerializer.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/Repository.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/RepositoryException.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraRelationships.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/Cache.php';
+require_once '/var/www/html/drupal/sites/all/libraries/tuque/HttpConnection.php';
+
 
 /**
  * Custom FTP connection handler.
@@ -35,6 +46,7 @@ define('ISLANDORA_BC_ROOT_PID_EMBARGO', 'bc-ir:GraduateThesesCollectionRestricte
 define('ISLANDORA_BC_XACML_POLICY','POLICY');
 define('GRADUATE_THESES','bc-ir:GraduateThesesCollection');
 define('GRADUATE_THESES_RESTRICTED','bc-ir:GraduateThesesCollectionRestricted');
+define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-jesse-log/');
 
 /**
  * Batch processes Proquest ETDs.
@@ -56,6 +68,7 @@ class processProquest {
     protected $api_m;
     protected $repository;
     protected $toProcess = 0;   // Number of PIDs for supplementary files. 
+    protected $logFile = "";
 
     /**
      * Class constructor. 
@@ -67,19 +80,101 @@ class processProquest {
     }
 
     /**
+     * Initialize logging file.
+     * 
+     * @param string $file_name The name to give the log file.
+     * @return boolean Log init status.
+     */
+    private function initLog($file_name = null){
+        // Set log file name.
+        if ( is_null($file_name) ) {
+            $file_name = "log";
+        }
+
+        $date = date("YmdHis", time());
+
+        // Set log location in case DEFAULT_LOG_FILE_LOCATION or $this->settings['log']["location"] isn't set.
+        $log_location = "/tmp/proquest-jesse-log/";
+        if ( isset($this->settings['log']["location"]) ) {
+            $log_location = $this->settings['log']["location"];
+        } else if (defined(DEFAULT_LOG_FILE_LOCATION) == TRUE) {
+            $log_location = DEFAULT_LOG_FILE_LOCATION;
+        } else {
+            // DEFAULT_LOG_FILE_LOCATION really should be set in this class.
+            //return false;
+        }
+
+        // Build final log path and name. Ex: /var/log/processProquest/log-20200216123456.txt
+        $this->logFile = $log_location . $file_name . "-" . $date . ".txt";
+
+        // Create file if it doesn't exist.
+        if( !is_file($this->logFile) ) {
+            file_put_contents($this->logFile, "");
+        }
+
+        echo "Writing to log file: " . $this->logFile . "\n";
+
+        return false;
+    }
+
+    /**
+     * Simple logging.
+     * 
+     * @param string $message The message to log.
+     * @param string $etd The ETD name. 
+     * @return boolean Write status.
+     */
+    private function writeLog($message, $function_name = "", $etd = ""){
+        // Check if $this->$logFile is set
+        if ( empty($this->logFile) ) {
+            $ret = $this->initLog();
+            // TODO: check $ret status value.
+        }
+
+        // Add some text wrapping to $etd, if set.
+        if ( !empty($etd) ) {
+            $etd = "[" . $etd . "]";
+        }
+
+        // Format the date and time. Ex: 16/Feb/2020:07:45:12
+        $time = @date('[d/M/Y:H:i:s]');
+
+        // Append message to the log file.
+        if ($fd = @fopen($this->logFile, "a")) {
+            //$result = fputcsv($fd, array($time, $message));
+            $result = fwrite($fd, "$time ($function_name) $etd $message" . PHP_EOL);
+            fclose($fd);
+        
+            if ($result > 0) {
+                return true;
+            } else {
+                return false;
+            }  
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * Initializes an FTP connection.
      * 
      * Calls on proquestFTP.php
+     * @return boolean Success value.
      */
     function initFTP() {
-        // TODO: sanity check that proquestPHP file exists.
-        // TODO: error handling.
+        $fn = "initFTP";
 
         echo "Initializing FTP connection...\n";
+        $this->writeLog("Initializing FTP connection.", $fn);
 
         $urlFTP = $this->settings['ftp']['server'];
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
+
+        if (empty($urlFTP) || empty($userFTP) || empty($passwordFTP)) {
+            $this->writeLog("Error: FTP login values missing!", $fn);
+            return false;
+        }
 
         // Create ftp object used for connection.
         $this->ftp = new proquestFTP($urlFTP);
@@ -88,7 +183,14 @@ class processProquest {
         $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         // Pass login credentials to login method.
-        $this->ftp->ftp_login($userFTP, $passwordFTP);
+        if ( $this->ftp->ftp_login($userFTP, $passwordFTP) ) {
+            $this->writeLog("FTP connection sucecssful.", $fn);
+            return true;
+        } else {
+            // TODO: get ftp error message
+            $this->writeLog("Error: FTP connection failed!", $fn);
+            return false;
+        }
     }
 
 
@@ -101,80 +203,129 @@ class processProquest {
      * Lastly, expand zip file contents into local directory. 
      */
     function getFiles() {
+        $fn = "getFiles";
 
+        $this->writeLog("Fetching ETD files from FTP server.", $fn);
         echo "Fetching files...\n";
 
-        // Look at specific directory on FTP server for ETD files. Ex: /path/to/files
-        // TODO: handle OS directory path errors.
+        // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
 
-        // Define local directory for file processing. Ex: /tmp/processed
-        // TODO: handle OS directory path errors.
+        // Define local directory for file processing. Ex: /tmp/processed/
         $localdirFTP = $this->settings['ftp']['localdir'];
-
-        // Check if the FTP file directory is root.
-        // TODO: manage when $fetchdirFTP is not an empty string!
-        if ($fetchdirFTP != "")
-        {
-            $this->ftp->ftp_chdir($fetchdirFTP);
+        if ( empty($localdirFTP) ) {
+            $this->writeLog("Error: Local working directory not set!", $fn);
+            return false;
         }
+
+        // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
+        if ($fetchdirFTP != "") {
+            if ( $this->ftp->ftp_chdir($fetchdirFTP) ) {
+                $this->writeLog("Changed to FTP directory: " . $fetchdirFTP, $fn);
+            } else {
+                $this->writeLog("Error: Cound not change FTP directory: " . $fetchdirFTP , $fn);
+                return false;
+            }
+        }
+        
+        $this->writeLog("Currently in FTP directory: " . $fetchdirFTP, $fn);
 
         /**
          * Look for files that begin with a specific string. 
          * In our specific case the file prefix is "etdadmin_upload".
          * Save results into $etdFiles array.
          */
-        // TODO: define "etdadmin_upload" string as a constant.
         $etdFiles = $this->ftp->ftp_nlist("etdadmin_upload*");
 
-        // TODO: check if $etdFiles is an empty array and handle some type of error message.
-        // TODO: make sure file name (including extension) is more than four chars.
+        // Sanity check to see if there are any ETD files to process.
+        // TODO: Handle some type of error message?
+        if ( empty($etdFiles) ) {
+            $this->writeLog("Did not find any files to process. Quitting.", $fn);
+            return true;
+        }
 
         /**
          * Loop through each match in $etdFiles. 
          * There may be multiple matched files so process each individually.
          */
+        $f = 0;
         foreach ($etdFiles as $filename) {
+            $f++;
             /**
              * Set the directory name for each ETD file. 
-             * This is based on the file name sans the file extension. 
+             * This is based on the file name without any file extension. 
              * Ex: etd_file_name_1234.zip -> /tmp/processing/etd_file_name_1234
              */
-            // TODO: check that file names are more than four chars.
-            $etdDir = $localdirFTP . substr($filename,0,strlen($filename)-4);
+
+            // Sanity check to see if filename is more than four chars. Continue if string fails.
+            if (strlen($filename) <= 4) {
+                $this->writeLog("Warning! File name only has " . strlen($filename) . " characters. Skipping this file." , $fn);
+                continue;
+            }
+
+            // Get the regular file name without file extension.
+            $etdname = substr($filename,0,strlen($filename)-4);
+
+            // Set the path of the local working fdrectory. Ex: /tmp/processing/file_name_1234
+            $etdDir = $localdirFTP . $etdname;
+
+            // Save the shortname as a local object variable
+            $this->localFiles[$etdDir]['ETD_SHORTNAME'] = $etdname;
 
             echo "Creating temp storage directory: " . $etdDir . "\n";
+            $this->writeLog("Working with ETD file #" . $f . " - " . $filename, $fn, $etdname);
 
-            // Create the local directory.
-            // TODO: error handling.
-            mkdir($etdDir, 0755);
-            $localFile = $etdDir . "/" .$filename;
+            // Create the local directory if it doesn't already exists.
+            $this->writeLog("Now building local working directory...", $fn, $etdname);
+            if ( file_exists($etdDir) ) {
+                $this->writeLog("Local working directory already exists: " . $etdDir, $fn, $etdname);
+            }
+            else if ( !mkdir($etdDir, 0755, true) ) {
+                $this->writeLog("Failed to create local working directory: " . $etdDir, $fn, $etdname);
+                return false;
+            } else {
+                $this->writeLog("Created ETD local working directory: " . $etdDir, $fn, $etdname);
+            }
+            $localFile = $etdDir . "/" . $filename;
 
-            // Be sure to sleep just to avoid parallel methods not completing!
+            // HACK: give loop some time to create directory.
             sleep(2);
 
             /**
              * Gets the file from the FTP server.
-             * Saves it locally to $localFile (Ex: /tmp/processing/file_name_1234).
+             * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
              * File is saved locally as a binary file.
              */
-            // TODO: error handling.
-            $this->ftp->ftp_get($localFile, $filename, FTP_BINARY);
+            if ( $this->ftp->ftp_get($localFile, $filename, FTP_BINARY) ) {
+                $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdname);
+            } else {
+                $this->writeLog("Error: Failed to fetch file from FTP server!" . $localFile, $fn, $etdname);
+            }
 
             // Store location of local directory if it hasn't been stored yet.
-            if(isset($this->localFiles[$etdDir])){
+            if( isset($this->localFiles[$etdDir]) ) {
                 $this->localFiles[$etdDir];
             }
 
-            // TODO: check that we are in fact processing a zip file.
+            // Unzip ETD zip file.
             $ziplisting = zip_open($localFile);
+
+            // zip_open returns a resource handle on success and an integer on error.
+            if (!is_resource($ziplisting)) {
+                $this->writeLog("Error: Failed to open zip file!", $fn, $etdname);
+            }
+
             $supplement = 0;
 
             // Go through entire zip file and process contents.
-            // TODO: error handling.
+            $z = 0;
             while ($zip_entry = zip_read($ziplisting)) {
+                $z++;
+                $this->writeLog("Now reading zip file #" . $z, $fn, $etdname);
+
                 // Get file name.
                 $file = zip_entry_name($zip_entry);
+                $this->writeLog("Zip file name: " . $file, $fn, $etdname);
 
                 /** 
                  * Match for a specific string in file.
@@ -186,15 +337,15 @@ class processProquest {
                  * 
                  *  The String "0016" is specific to BC.
                  */
-                // TODO: track or log non-BC files?
                 if (preg_match('/0016/', $file)) { 
                     // Check if this is a PDF or XML file.
-                    // TODO: check that file names are more than four chars.
-                    // TODO: handle string case in comparison.
+                    // TODO: handle string case in comparison. Ex: "pdf" vs "PDF".
                     if (substr($file,strlen($file)-3) === 'pdf') {
                         $this->localFiles[$etdDir]['ETD'] = $file;
+                        $this->writeLog("This is an PDF file.", $fn, $etdname);
                     } elseif (substr($file,strlen($file)-3) === 'xml') {
                         $this->localFiles[$etdDir]['METADATA'] = $file;
+                        $this->writeLog("This is an XML metadata file.", $fn, $etdname);
                     } else {
                         /**
                          * Supplementary files - could be permissions or data.
@@ -203,26 +354,49 @@ class processProquest {
                          */
                         $this->localFiles[$etdDir]['UNKNOWN'.$supplement] = $file;
                         $supplement++;
+
+                        $this->writeLog("This is a supplementary file.", $fn, $etdname);
                     }
                 }
-
-                /**
-                 * TODO: sanity check that both:
-                 *  - $this->localFiles[$etdDir]['ETD']
-                 *  - $this->localFiles[$etdDir]['METADATA'] 
-                 * are defined and are nonempty strings.
-                 */
             }
+
+            /**
+             * Sanity check that both:
+             *  - $this->localFiles[$etdDir]['ETD']
+             *  - $this->localFiles[$etdDir]['METADATA'] 
+             * are defined and are nonempty strings.
+             */
+            $this->writeLog("Running sanity check that ETD PDF and XML file were found...", $fn, $etdname);
+            if ( empty($this->localFiles[$etdDir]['ETD']) ) {
+                $this->writeLog("Warning! The ETD PDF file was not found or set!", $fn, $etdname);
+            }
+            $this->writeLog("Great! The ETD PDF file was found.", $fn, $etdname);
+
+            if ( empty($this->localFiles[$etdDir]['METADATA']) ) {
+                $this->writeLog("Warning! The ETD XML file was not found or set!", $fn, $etdname);
+            }
+            $this->writeLog("Great! The ETD XML file was found.", $fn, $etdname);
 
             echo "Extracting files...\n";
             $zip = new ZipArchive;
 
             // Open and extract zip file to local directory.
-            // TODO: error handling.
-            $zip->open($localFile);
-            $zip->extractTo($etdDir);
-            $zip->close();
+            $res = $zip->open($localFile);
+            if ($res === TRUE) {
+                $zip->extractTo($etdDir);
+                $zip->close();
+
+                $this->writeLog("Extracting ETD zip file: " . $localFile, $fn, $etdname);
+            } else {
+                $this->writeLog("Error: Failed to extract ETD zip file!", $fn, $etdname);
+                return false;
+            }
+
+            $this->writeLog("Completed Working with ETD file #" . $f, $fn, $etdname);
         }
+
+        // Completed fetching all ETD zip files.
+        $this->writeLog("Completed fetching all ETD zip files from FTP server.", $fn, $etdname);
     }
 
     /**
@@ -235,8 +409,8 @@ class processProquest {
      *  - PID, title, author values.
      */
     function processFiles() {
-
-        // TODO: check if $this->localFiles is a non-empty array.
+        $fn = "processFiles";
+        $this->writeLog("Now processing ETD files.", $fn);
 
         /**
          * Load Proquest MODS XSLT stylesheet.
@@ -245,7 +419,12 @@ class processProquest {
         $xslt = new xsltProcessor;
         $proquestxslt = new DOMDocument();
         $proquestxslt->load($this->settings['xslt']['xslt']);
-        $xslt->importStyleSheet($proquestxslt);
+        if ( $xslt->importStyleSheet($proquestxslt) ) {
+            $this->writeLog("Loaded MODS XSLT stylesheet.", $fn);
+        } else {
+            $this->writeLog("Error: Failed to load MODS XSLT stylesheet!", $fn);
+            return false;
+        }
 
         /** 
          * Load Fedora Label XSLT stylesheet.
@@ -254,12 +433,28 @@ class processProquest {
         $label = new xsltProcessor;
         $labelxslt = new DOMDocument();
         $labelxslt->load($this->settings['xslt']['label']);
-        $label->importStyleSheet($labelxslt);
+        if ( $label->importStyleSheet($labelxslt) ) {
+            $this->writeLog("Loaded Fedora Label XSLT stylesheet.", $fn);
+        } else {
+            $this->writeLog("Error: Failed to load Fedora Label XSLT stylesheet!", $fn);
+            return false;
+        }
 
         /**
          * Given the array of ETD local files, generate additional metadata.
          */
+        $s = 0;
         foreach ($this->localFiles as $directory => $submission) {
+            $s++;
+
+            // Pull out the ETD shortname that was generated in getFiles()
+            $etdname = $this->localFiles[$directory]['ETD_SHORTNAME'];
+            if ( empty($etdname) ) {
+                $etdname = substr($this->localFiles[$directory]["ETD"],0,strlen($this->localFiles[$directory]["ETD"])-4);
+                $this->localFiles[$directory]['ETD_SHORTNAME'] = $etdname;
+            }
+            $this->writeLog("Processing ETD #" . $s . " - " . $etdname, $fn, $etdname);
+
             echo "Processing " . $directory . "\n";
 
             // Create XPath object from the ETD XML file. 
@@ -272,17 +467,20 @@ class processProquest {
              * This looks for the existance of an "oa" node in the XPath object.
              * Ex: /DISS_submission/DISS_repository/DISS_acceptance/text()
              */
+            $this->writeLog("Searching for OA agreement...", $fn, $etdname);
+
             $openaccess = 0;
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
             if ($oaElements->length === 0 ) {
-                //$openaccess = 0;
-		        echo "No OA agreement found\n";
+                echo "No OA agreement found\n";
+                $this->writeLog("No OA agreement found.", $fn, $etdname);
             } elseif ($oaElements->item(0)->C14N() === '0') {
-                //$openaccess = 0;
-		        echo "No OA agreement found\n";
+                echo "No OA agreement found\n";
+                $this->writeLog("No OA agreement found.", $fn, $etdname);
             } else {
                 $openaccess = $oaElements->item(0)->C14N();
-		        echo "OA agreement found\n";
+                echo "OA agreement found\n";
+                $this->writeLog("Found OA agreement.", $fn, $etdname);
             }
 
             $this->localFiles[$directory]['OA'] = $openaccess;
@@ -292,6 +490,8 @@ class processProquest {
              * This looks for the existance of an "embargo" node in the XPath object.
              * Ex: /DISS_submission/DISS_repository/DISS_delayed_release/text()
              */
+            $this->writeLog("Searching for embargo information...", $fn, $etdname);
+
             $embargo = 0;
             $emElements = $xpath->query($this->settings['xslt']['embargo']);
             if ($emElements->item(0) ) {
@@ -300,35 +500,55 @@ class processProquest {
                 $embargo = str_replace(" ","T",$embargo);
                 $embargo = $embargo . "Z";
                 $this->localFiles[$directory]['EMBARGO'] = $embargo;
+                $this->writeLog("Found embargo date of: " . $embargo, $fn, $etdname);
+            } else {
+                $this->writeLog("No embargo date found.", $fn, $etdname);
             }
 
             /**
              * Check to see if the OA and embargo permissions match.
              * If so, set the embargo permission/date to "indefinite".
              */
-            // TODO: should this be a corresponding ELSEIF clause to the previous IF clause?
+            // TODO: should this be a corresponding ELSE IF clause to the previous IF clause?
             //       This looks like $embargo would only match $openaccess if they are both 0.
             if ($openaccess === $embargo) {
                 $embargo = 'indefinite';
                 $this->localFiles[$directory]['EMBARGO'] = $embargo;
-		        echo "Embargo date is " . $embargo . "\n";
+                echo "Embargo date is " . $embargo . "\n";
+                $this->writeLog("Found embargo date of " . $embargo, $fn, $etdname);
             }
 
             /**
              * Fetch next PID from Fedora.
              * Prepend PID with locally defined Fedora namespace.
-             * Ex: "bc-ir" for BC.
+             * Ex: "bc-ir:" for BC.
              */
-            $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
+            
+            //
+            //
+            //$pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
+            //
+            //
+
+            // TESTING
+            $pid = "bc-ir:" . rand(50000,100000);
+            $this->writeLog("Generating random PID for testing (NOT contacting Fedora): " . $pid, $fn, $etdname);
+
             $this->localFiles[$directory]['PID'] = $pid;
 
-	        echo "Record PID is " . $pid . "\n";
+            echo "Record PID is " . $pid . "\n";
+            $this->writeLog("Fedora PID value for this ETD: " . $pid, $fn, $etdname);
 
             /**
              * Insert the PID value into the Proquest MODS XSLT stylesheet.
              * The "handle" value should be set the PID.
              */
-            $xslt->setParameter('mods', 'handle', $pid);
+            $res = $xslt->setParameter('mods', 'handle', $pid);
+            if ($res === false) {
+                $this->writeLog("Error: Could not update XSLT stylesheet with PID value!", $fn, $etdname);
+                return false;
+            }
+            $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdname);
 
             /**
              * Generate MODS file.
@@ -336,6 +556,11 @@ class processProquest {
              * Additional metadata will be generated from the MODS file.
              */
             $mods = $xslt->transformToDoc($metadata);
+            if ($mods === false) {
+                $this->writeLog("Error: Could not transform ETD MODS XML file!", $fn, $etdname);
+                return false;
+            }
+            $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdname);
 
             /**
              * Generate ETD title/Fedora Label.
@@ -343,9 +568,14 @@ class processProquest {
              * This uses mods:titleInfo.
              */
             $fedoraLabel = $label->transformToXml($mods);
+            if ($fedoraLabel === false) {
+                $this->writeLog("Error: Could not generate ETD title using Fedora Label XSLT stylesheet!", $fn, $etdname);
+                return false;
+            }
             $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
 
-	        echo "Title is " . $fedoraLabel . "\n";
+            echo "Title is " . $fedoraLabel . "\n";
+            $this->writeLog("Generated ETD title: " . $fedoraLabel, $fn, $etdname);
 
             /**
              * Generate ETD author.
@@ -355,6 +585,7 @@ class processProquest {
             $xpathAuthor = new DOMXpath($mods);
             $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);
             $author = $authorElements->item(0)->C14N();
+            $this->writeLog("Generated ETD author: " . $author, $fn, $etdname);
 
             /**
              * Normalize the ETD author string. This forms the internal file name convention.
@@ -363,22 +594,35 @@ class processProquest {
             // TODO: Need to add unicode replacements.
             $normalizedAuthor = str_replace(array(" ",",","'",".","&apos;"), array("-","","","",""), $author);
 
+            $this->writeLog("Generated normalized ETD author: " . $normalizedAuthor, $fn, $etdname);
+            $this->writeLog("Now using the normalized ETD author name to update ETD PDF and MODS files.", $fn, $etdname);
+
             // Create placeholder full-text text file using normalized author's name.
             $this->localFiles[$directory]['FULLTEXT'] = $normalizedAuthor . ".txt";
+            //$this->writeLog("Generated placeholder full text file name: " . $this->localFiles[$directory]['FULLTEXT'], $fn, $etdname);
 
             // Rename Proquest PDF using normalized author's name.
-            // TODO: error handling.
-            rename($directory . "/". $submission['ETD'] , $directory . "/" . $normalizedAuthor . ".pdf");
+            $res = rename($directory . "/". $submission['ETD'] , $directory . "/" . $normalizedAuthor . ".pdf");
+            if ($res === false) {
+                $this->writeLog("Error: Could not rename ETD PDF file!", $fn, $etdname);
+                return false;
+            }
 
             // Update local file path for ETD PDF file.
             $this->localFiles[$directory]['ETD'] = $normalizedAuthor . ".pdf";
+            $this->writeLog("Renamed ETD PDF file from " . $submission['ETD'] . " to " . $this->localFiles[$directory]['ETD'], $fn, $etdname);
 
             // Save MODS using normalized author's name.
-            // TODO: error handling.
-            $mods->save($directory . "/" . $normalizedAuthor . ".xml");
+            $res = $mods->save($directory . "/" . $normalizedAuthor . ".xml");
+            if ($res === false) {
+                $this->writeLog("Error: Could not create new ETD MODS file!", $fn, $etdname);
+                return false;
+            }
 
             // Update local file path for MODS file.
             $this->localFiles[$directory]['MODS'] = $normalizedAuthor . ".xml";
+            $this->writeLog("Created new ETD MODS file " . $this->localFiles[$directory]['MODS'], $fn, $etdname);
+
 
             /**
              * Check for supplemental files.
@@ -393,18 +637,26 @@ class processProquest {
             $suppxpath = new DOMXpath($metadata);
             $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
 
+            $this->writeLog("Checking for existence supplemental files...", $fn, $etdname);
+
             // Check if there are zero or more supplemental files. 
             if ($suElements->item(0) ) {
                 $this->localFiles[$directory]['PROCESS'] = "0";
+                $this->writeLog("No supplemental files found.", $fn, $etdname);
             } else {
                 $this->localFiles[$directory]['PROCESS'] = "1";
+                $this->writeLog("Found a supplemental file(s).", $fn, $etdname);
 
                 // Keep track of how many additional PIDs will need to be generated.
                 $this->toProcess++;
             }
 
             echo "\n\n";
+            $this->writeLog("Completed processing ETD #" . $s, $fn, $etdname);
         }
+
+        // Completed processing all ETD files.
+        $this->writeLog("Completed processing all ETD files.", $fn, $etdname);
     }
 
     /**
