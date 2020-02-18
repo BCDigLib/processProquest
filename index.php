@@ -18,8 +18,11 @@ if (!isset($argv[1])){
     exit(1);
 }
 
+// Debug is off by default
+$debug = true;
+
 // Create the $process object.
-$process = new processProquest($argv[1]);
+$process = new processProquest($argv[1], $debug);
 
 // Initialize FTP connection.
 $process->initFTP();

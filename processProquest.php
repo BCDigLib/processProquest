@@ -13,7 +13,9 @@ error_reporting(E_ALL);
 /* 
  * Islandora/Fedora library.
  */
-/*require_once '../tuque/RepositoryConnection.php';
+
+/*
+require_once '../tuque/RepositoryConnection.php';
 require_once '../tuque/FedoraApi.php';
 require_once '../tuque/FedoraApiSerializer.php';
 require_once '../tuque/Repository.php';
@@ -47,6 +49,7 @@ define('ISLANDORA_BC_XACML_POLICY','POLICY');
 define('GRADUATE_THESES','bc-ir:GraduateThesesCollection');
 define('GRADUATE_THESES_RESTRICTED','bc-ir:GraduateThesesCollectionRestricted');
 define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-jesse-log/');
+define('DEFAULT_DEBUG_VALUE', false);
 
 /**
  * Batch processes Proquest ETDs.
@@ -61,6 +64,7 @@ define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-jesse-log/');
 class processProquest {
 
     public $settings;
+    public $debug;
     protected $ftp;
     protected $localFiles;      // array
     protected $connection;
@@ -69,14 +73,28 @@ class processProquest {
     protected $repository;
     protected $toProcess = 0;   // Number of PIDs for supplementary files. 
     protected $logFile = "";
+    protected $logError = false;
 
     /**
      * Class constructor. 
      * 
      * This builds a local '$this' object that contains various script settings. 
+     * 
+     * @param string $config An ini file containing various configurations.
+     * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      */
-    public function __construct($config){
+    public function __construct($config, $debug = DEFAULT_DEBUG_VALUE) {
         $this->settings = parse_ini_file($config, true);
+
+        // Verify that $debug is a bool value.
+        if ( is_bool($debug) ){
+            $this->debug = $debug;
+        } else {
+            $this->debug = DEFAULT_DEBUG_VALUE;
+        }
+
+        $this->writeLog("Starting processProquest script.", "");
+        $this->writeLog("Running with DEBUG value: " . ($this->debug ? "TRUE" : "FALSE"), "");
     }
 
     /**
@@ -85,13 +103,13 @@ class processProquest {
      * @param string $file_name The name to give the log file.
      * @return boolean Log init status.
      */
-    private function initLog($file_name = null){
+    private function initLog($file_name = null) {
         // Set log file name.
         if ( is_null($file_name) ) {
             $file_name = "log";
         }
 
-        $date = date("YmdHis", time());
+        $date = date("Ymd-His", time());
 
         // Set log location in case DEFAULT_LOG_FILE_LOCATION or $this->settings['log']["location"] isn't set.
         $log_location = "/tmp/proquest-jesse-log/";
@@ -104,17 +122,24 @@ class processProquest {
             //return false;
         }
 
-        // Build final log path and name. Ex: /var/log/processProquest/log-20200216123456.txt
+        // Build final log path and name. Ex: /var/log/processProquest/log-20200216-123456.txt
         $this->logFile = $log_location . $file_name . "-" . $date . ".txt";
 
         // Create file if it doesn't exist.
         if( !is_file($this->logFile) ) {
-            file_put_contents($this->logFile, "");
+            $res = file_put_contents($this->logFile, "");
+
+            // In case of complete file creation error.
+            if ($res === false) {
+                echo "ERROR: Can't write to log file! " . $res;
+                $this->logError = true;
+                return false;
+            }
         }
 
         echo "Writing to log file: " . $this->logFile . "\n";
 
-        return false;
+        return true;
     }
 
     /**
@@ -124,11 +149,21 @@ class processProquest {
      * @param string $etd The ETD name. 
      * @return boolean Write status.
      */
-    private function writeLog($message, $function_name = "", $etd = ""){
-        // Check if $this->$logFile is set
+    private function writeLog($message, $function_name = "", $etd = "") {
+        // Check if there is a known issue with log writing.
+        if ($this->logError === true){
+            // Nothing we can do at this point. 
+            return false;
+        }
+
+        // Check if $this->$logFile is set, and run initLog if not.
         if ( empty($this->logFile) ) {
-            $ret = $this->initLog();
-            // TODO: check $ret status value.
+            $res = $this->initLog();
+
+            // If initLog fails then we can't write to logs.
+            if ($res === false) {
+                return false;
+            }
         }
 
         // Add some text wrapping to $etd, if set.
@@ -142,23 +177,90 @@ class processProquest {
         // Append message to the log file.
         if ($fd = @fopen($this->logFile, "a")) {
             //$result = fputcsv($fd, array($time, $message));
-            $result = fwrite($fd, "$time ($function_name) $etd $message" . PHP_EOL);
-            fclose($fd);
-        
-            if ($result > 0) {
-                return true;
-            } else {
+            $res = fwrite($fd, "$time ($function_name) $etd $message" . PHP_EOL);
+
+            // Check if fwrite failed.
+            if ($res === false) {
+                // Only print this error message once.
+                if ($this->logError === false) {
+                    echo "ERROR: Can't write to log file! " . $res;
+                    $this->logError = true;
+                }
+                
                 return false;
-            }  
+            }
+
+            fclose($fd);
         } else {
+            // Only print this error message once.
+            if ($this->logError === false) {
+                echo "ERROR: Can't open log file! " . $res;
+                $this->logError = true;
+            }
+            
             return false;
         }
+
+        return true;
+    }
+
+    /**
+     * Send email notification.
+     * 
+     * @param string $message The email body to send.
+     * @return boolean Was the email send successfully. 
+     */
+    private function sendEmail($message) {
+        $fn = "sendEmail";
+
+        $log_location_message = "\n\nA full log of this ingestion can be found on the server here: " . $this->logFile . " .";
+
+        $email_to = $this->settings['notify']['email'];
+        $email_subject = "Message from processProquest";
+        $email_message = $message . $log_location_message;
+
+        // Sanity checks.
+        if ( empty($email_to) ) {
+            $this->writeLog("ERROR: Email to: field is empty!", $fn);
+            return false;
+        }
+
+        if ( empty($email_subject) ) {
+            $this->writeLog("ERROR: Email subject: field is empty!", $fn);
+            return false;
+        }
+
+        if ( empty($email_message) ) {
+            $this->writeLog("ERROR: Email body: field is empty!", $fn);
+            return false;
+        }
+
+        $this->writeLog("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]", $fn);
+
+        // DEBUG: don't send email.
+        $res = true;
+        if ($this->debug === true) {
+            $this->writeLog("DEBUG: Not sending email notification.", $fn);
+        } else {
+            $res = mail($email_to, $email_subject, $email_message);
+        }
+        
+        // Check mail success.
+        if ($res === false) {
+            $this->writeLog("ERROR: Email not sent!", $fn);
+            return false;
+        }
+
+        $this->writeLog("Email sent.", $fn);
+
+        return true;
     }
 
     /**
      * Initializes an FTP connection.
      * 
      * Calls on proquestFTP.php
+     * 
      * @return boolean Success value.
      */
     function initFTP() {
@@ -193,7 +295,6 @@ class processProquest {
         }
     }
 
-
     /**
      * Gather ETD zip files from FTP server.
      * 
@@ -201,6 +302,8 @@ class processProquest {
      * Local directory name is based on file name. 
      * Next, varify that PDF and XML files exist. Also keep track of supplementary files. 
      * Lastly, expand zip file contents into local directory. 
+     * 
+     * @return boolean Success value.
      */
     function getFiles() {
         $fn = "getFiles";
@@ -273,7 +376,7 @@ class processProquest {
             $this->localFiles[$etdDir]['ETD_SHORTNAME'] = $etdname;
 
             echo "Creating temp storage directory: " . $etdDir . "\n";
-            $this->writeLog("BEGIN Gathering ETD file #" . $f . " - " . $filename, $fn, $etdname);
+            $this->writeLog("BEGIN Gathering ETD file #" . $f . " - " . $filename, $fn);
 
             // Create the local directory if it doesn't already exists.
             $this->writeLog("Now building local working directory...", $fn, $etdname);
@@ -300,6 +403,7 @@ class processProquest {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: Failed to fetch file from FTP server!" . $localFile, $fn, $etdname);
+                continue;
             }
 
             // Store location of local directory if it hasn't been stored yet.
@@ -313,6 +417,7 @@ class processProquest {
             // zip_open returns a resource handle on success and an integer on error.
             if (!is_resource($ziplisting)) {
                 $this->writeLog("ERROR: Failed to open zip file!", $fn, $etdname);
+                continue;
             }
 
             $supplement = 0;
@@ -392,7 +497,7 @@ class processProquest {
                 continue;
             }
 
-            $this->writeLog("END Gathering ETD file #" . $f . " - " . $filename, $fn, $etdname);
+            $this->writeLog("END Gathering ETD file #" . $f . " - " . $filename, $fn);
         }
 
         // Completed fetching all ETD zip files.
@@ -407,6 +512,8 @@ class processProquest {
      *  - Embargo settings.
      *  - MODS metadata.
      *  - PID, title, author values.
+     * 
+     * @return boolean Success value.
      */
     function processFiles() {
         $fn = "processFiles";
@@ -453,7 +560,7 @@ class processProquest {
                 $etdname = substr($this->localFiles[$directory]["ETD"],0,strlen($this->localFiles[$directory]["ETD"])-4);
                 $this->localFiles[$directory]['ETD_SHORTNAME'] = $etdname;
             }
-            $this->writeLog("BEGIN Processing ETD #" . $s . " - " . $etdname, $fn, $etdname);
+            $this->writeLog("BEGIN Processing ETD #" . $s . " - " . $etdname, $fn);
 
             echo "Processing " . $directory . "\n";
 
@@ -523,16 +630,16 @@ class processProquest {
              * Prepend PID with locally defined Fedora namespace.
              * Ex: "bc-ir:" for BC.
              */
-            
-            //
-            //
-            //$pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
-            //
-            //
+            // DEBUG: make up PID. 
+            if ($this->debug === true) {
+                $pid = "bc-ir:" . rand(50000,100000);
+                $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): " . $pid, $fn, $etdname);
+            } else {
+                //$pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
 
-            // TESTING
-            $pid = "bc-ir:" . rand(50000,100000);
-            $this->writeLog("Generating random PID for testing (NOT contacting Fedora): " . $pid, $fn, $etdname);
+                $pid = "bc-ir:" . rand(50000,100000);
+                $this->writeLog("Fetched new PID from Fedora: " . $pid, $fn, $etdname);
+            }
 
             $this->localFiles[$directory]['PID'] = $pid;
 
@@ -652,7 +759,7 @@ class processProquest {
             }
 
             echo "\n\n";
-            $this->writeLog("END Processing ETD #" . $s . " - " . $etdname, $fn, $etdname);
+            $this->writeLog("END Processing ETD #" . $s . " - " . $etdname, $fn);
         }
 
         // Completed processing all ETD files.
@@ -668,13 +775,11 @@ class processProquest {
                                                      $this->settings['fedora']['username'],
                                                      $this->settings['fedora']['password']);
 
-        // TODO: error handling.
         $this->api = new FedoraApi($this->connection);
         $this->repository = new FedoraRepository($this->api, new simpleCache());
 
         // Fedora Management API.
         $this->api_m = $this->repository->api->m; 
-
     }
 
     /**
@@ -703,6 +808,8 @@ class processProquest {
         echo "\n\nNow ingesting files...\n\n";
 
         $pidcount = 0;
+        $successCount = 0;
+        $failureCount = 0;
         $fop = '../../modules/boston_college/data/fop/cfg.xml';
 
         // Initialize messages for notification email.
@@ -723,11 +830,11 @@ class processProquest {
                 $etdname = substr($this->localFiles[$directory]["ETD"],0,strlen($this->localFiles[$directory]["ETD"])-4);
                 $this->localFiles[$directory]['ETD_SHORTNAME'] = $etdname;
             }
-            $this->writeLog("BEGIN Ingesting ETD #" . $s . " - " . $etdname, $fn, $etdname);
+            $this->writeLog("BEGIN Ingesting ETD #" . $s . " - " . $etdname, $fn);
 
             // Check for supplemental files, and create log message.
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
-                // Still Load - but notify admin about supp files
+                // Still Load - but notify admin about supp files.
                 echo "Supplementary files found\n";
                 $this->writeLog("Supplementary files found.", $fn, $etdname);
             }
@@ -810,6 +917,7 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting MODS datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested MODS datastream\n";
             $this->writeLog("Ingested MODS datastream.", $fn, $etdname);
@@ -876,6 +984,7 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested ARCHIVE-PDF datastream\n";
             $this->writeLog("Ingested ARCHIVE-PDF datastream.", $fn, $etdname);
@@ -968,6 +1077,7 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested PDF with splash page\n";
             $this->writeLog("Ingested PDF datastream.", $fn, $etdname);
@@ -1014,6 +1124,12 @@ class processProquest {
             // Read in the full-text document that was just generated.
             $fulltext = file_get_contents($fttemp);
 
+            // Check if file read failed.
+            if ($fulltext === false) {
+                $this->writeLog("ERROR: could not read in file: ". $fttemp, $fn, $etdname);
+                continue;
+            }
+
             // Strip out junky characters that mess up SOLR.
             $replacement = '';
             $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
@@ -1033,6 +1149,7 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested FULL TEXT datastream\n";
             $this->writeLog("Ingested FULL_TEXT datastream.", $fn, $etdname);
@@ -1083,6 +1200,7 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting TN datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested TN datastream\n";
             $this->writeLog("Ingested TN datastream.", $fn, $etdname);
@@ -1133,6 +1251,7 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested PREVIEW datastream\n";
             $this->writeLog("Ingested PREVIEW datastream.", $fn, $etdname);
@@ -1150,6 +1269,7 @@ class processProquest {
                 $object->ingestDatastream($policy);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage(), $fn, $etdname);
+                continue;
             }
             echo "Ingested XACML datastream\n";
             $this->writeLog("Ingested RELS-EXT (XACML) datastream.", $fn, $etdname);
@@ -1163,17 +1283,40 @@ class processProquest {
              */
             $this->writeLog("Generating RELS-INT datastream.", $fn, $etdname);
 
+            $this->writeLog("Reading in custom RELS XSLT file...", $fn, $etdname);
+
             // $submission['OA'] is either '0' for no OA policy, or some non-zero value.
             $relsint = '';
+            $relsFile = "";
             if ($submission['OA'] === 0) {
                 // No OA policy. 
-                $relsint =  file_get_contents('xsl/permRELS-INT.xml');
+                $relsFile = "xsl/permRELS-INT.xml";
+                $relsint = file_get_contents($relsFile);
+                
+                // Check if file read failed.
+                if ($relsint === false) {
+                    $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
+                    continue;
+                }
+
                 $relsint = str_replace('######', $submission['PID'], $relsint);
+
+                $this->writeLog("No OA policy for ETD: read in: " . $relsFile, $fn, $etdname);
             } else if (isset($submission['EMBARGO'])) {
                 // Has an OA policy, and an embargo date.
-                $relsint =  file_get_contents('xsl/embargoRELS-INT.xml');
+                $relsFile = "xsl/embargoRELS-INT.xml";
+                $relsint = file_get_contents($relsFile);
+
+                // Check if file read failed.
+                if ($relsint === false) {
+                    $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
+                    continue;
+                }
+
                 $relsint = str_replace('######', $submission['PID'], $relsint);
                 $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
+
+                $this->writeLog("OA policy found and Embargo date found for ETD: read in: " . $relsFile, $fn, $etdname);
             }
 
             // TODO: handle case where there is an OA policy and no embargo date?
@@ -1191,11 +1334,18 @@ class processProquest {
 
                 // Set RELS-INT datastream to be the custom XACML policy file read in above.
                 $datastream->setContentFromString($relsint);
+                $this->writeLog("Selecting RELS-INT datastream to use: " . $relsFile, $fn, $etdname);
 
                 // Ingest RELS-INT datastream into Fedora object.
-                $object->ingestDatastream($datastream);
+                try {
+                    $object->ingestDatastream($datastream);
+                } catch (Exception $e) {
+                    $this->writeLog("ERROR: Ingesting RELS-INT datastream failed! " . $e->getMessage(), $fn, $etdname);
+                    continue;
+                }
 
                 echo "Ingested RELS-INT datastream\n";
+                $this->writeLog("Ingested RELS-INT datastream.", $fn, $etdname);
             }
 
 
@@ -1205,17 +1355,27 @@ class processProquest {
              * 
              */
 
-            // Get the zip filename on the FTP server of the ETD being processed.
-            // We'll use this in the conditional below to move the ETD on the
-            // remove server accordingly.
+            // Reconstruct name of zip file from the local ETD work space directory name.
+            // TODO: there must be a better way to do this...
             $directoryArray = explode('/', $directory);
             $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
+            // DEBUG: ignore Fedora ingest.
+            $res = true;
+            if ($this->debug === true) {
+                $this->writeLog("DEBUG: Ignore ingesting object into Fedora.", $fn, $etdname);
+            } else {
+                $res = $this->repository->ingestObject($object);
+                $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
+            }
+
             // Check if ingest was successful, and manage where to put FTP ETD file. 
-            if ($this->repository->ingestObject($object)) {
+            if ($res) {
                 echo "Object ingested successfully\n";
+                $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
 
                 $pidcount++;
+                $succcessCount++;
                 $successMessage .= $submission['PID'] . "\t";
 
                 // Set success status for email message.
@@ -1228,11 +1388,21 @@ class processProquest {
 
                 // Move processed PDF file to a new directory. Ex: /path/to/files/processed
                 $processdirFTP = $this->settings['ftp']['processdir'];
-                $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
+                $res = $this->ftp->ftp_rename($fnameFTP, $processdirFTP . '/' . $fnameFTP);
+                
+                // Check if there was an error moving the ETD file on the FTP server.
+                if ($res === false) {
+                    $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
+                    continue;
+                }
+
+                $this->writeLog("Moved ETD file to 'processed' FTP directory: " . $processdirFTP, $fn, $etdname);
             } else {
                 echo "Object failed to ingest\n";
+                $this->writeLog("ERROR: Ingestion of Fedora object failed.", $fn, $etdname);
 
                 $pidcount++;
+                $failureCount++;
                 $failureMessage .= $submission['PID'] . "\t";
 
                 // Set failure status for email message.
@@ -1245,12 +1415,22 @@ class processProquest {
 
                 // Move processed PDF file to a new directory. Ex: /path/to/files/failed
                 $faildirFTP = $this->settings['ftp']['faildir'];
-                $this->ftp->ftp_rename($fnameFTP, $faildirFTP . '/' . $fnameFTP);
+                $res = $this->ftp->ftp_rename($fnameFTP, $faildirFTP . '/' . $fnameFTP);
+
+                // Check if there was an error moving the ETD file on the FTP server.
+                if ($res === false) {
+                    $this->writeLog("ERROR: Could not move ETD file to 'failed' FTP directory!", $fn, $etdname);
+                    continue;
+                }
+
+                $this->writeLog("Moved ETD file to 'failed' FTP directory: " . $faildirFTP, $fn, $etdname);
             }
 
             // Make sure we give every processing loop enough time to complete. 
             sleep(2);
+
             echo "\n\n\n\n";
+            $this->writeLog("END Ingesting ETD #" . $s . " - " . $etdname, $fn);
         }
 
         /**
@@ -1258,7 +1438,17 @@ class processProquest {
          * 
          * Do not show failure message in notification if no ETDs failed.
          * (same with success message, but hopefully we won't have that problem!)
+         * 
+         * $res returns a bool value, but nothing else to manage if it returns false at this point.
          */
+        $res = true;
+
+        $this->writeLog("Status report:" .
+                        "\n\tETDs ingested:     " . $successCount .
+                        "\n\tETDs not ingested: " . $failureCount .
+                        $fn);
+
+        /*
         if ($failureMessage == "\n\nThe following ETDs failed to ingest:\n\n") {
             mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
         } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
@@ -1266,7 +1456,25 @@ class processProquest {
         } else {
             mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
         }
+        */
 
+        // No Failures: hide failure message.
+        if ($failureCount == 0) {
+            $res = $this->sendEmail($successMessage . $processingMessage);
+            return;
+        }
+
+        // No successes, but some failures: hide success message.
+        if ($successCount == 0) {
+            $res = $this->sendEmail($failureMessage . $processingMessage);
+            return;
+        } 
+        
+        // Everything else: send all message types.
+        $res = $this->sendEmail($successMessage . $failureMessage . $processingMessage);
+
+        // Completed ingesting all ETD files.
+        $this->writeLog("Completed ingesting all ETD files.", $fn);
     }
 }
 ?>
