@@ -635,9 +635,7 @@ class processProquest {
                 $pid = "bc-ir:" . rand(50000,100000);
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): " . $pid, $fn, $etdname);
             } else {
-                //$pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
-
-                $pid = "bc-ir:" . rand(50000,100000);
+                $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
                 $this->writeLog("Fetched new PID from Fedora: " . $pid, $fn, $etdname);
             }
 
