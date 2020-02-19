@@ -48,7 +48,7 @@ define('ISLANDORA_BC_ROOT_PID_EMBARGO', 'bc-ir:GraduateThesesCollectionRestricte
 define('ISLANDORA_BC_XACML_POLICY','POLICY');
 define('GRADUATE_THESES','bc-ir:GraduateThesesCollection');
 define('GRADUATE_THESES_RESTRICTED','bc-ir:GraduateThesesCollectionRestricted');
-define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-jesse-log/');
+define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-log/');
 define('DEFAULT_DEBUG_VALUE', false);
 
 /**
@@ -106,7 +106,7 @@ class processProquest {
     private function initLog($file_name = null) {
         // Set log file name.
         if ( is_null($file_name) ) {
-            $file_name = "log";
+            $file_name = "ingest";
         }
 
         $date = date("Ymd-His", time());
@@ -208,12 +208,12 @@ class processProquest {
      * Send email notification.
      * 
      * @param string $message The email body to send.
-     * @return boolean Was the email send successfully. 
+     * @return boolean Was the email sent successfully. 
      */
     private function sendEmail($message) {
         $fn = "sendEmail";
 
-        $log_location_message = "\n\nA full log of this ingestion can be found on the server here: " . $this->logFile . " .";
+        $log_location_message = "\n\nLog file for this process can he found on the server here: " . $this->logFile . " .";
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
@@ -343,7 +343,7 @@ class processProquest {
         // Sanity check to see if there are any ETD files to process.
         // TODO: Handle some type of error message?
         if ( empty($etdFiles) ) {
-            $this->writeLog("Did not find any files to process. Quitting.", $fn);
+            $this->writeLog("Did not find any files to fetch. Quitting.", $fn);
             return true;
         }
 
@@ -517,6 +517,13 @@ class processProquest {
      */
     function processFiles() {
         $fn = "processFiles";
+
+        // Sanity check to see if there are any ETD files to process.
+        if ( empty($this->localFiles) ) {
+            $this->writeLog("Did not find any files to process. Quitting.", $fn);
+            return true;
+        }
+
         $this->writeLog("Now processing ETD files.", $fn);
 
         /**
@@ -801,6 +808,18 @@ class processProquest {
      */
     function ingest() {
         $fn = "ingest";
+
+        // Sanity check to see if there are any ETD files to process.
+        if ( empty($this->localFiles) ) {
+            $this->writeLog("Did not find any files to ingest. Quitting.", $fn);
+
+            // Shortcut to sending email update.
+            $message = "No ETD files to process.";
+            $res = $this->sendEmail($message);
+
+            return true;
+        }
+
         $this->writeLog("Now Ingesting ETD files.", $fn);
 
         echo "\n\nNow ingesting files...\n\n";
@@ -1368,10 +1387,9 @@ class processProquest {
             if ($fetchdirFTP == "") {
                 $fullfnameFTP = $fnameFTP;
             } else {
-                $fullfnameFTP = $fetchdirFTP . "/" . $fnameFTP;
+                $fullfnameFTP = "~/" . $fetchdirFTP . "/" . $fnameFTP;
             }
             $this->writeLog("The full path of the ETD file on the FTP server is: " . $fullfnameFTP, $fn, $etdname);
-
 
             // DEBUG: ignore Fedora ingest.
             $res = true;
@@ -1401,7 +1419,7 @@ class processProquest {
 
                 // Move processed PDF file to a new directory. Ex: /path/to/files/processed
                 $processdirFTP = $this->settings['ftp']['processdir'];
-                $fullProcessdirFTP = $processdirFTP . "/" . $fnameFTP;
+                $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
 
                 $this->writeLog("Currently in FTP directory: " . $this->ftp->ftp_pwd(), $fn, $etdname);
 
@@ -1439,7 +1457,7 @@ class processProquest {
 
                 // Move processed PDF file to a new directory. Ex: /path/to/files/failed
                 $faildirFTP = $this->settings['ftp']['faildir'];
-                $fullFaildirFTP = $processdirFTP . "/" . $fnameFTP;
+                $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
 
                 $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullFaildirFTP, $fn, $etdname);
 
