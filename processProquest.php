@@ -213,7 +213,7 @@ class processProquest {
     private function sendEmail($message) {
         $fn = "sendEmail";
 
-        $log_location_message = "\n\nLog file for this process can he found on the server here: " . $this->logFile . " .";
+        $log_location_message = "\n\nLog file for this process can be found on the server here: " . $this->logFile . " .";
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
