@@ -30,4 +30,6 @@ password   = "fedoraPassword";
 namespace  = bc-ir
 [notify]
 email      = notify.me@example.edu
+[log]
+location   = "/path/to/logs/
 ```

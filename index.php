@@ -18,8 +18,9 @@ if (!isset($argv[1])){
     exit(1);
 }
 
-// Debug is off by default
-$debug = true;
+// Setting the $debug variable to 'true' will go through the entire ingest workflow but not actually ingest the ETD into Fedora.
+// Debug is off by default.
+$debug = false;
 
 // Create the $process object.
 $process = new processProquest($argv[1], $debug);
