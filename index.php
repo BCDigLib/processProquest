@@ -7,6 +7,7 @@
 
 error_reporting(E_ALL);
 
+#$fontpath = realpath('/usr/share/fonts/truetype/freefont/');
 $fontpath = realpath('/usr/share/fonts/truetype/freefont/');
 putenv('GDFONTPATH='.$fontpath);
 
@@ -18,8 +19,7 @@ if (!isset($argv[1])){
     exit(1);
 }
 
-// Setting the $debug variable to 'true' will go through the entire ingest workflow but not actually ingest the ETD into Fedora.
-// Debug is off by default.
+// Debug is off by default
 $debug = false;
 
 // Create the $process object.
