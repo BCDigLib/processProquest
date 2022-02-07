@@ -201,6 +201,9 @@ class processProquest {
             return false;
         }
 
+        // Finally, outout to stdout
+        echo "$time ($function_name) $etd $message\n";
+
         return true;
     }
 
@@ -267,7 +270,6 @@ class processProquest {
     function initFTP() {
         $fn = "initFTP";
 
-        echo "Initializing FTP connection...\n";
         $this->writeLog("Initializing FTP connection.", $fn);
 
         $urlFTP = $this->settings['ftp']['server'];
@@ -310,7 +312,6 @@ class processProquest {
         $fn = "getFiles";
 
         $this->writeLog("Fetching ETD files from FTP server.", $fn);
-        echo "Fetching files...\n";
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
@@ -376,7 +377,6 @@ class processProquest {
             // Save the shortname as a local object variable
             $this->localFiles[$etdDir]['ETD_SHORTNAME'] = $etdname;
 
-            echo "Creating temp storage directory: " . $etdDir . "\n";
             $this->writeLog("BEGIN Gathering ETD file #" . $f . " - " . $filename, $fn);
 
             // Create the local directory if it doesn't already exists.
@@ -483,7 +483,6 @@ class processProquest {
             }
             $this->writeLog("Great! The ETD XML file was found.", $fn, $etdname);
 
-            echo "Extracting files...\n";
             $zip = new ZipArchive;
 
             // Open and extract zip file to local directory.
@@ -570,8 +569,6 @@ class processProquest {
             }
             $this->writeLog("BEGIN Processing ETD #" . $s . " - " . $etdname, $fn);
 
-            echo "Processing " . $directory . "\n";
-
             // Create XPath object from the ETD XML file.
             $metadata = new DOMDocument();
             $metadata->load($directory . '//' . $submission['METADATA']);
@@ -587,14 +584,11 @@ class processProquest {
             $openaccess = 0;
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
             if ($oaElements->length === 0 ) {
-                echo "No OA agreement found\n";
                 $this->writeLog("No OA agreement found.", $fn, $etdname);
             } elseif ($oaElements->item(0)->C14N() === '0') {
-                echo "No OA agreement found\n";
                 $this->writeLog("No OA agreement found.", $fn, $etdname);
             } else {
                 $openaccess = $oaElements->item(0)->C14N();
-                echo "OA agreement found\n";
                 $this->writeLog("Found an OA agreement.", $fn, $etdname);
             }
 
@@ -627,7 +621,6 @@ class processProquest {
             if ($openaccess === $embargo) {
                 $embargo = 'indefinite';
                 $this->localFiles[$directory]['EMBARGO'] = $embargo;
-                echo "Embargo date is " . $embargo . "\n";
                 $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
             } else {
                 $this->writeLog("No embargo date found.", $fn, $etdname);
@@ -649,7 +642,6 @@ class processProquest {
 
             $this->localFiles[$directory]['PID'] = $pid;
 
-            echo "Record PID is " . $pid . "\n";
             $this->writeLog("Fedora PID value for this ETD: " . $pid, $fn, $etdname);
 
             /**
@@ -687,7 +679,6 @@ class processProquest {
             }
             $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
 
-            echo "Title is " . $fedoraLabel . "\n";
             $this->writeLog("Generated ETD title: " . $fedoraLabel, $fn, $etdname);
 
             /**
@@ -764,7 +755,6 @@ class processProquest {
                 $this->toProcess++;
             }
 
-            echo "\n\n";
             $this->writeLog("END Processing ETD #" . $s . " - " . $etdname, $fn);
         }
 
@@ -823,8 +813,6 @@ class processProquest {
 
         $this->writeLog("Now Ingesting ETD files.", $fn);
 
-        echo "\n\nNow ingesting files...\n\n";
-
         $pidcount = 0;
         $successCount = 0;
         $failureCount = 0;
@@ -843,7 +831,6 @@ class processProquest {
         foreach ($this->localFiles as $directory => $submission) {
             $i++;
 
-            echo "Processing " . $directory . "\n";
             $processingMessage .= $directory . "\n";
 
             // Pull out the ETD shortname that was generated in getFiles()
@@ -857,7 +844,6 @@ class processProquest {
             // Check for supplemental files, and create log message.
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files.
-                echo "Supplementary files found\n";
                 $this->writeLog("Supplementary files found.", $fn, $etdname);
             }
 
@@ -872,7 +858,6 @@ class processProquest {
             // All Fedora objects are owned by the same generic account
             $object->owner = 'fedoraAdmin';
 
-            echo "Fedora object created\n";
             $this->writeLog("Now generating Fedora datastreams.", $fn, $etdname);
 
 
@@ -889,12 +874,10 @@ class processProquest {
 
             // Update the Parent and Collection policies if this ETD is embargoed.
             if (isset($this->localFiles[$directory]['EMBARGO'])) {
-	            echo "Adding to Graduate Theses (Restricted) collection\n";
                 $collection = GRADUATE_THESES_RESTRICTED;
                 $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                 $this->writeLog("Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
             } else {
-                echo "Adding to Graduate Theses Collection\n";
                 $this->writeLog("Adding to Graduate Theses collection.", $fn, $etdname);
             }
 
@@ -905,8 +888,6 @@ class processProquest {
             // Set various other Fedora object settings.
             $object->checksumType = 'SHA-256';
             $object->state = 'I';
-
-            echo "Adding XACML policy\n";
 
             // Get Parent XACML policy.
             $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
@@ -941,7 +922,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting MODS datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested MODS datastream\n";
             $this->writeLog("Ingested MODS datastream.", $fn, $etdname);
 
 
@@ -972,7 +952,6 @@ class processProquest {
 
             // Ingest ARCHIVE MODS datastream into Fedora object.
             $object->ingestDatastream($datastream);
-            echo "Ingested ARCHIVE datastream\n";
             $this->writeLog("Ingested ARCHIVE datastream.", $fn, $etdname);
 
 
@@ -1008,7 +987,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested ARCHIVE-PDF datastream\n";
             $this->writeLog("Ingested ARCHIVE-PDF datastream.", $fn, $etdname);
 
 
@@ -1040,10 +1018,8 @@ class processProquest {
             $this->writeLog("Running 'fop' command to build PDF splash page.", $fn, $etdname);
 
     		if (!$return) {
-                echo "PDF splash page created successfully\n";
                 $this->writeLog("PDF splash page created successfully.", $fn, $etdname);
     		} else {
-                echo "PDF splash page creation unsuccessful. Continuing...\n";
                 $this->writeLog("ERROR: PDF splash page creation failed! ". $return, $fn, $etdname);
     		    continue;
     		}
@@ -1076,25 +1052,20 @@ class processProquest {
             $this->writeLog("Running 'pdftk' command to build concatenated PDF document.", $fn, $etdname);
 
             if (!$return) {
-                echo "Splash page concatenated successfully\n";
                 $this->writeLog("Concatenated PDF document created successfully.", $fn, $etdname);
             } else {
-                echo "Splash page concatenation unsuccessful. Continuing...\n";
                 $this->writeLog("ERROR: Concatenated PDF document creation failed! " . $return, $fn, $etdname);
                 continue;
             }
             */
 
             // Temporarily copying over the $pdf file as the $concattemp version since we can no longer use pdftk on RHEL 7
-            echo "WARNING: pdftk is no longer supported in RHEL. A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.\n";
             $this->writeLog("WARNING: pdftk is no longer supported in RHEL. A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
 
             if(!copy($pdf,$concattemp)){
-                echo "ERROR: PDF document cloning failed!\n";
                 $this->writeLog("ERROR: PDF document cloning failed!", $fn, $etdname);
             }
             else{
-                echo "PDF document cloned successfully.\n";
                 $this->writeLog("PDF document cloned successfully.", $fn, $etdname);
             }
 
@@ -1118,7 +1089,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested PDF with splash page\n";
             $this->writeLog("Ingested PDF datastream.", $fn, $etdname);
 
 
@@ -1145,10 +1115,8 @@ class processProquest {
             $this->writeLog("Running 'pdftotext' command to build FULL_TEXT document.", $fn, $etdname);
 
             if (!$return) {
-                echo "FULL TEXT datastream generated successfully\n";
                 $this->writeLog("FULL_TEXT datastream generated successfully.", $fn, $etdname);
             } else {
-                echo "FULL TEXT generation unsuccessful. Continuing...\n";
                 $this->writeLog("ERROR: FULL_TEXT document creation failed! " . $return, $fn, $etdname);
                 continue;
             }
@@ -1190,7 +1158,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested FULL TEXT datastream\n";
             $this->writeLog("Ingested FULL_TEXT datastream.", $fn, $etdname);
 
 
@@ -1215,10 +1182,8 @@ class processProquest {
             $this->writeLog("Running 'convert' command to build TN document.", $fn, $etdname);
 
             if (!$return) {
-                echo "TN datastream generated successfully\n";
                 $this->writeLog("TN datastream generated successfully.", $fn, $etdname);
             } else {
-                echo "TN generation unsuccessful. Exiting...\n";
                 $this->writeLog("ERROR: TN document creation failed! " . $return, $fn, $etdname);
                 continue;
             }
@@ -1241,7 +1206,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting TN datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested TN datastream\n";
             $this->writeLog("Ingested TN datastream.", $fn, $etdname);
 
 
@@ -1266,10 +1230,8 @@ class processProquest {
             $this->writeLog("Running 'convert' command to build PREVIEW document.", $fn, $etdname);
 
             if (!$return) {
-                echo "PREVIEW datastream generated successfully\n";
                 $this->writeLog("PREVIEW datastream generated successfully.", $fn, $etdname);
             } else {
-                echo "PREVIEW generation unsuccessful. Exiting...\n";
                 $this->writeLog("ERROR: REVIEW document creation failed! " . $return, $fn, $etdname);
                 continue;
             }
@@ -1292,7 +1254,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested PREVIEW datastream\n";
             $this->writeLog("Ingested PREVIEW datastream.", $fn, $etdname);
 
 
@@ -1310,7 +1271,6 @@ class processProquest {
                 $this->writeLog("ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage(), $fn, $etdname);
                 continue;
             }
-            echo "Ingested XACML datastream\n";
             $this->writeLog("Ingested RELS-EXT (XACML) datastream.", $fn, $etdname);
 
 
@@ -1383,7 +1343,6 @@ class processProquest {
                     continue;
                 }
 
-                echo "Ingested RELS-INT datastream\n";
                 $this->writeLog("Ingested RELS-INT datastream.", $fn, $etdname);
             }
 
@@ -1420,7 +1379,6 @@ class processProquest {
 
             // Check if ingest was successful, and manage where to put FTP ETD file.
             if ($res) {
-                echo "Object ingested successfully\n";
                 $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
 
                 $pidcount++;
@@ -1458,7 +1416,6 @@ class processProquest {
 
                 $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
             } else {
-                echo "Object failed to ingest\n";
                 $this->writeLog("ERROR: Ingestion of Fedora object failed.", $fn, $etdname);
 
                 $pidcount++;
@@ -1498,7 +1455,6 @@ class processProquest {
             // Make sure we give every processing loop enough time to complete.
             sleep(2);
 
-            echo "\n\n\n\n";
             $this->writeLog("END Ingesting ETD #" . $i . " - " . $etdname, $fn);
         }
 
