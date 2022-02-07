@@ -848,8 +848,14 @@ class processProquest {
             }
 
             // Instantiated a Fedora object and use the generated PID as its ID.
-            $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);
-            $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$directory]['PID'], $fn, $etdname);
+            try {
+                $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);
+                $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$directory]['PID'], $fn, $etdname);
+            } catch (Exception $e) {
+                $this->writeLog("ERROR: Could not instanciate Fedora object: " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog($e->getTrace(), $fn, $etdname);
+                continue;
+            }
 
             // Assign the Fedora object label the ETD name/label
             $object->label = $this->localFiles[$directory]['LABEL'];
@@ -869,14 +875,26 @@ class processProquest {
             $this->writeLog("Generating RELS-EXT (XACML) datastream.", $fn, $etdname);
 
             // Set the default Parent and Collection policies for the Fedora object.
-            $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
-            $collection = GRADUATE_THESES;
+            try {
+                $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
+                $collection = GRADUATE_THESES;
+            } catch (Exception $e) {
+                $this->writeLog("ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog($e->getTrace(), $fn, $etdname);
+                continue;
+            }
 
             // Update the Parent and Collection policies if this ETD is embargoed.
             if (isset($this->localFiles[$directory]['EMBARGO'])) {
                 $collection = GRADUATE_THESES_RESTRICTED;
-                $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
-                $this->writeLog("Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
+                try {
+                    $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
+                    $this->writeLog("Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
+                } catch (Exception $e) {
+                    $this->writeLog("ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage(), $fn, $etdname);
+                    $this->writeLog($e->getTrace(), $fn, $etdname);
+                    continue;
+                }
             } else {
                 $this->writeLog("Adding to Graduate Theses collection.", $fn, $etdname);
             }
@@ -1373,8 +1391,14 @@ class processProquest {
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Ignore ingesting object into Fedora.", $fn, $etdname);
             } else {
-                $res = $this->repository->ingestObject($object);
-                $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
+                try {
+                    $res = $this->repository->ingestObject($object);
+                    $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
+                } catch (Exception $e) {
+                    $this->writeLog("ERROR: Could not ingest Fedora object:\n" . $e->getMessage(), $fn, $etdname);
+                    $this->writeLog($e->getTrace(), $fn, $etdname);
+                    continue;
+                }
             }
 
             // Check if ingest was successful, and manage where to put FTP ETD file.
