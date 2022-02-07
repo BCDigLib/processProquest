@@ -6,11 +6,11 @@ error_reporting(E_ALL);
  * Description of processProquest
  *
  * @author MEUSEB
- * 
+ *
  * annotations by Jesse Martinez.
  */
 
-/* 
+/*
  * Islandora/Fedora library.
  */
 
@@ -40,7 +40,7 @@ require_once '/var/www/html/drupal/sites/all/libraries/tuque/HttpConnection.php'
  */
 require_once 'proquestFTP.php';
 
-/* 
+/*
  * BC Islandora definitions.
  */
 define('ISLANDORA_BC_ROOT_PID', 'bc-ir:GraduateThesesCollection');
@@ -53,7 +53,7 @@ define('DEFAULT_DEBUG_VALUE', false);
 
 /**
  * Batch processes Proquest ETDs.
- * 
+ *
  * This class allows for the following workflow:
  *  - Initialize FTP server connection.
  *  - Gathers and extracts the ETD zip files from FTP server onto a local directory.
@@ -71,15 +71,15 @@ class processProquest {
     protected $api;
     protected $api_m;
     protected $repository;
-    protected $toProcess = 0;   // Number of PIDs for supplementary files. 
+    protected $toProcess = 0;   // Number of PIDs for supplementary files.
     protected $logFile = "";
     protected $logError = false;
 
     /**
-     * Class constructor. 
-     * 
-     * This builds a local '$this' object that contains various script settings. 
-     * 
+     * Class constructor.
+     *
+     * This builds a local '$this' object that contains various script settings.
+     *
      * @param string $config An ini file containing various configurations.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      */
@@ -99,7 +99,7 @@ class processProquest {
 
     /**
      * Initialize logging file.
-     * 
+     *
      * @param string $file_name The name to give the log file.
      * @return boolean Log init status.
      */
@@ -144,15 +144,15 @@ class processProquest {
 
     /**
      * Simple logging.
-     * 
+     *
      * @param string $message The message to log.
-     * @param string $etd The ETD name. 
+     * @param string $etd The ETD name.
      * @return boolean Write status.
      */
     private function writeLog($message, $function_name = "", $etd = "") {
         // Check if there is a known issue with log writing.
         if ($this->logError === true){
-            // Nothing we can do at this point. 
+            // Nothing we can do at this point.
             return false;
         }
 
@@ -186,7 +186,7 @@ class processProquest {
                     echo "ERROR: Can't write to log file! " . $res;
                     $this->logError = true;
                 }
-                
+
                 return false;
             }
 
@@ -197,7 +197,7 @@ class processProquest {
                 echo "ERROR: Can't open log file! " . $res;
                 $this->logError = true;
             }
-            
+
             return false;
         }
 
@@ -206,9 +206,9 @@ class processProquest {
 
     /**
      * Send email notification.
-     * 
+     *
      * @param string $message The email body to send.
-     * @return boolean Was the email sent successfully. 
+     * @return boolean Was the email sent successfully.
      */
     private function sendEmail($message) {
         $fn = "sendEmail";
@@ -243,8 +243,9 @@ class processProquest {
             $this->writeLog("DEBUG: Not sending email notification.", $fn);
         } else {
             $res = mail($email_to, $email_subject, $email_message);
+	    return true;
         }
-        
+
         // Check mail success.
         if ($res === false) {
             $this->writeLog("ERROR: Email not sent!", $fn);
@@ -258,9 +259,9 @@ class processProquest {
 
     /**
      * Initializes an FTP connection.
-     * 
+     *
      * Calls on proquestFTP.php
-     * 
+     *
      * @return boolean Success value.
      */
     function initFTP() {
@@ -297,12 +298,12 @@ class processProquest {
 
     /**
      * Gather ETD zip files from FTP server.
-     * 
-     * Create a local directory for each zip file from FTP server and save into directory. 
-     * Local directory name is based on file name. 
-     * Next, varify that PDF and XML files exist. Also keep track of supplementary files. 
-     * Lastly, expand zip file contents into local directory. 
-     * 
+     *
+     * Create a local directory for each zip file from FTP server and save into directory.
+     * Local directory name is based on file name.
+     * Next, varify that PDF and XML files exist. Also keep track of supplementary files.
+     * Lastly, expand zip file contents into local directory.
+     *
      * @return boolean Success value.
      */
     function getFiles() {
@@ -330,11 +331,11 @@ class processProquest {
                 return false;
             }
         }
-        
+
         $this->writeLog("Currently in FTP directory: " . $fetchdirFTP, $fn);
 
         /**
-         * Look for files that begin with a specific string. 
+         * Look for files that begin with a specific string.
          * In our specific case the file prefix is "etdadmin_upload".
          * Save results into $etdFiles array.
          */
@@ -348,15 +349,15 @@ class processProquest {
         }
 
         /**
-         * Loop through each match in $etdFiles. 
+         * Loop through each match in $etdFiles.
          * There may be multiple matched files so process each individually.
          */
         $f = 0;
         foreach ($etdFiles as $filename) {
             $f++;
             /**
-             * Set the directory name for each ETD file. 
-             * This is based on the file name without any file extension. 
+             * Set the directory name for each ETD file.
+             * This is based on the file name without any file extension.
              * Ex: etd_file_name_1234.zip -> /tmp/processing/etd_file_name_1234
              */
 
@@ -432,17 +433,17 @@ class processProquest {
                 $file = zip_entry_name($zip_entry);
                 $this->writeLog("Zip file name: " . $file, $fn, $etdname);
 
-                /** 
+                /**
                  * Match for a specific string in file.
-                 * 
+                 *
                  * Make note of expected files:
                  *  - PDF.
                  *  - XML.
                  *  - all else (AKA supplementary files).
-                 * 
+                 *
                  *  The String "0016" is specific to BC.
                  */
-                if (preg_match('/0016/', $file)) { 
+                if (preg_match('/0016/', $file)) {
                     // Check if this is a PDF or XML file.
                     // TODO: handle string case in comparison. Ex: "pdf" vs "PDF".
                     if (substr($file,strlen($file)-3) === 'pdf') {
@@ -468,7 +469,7 @@ class processProquest {
             /**
              * Sanity check that both:
              *  - $this->localFiles[$etdDir]['ETD']
-             *  - $this->localFiles[$etdDir]['METADATA'] 
+             *  - $this->localFiles[$etdDir]['METADATA']
              * are defined and are nonempty strings.
              */
             $this->writeLog("Running sanity check that ETD PDF and XML file were found...", $fn, $etdname);
@@ -506,13 +507,13 @@ class processProquest {
 
     /**
      * Generate metadata from gathered ETD files.
-     * 
+     *
      * This will generate:
      *  - OA permissions.
      *  - Embargo settings.
      *  - MODS metadata.
      *  - PID, title, author values.
-     * 
+     *
      * @return boolean Success value.
      */
     function processFiles() {
@@ -540,7 +541,7 @@ class processProquest {
             return false;
         }
 
-        /** 
+        /**
          * Load Fedora Label XSLT stylesheet.
          * Ex: /path/to/proquest/xsl/getLabel.xsl
          */
@@ -571,12 +572,12 @@ class processProquest {
 
             echo "Processing " . $directory . "\n";
 
-            // Create XPath object from the ETD XML file. 
+            // Create XPath object from the ETD XML file.
             $metadata = new DOMDocument();
             $metadata->load($directory . '//' . $submission['METADATA']);
             $xpath = new DOMXpath($metadata);
 
-            /** 
+            /**
              * Get OA permission.
              * This looks for the existance of an "oa" node in the XPath object.
              * Ex: /DISS_submission/DISS_repository/DISS_acceptance/text()
@@ -600,7 +601,7 @@ class processProquest {
             $this->localFiles[$directory]['OA'] = $openaccess;
 
             /**
-             * Get embargo permission/dates. 
+             * Get embargo permission/dates.
              * This looks for the existance of an "embargo" node in the XPath object.
              * Ex: /DISS_submission/DISS_repository/DISS_delayed_release/text()
              */
@@ -637,7 +638,7 @@ class processProquest {
              * Prepend PID with locally defined Fedora namespace.
              * Ex: "bc-ir:" for BC.
              */
-            // DEBUG: make up PID. 
+            // DEBUG: make up PID.
             if ($this->debug === true) {
                 $pid = "bc-ir:" . rand(50000,100000);
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): " . $pid, $fn, $etdname);
@@ -740,7 +741,7 @@ class processProquest {
              * Check for supplemental files.
              * This looks for the existance of an "DISS_attachment" node in the ETD XML XPath object.
              * Ex: /DISS_submission/DISS_content/DISS_attachment
-             * 
+             *
              * Previous comments (possibly outdated):
              *    UNKNOWN0 in lookup should mean there are other files
              *    also, Proquest MD will have DISS_attachment
@@ -751,7 +752,7 @@ class processProquest {
 
             $this->writeLog("Checking for existence supplemental files...", $fn, $etdname);
 
-            // Check if there are zero or more supplemental files. 
+            // Check if there are zero or more supplemental files.
             if ($suElements->item(0) ) {
                 $this->localFiles[$directory]['PROCESS'] = "0";
                 $this->writeLog("No supplemental files found.", $fn, $etdname);
@@ -784,12 +785,12 @@ class processProquest {
         $this->repository = new FedoraRepository($this->api, new simpleCache());
 
         // Fedora Management API.
-        $this->api_m = $this->repository->api->m; 
+        $this->api_m = $this->repository->api->m;
     }
 
     /**
      * Ingest files into Fedora
-     * 
+     *
      * This creates and ingests the following Fedora datastreams:
      * - RELS-EXT       (external relationship)
      * - MODS           (updated MODS fole)
@@ -801,7 +802,7 @@ class processProquest {
      * - PREVIEW        (image of PDF first page)
      * - XACML          (access control policy)
      * - RELS-INT       (internal relationship)
-     * 
+     *
      * Next, it ingests the completed object into Fedora.
      * Then, tidies up ETD files on FTP server.
      * Lastly, send out notification email.
@@ -864,7 +865,7 @@ class processProquest {
             $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);
             $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$directory]['PID'], $fn, $etdname);
 
-            // Assign the Fedora object label the ETD name/label 
+            // Assign the Fedora object label the ETD name/label
             $object->label = $this->localFiles[$directory]['LABEL'];
             $this->writeLog("Assigned a title to Fedora object: " . $this->localFiles[$directory]['LABEL'], $fn, $etdname);
 
@@ -877,8 +878,8 @@ class processProquest {
 
             /**
              * Generate RELS-EXT (XACML) datastream.
-             * 
-             * 
+             *
+             *
              */
             $this->writeLog("Generating RELS-EXT (XACML) datastream.", $fn, $etdname);
 
@@ -915,8 +916,8 @@ class processProquest {
 
             /**
              * Build MODS Datastream.
-             * 
-             * 
+             *
+             *
              */
             $dsid = 'MODS';
             $this->writeLog("Generating MODS datastream.", $fn, $etdname);
@@ -925,7 +926,7 @@ class processProquest {
             $datastream = $object->constructDatastream($dsid, 'X');
 
             // Set various MODS datastream values.
-            $datastream->label = 'MODS Record'; 
+            $datastream->label = 'MODS Record';
             // OLD: $datastream->label = $this->localFiles[$directory]['LABEL'];
             $datastream->mimeType = 'application/xml';
 
@@ -946,7 +947,7 @@ class processProquest {
 
             /**
              * Build ARCHIVE MODS datastream.
-             * 
+             *
              * Original Proquest Metadata will be saved as ARCHIVE.
              * Original filename is used as label for identification.
              */
@@ -974,10 +975,10 @@ class processProquest {
             echo "Ingested ARCHIVE datastream\n";
             $this->writeLog("Ingested ARCHIVE datastream.", $fn, $etdname);
 
-            
+
             /**
              * Build ARCHIVE-PDF datastream.
-             * 
+             *
              * PDF will always be loaded as ARCHIVE-PDF DSID regardless of embargo.
              * Splash paged PDF will be PDF dsid.
              */
@@ -986,11 +987,11 @@ class processProquest {
 
             // Default Control Group is M.
             // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
-            $datastream = $object->constructDatastream($dsid); 
+            $datastream = $object->constructDatastream($dsid);
 
             // OLD: $datastream->label = $this->localFiles[$directory]['LABEL'];
-            $datastream->label = 'ARCHIVE-PDF Datastream'; 
-            
+            $datastream->label = 'ARCHIVE-PDF Datastream';
+
             // Set various ARCHIVE-PDF datastream values.
             $datastream->mimeType = 'application/pdf';
             $datastream->checksumType = 'SHA-256';
@@ -1009,11 +1010,11 @@ class processProquest {
             }
             echo "Ingested ARCHIVE-PDF datastream\n";
             $this->writeLog("Ingested ARCHIVE-PDF datastream.", $fn, $etdname);
-            
+
 
             /**
              * Build PDF datastream.
-             * 
+             *
              * First, build splash page PDF.
              * Then, concatenate splash page onto ETD PDF for final PDF.
              */
@@ -1021,12 +1022,12 @@ class processProquest {
             $this->writeLog("Generating PDF datastream.", $fn, $etdname);
             $this->writeLog("First, generate PDF splash page.", $fn, $etdname);
 
-            // Source file is the original Proquest XML file. 
+            // Source file is the original Proquest XML file.
             $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
 
             // Use FOP (Formatting Objects Processor) to build PDF splash page.
             $executable = "/usr/bin/fop -c $fop";
-            
+
             // Assign PDF splash document to ETD file's directory.
             $splashtemp = $directory . "/splash.pdf";
 
@@ -1052,7 +1053,7 @@ class processProquest {
 
             /**
              * Build concatted PDF document.
-             * 
+             *
              * Load splash page PDF to core PDF if under embargo. -- TODO: find out when/how this happens
              */
             $this->writeLog("Next, generate concatenated PDF document.", $fn, $etdname);
@@ -1065,6 +1066,9 @@ class processProquest {
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
+
+            /*
+            // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
 
             // Execute 'pdftk' command and check return code.
             $command = "$executable $splashtemp $pdf cat output $concattemp";
@@ -1079,10 +1083,24 @@ class processProquest {
                 $this->writeLog("ERROR: Concatenated PDF document creation failed! " . $return, $fn, $etdname);
                 continue;
             }
+            */
+
+            // Temporarily copying over the $pdf file as the $concattemp version since we can no longer use pdftk on RHEL 7
+            echo "WARNING: pdftk is no longer supported in RHEL. A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.\n";
+            $this->writeLog("WARNING: pdftk is no longer supported in RHEL. A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
+
+            if(!copy($pdf,$concattemp)){
+                echo "ERROR: PDF document cloning failed!\n";
+                $this->writeLog("ERROR: PDF document cloning failed!", $fn, $etdname);
+            }
+            else{
+                echo "PDF document cloned successfully.\n";
+                $this->writeLog("PDF document cloned successfully.", $fn, $etdname);
+            }
 
             // Default Control Group is M
             // Build Fedora object PDF datastream.
-            $datastream = $object->constructDatastream($dsid); 
+            $datastream = $object->constructDatastream($dsid);
 
             // Set various PDF datastream values.
             $datastream->label = 'PDF Datastream';
@@ -1106,8 +1124,8 @@ class processProquest {
 
             /**
              * Build FULL_TEXT datastream.
-             * 
-             * 
+             *
+             *
              */
             $dsid = "FULL_TEXT";
             $this->writeLog("Generating FULL_TEXT datastream.", $fn, $etdname);
@@ -1178,8 +1196,8 @@ class processProquest {
 
             /**
              * Build Thumbnail (TN) datastream
-             * 
-             * 
+             *
+             *
              */
             $dsid = "TN";
             $this->writeLog("Generating TN (thumbnail) datastream.", $fn, $etdname);
@@ -1229,8 +1247,8 @@ class processProquest {
 
             /**
              * Build PREVIEW datastream.
-             * 
-             * 
+             *
+             *
              */
             $dsid = "PREVIEW";
             $this->writeLog("Generating PREVIEW datastream.", $fn, $etdname);
@@ -1280,8 +1298,8 @@ class processProquest {
 
             /**
              * Continue RELS-EXT datastream.
-             * 
-             * 
+             *
+             *
              */
             // TODO: understand why this command is down here and not in an earlier POLICY datastream section.
             $this->writeLog("Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
@@ -1294,11 +1312,11 @@ class processProquest {
             }
             echo "Ingested XACML datastream\n";
             $this->writeLog("Ingested RELS-EXT (XACML) datastream.", $fn, $etdname);
-            
+
 
             /**
              * Build RELS-INT datastream.
-             * 
+             *
              * This checks if there is an OA policy set for this ETD.
              * If there is, then set Embargo date in the custom XACML policy file.
              */
@@ -1310,10 +1328,10 @@ class processProquest {
             $relsint = '';
             $relsFile = "";
             if ($submission['OA'] === 0) {
-                // No OA policy. 
+                // No OA policy.
                 $relsFile = "xsl/permRELS-INT.xml";
                 $relsint = file_get_contents($relsFile);
-                
+
                 // Check if file read failed.
                 if ($relsint === false) {
                     $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
@@ -1372,8 +1390,8 @@ class processProquest {
 
             /**
              * Ingest full object into Fedora.
-             * 
-             * 
+             *
+             *
              */
 
             // Reconstruct name of zip file from the local ETD work space directory name.
@@ -1381,7 +1399,7 @@ class processProquest {
             $directoryArray = explode('/', $directory);
             $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
-            // Build full FTP path for ETD file incase $fetchdirFTP is not the root directory. 
+            // Build full FTP path for ETD file incase $fetchdirFTP is not the root directory.
             $fetchdirFTP = $this->settings['ftp']['fetchdir'];
             $fullfnameFTP = "";
             if ($fetchdirFTP == "") {
@@ -1400,7 +1418,7 @@ class processProquest {
                 $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
             }
 
-            // Check if ingest was successful, and manage where to put FTP ETD file. 
+            // Check if ingest was successful, and manage where to put FTP ETD file.
             if ($res) {
                 echo "Object ingested successfully\n";
                 $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
@@ -1431,7 +1449,7 @@ class processProquest {
                 } else {
                     $res = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
                 }
-                
+
                 // Check if there was an error moving the ETD file on the FTP server.
                 if ($res === false) {
                     $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
@@ -1477,7 +1495,7 @@ class processProquest {
                 $this->writeLog("Moved ETD file to 'failed' FTP directory.", $fn, $etdname);
             }
 
-            // Make sure we give every processing loop enough time to complete. 
+            // Make sure we give every processing loop enough time to complete.
             sleep(2);
 
             echo "\n\n\n\n";
@@ -1486,10 +1504,10 @@ class processProquest {
 
         /**
          * Send email message on status of all processed ETD files.
-         * 
+         *
          * Do not show failure message in notification if no ETDs failed.
          * (same with success message, but hopefully we won't have that problem!)
-         * 
+         *
          * $res returns a bool value, but nothing else to manage if it returns false at this point.
          */
         $res = true;
@@ -1520,8 +1538,8 @@ class processProquest {
         if ($successCount == 0) {
             $res = $this->sendEmail($failureMessage . $processingMessage);
             return;
-        } 
-        
+        }
+
         // Everything else: send all message types.
         $res = $this->sendEmail($successMessage . $failureMessage . $processingMessage);
 

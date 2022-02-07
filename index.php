@@ -7,6 +7,7 @@
 
 error_reporting(E_ALL);
 
+#$fontpath = realpath('/usr/share/fonts/truetype/freefont/');
 $fontpath = realpath('/usr/share/fonts/truetype/freefont/');
 putenv('GDFONTPATH='.$fontpath);
 
@@ -19,7 +20,7 @@ if (!isset($argv[1])){
 }
 
 // Debug is off by default
-$debug = true;
+$debug = false;
 
 // Create the $process object.
 $process = new processProquest($argv[1], $debug);
