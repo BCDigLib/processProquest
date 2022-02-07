@@ -14,17 +14,6 @@ error_reporting(E_ALL);
  * Islandora/Fedora library.
  */
 
-/*
-require_once '../tuque/RepositoryConnection.php';
-require_once '../tuque/FedoraApi.php';
-require_once '../tuque/FedoraApiSerializer.php';
-require_once '../tuque/Repository.php';
-require_once '../tuque/RepositoryException.php';
-require_once '../tuque/FedoraRelationships.php';
-require_once '../tuque/Cache.php';
-require_once '../tuque/HttpConnection.php';
-*/
-
 require_once '/var/www/html/drupal/sites/all/libraries/tuque/RepositoryConnection.php';
 require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraApi.php';
 require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraApiSerializer.php';
@@ -201,7 +190,7 @@ class processProquest {
             return false;
         }
 
-        // Finally, outout to stdout
+        // Finally, output to stdout
         echo "$time ($function_name) $etd $message\n";
 
         return true;
