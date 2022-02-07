@@ -651,7 +651,7 @@ class processProquest {
             $res = $xslt->setParameter('mods', 'handle', $pid);
             if ($res === false) {
                 $this->writeLog("ERROR: Could not update XSLT stylesheet with PID value!", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdname);
@@ -664,7 +664,7 @@ class processProquest {
             $mods = $xslt->transformToDoc($metadata);
             if ($mods === false) {
                 $this->writeLog("ERROR: Could not transform ETD MODS XML file!", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdname);
@@ -677,7 +677,7 @@ class processProquest {
             $fedoraLabel = $label->transformToXml($mods);
             if ($fedoraLabel === false) {
                 $this->writeLog("ERROR: Could not generate ETD title using Fedora Label XSLT stylesheet!", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
@@ -712,7 +712,7 @@ class processProquest {
             $res = rename($directory . "/". $submission['ETD'] , $directory . "/" . $normalizedAuthor . ".pdf");
             if ($res === false) {
                 $this->writeLog("ERROR: Could not rename ETD PDF file!", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -724,7 +724,7 @@ class processProquest {
             $res = $mods->save($directory . "/" . $normalizedAuthor . ".xml");
             if ($res === false) {
                 $this->writeLog("ERROR: Could not create new ETD MODS file!", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -794,7 +794,14 @@ class processProquest {
     public $processingMessage = "";
 
 
-
+    /**
+     * Manages the post-process handling of an ETD ingest
+     *
+     * @param boolean $status The success status of the calling function.
+     * @param string $etdname The name of the ETD to print.
+     * @param object $etd An object containing the ETD submission metadata.
+     * @return boolean Returns true.
+     */
     function ingestHandlerPostProcess($status, $etdname, $etd){
         $fn = "ingestHandlerPostProcess";
 
@@ -805,11 +812,12 @@ class processProquest {
         $fnameFTP     = $etd["fnameFTP"];
         $fullfnameFTP = $etd["fullfnameFTP"];
 
+        $pidcount++;
+
         // Check if ingest was successful, and manage where to put FTP ETD file.
         if ($status) {
             $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
 
-            $pidcount++;
             $successCount++;
             $successMessage .= $submission['PID'] . "\t";
 
@@ -845,7 +853,6 @@ class processProquest {
         } else {
             //$this->writeLog("ERROR: Ingestion of Fedora object failed.", $fn, $etdname);
 
-            $pidcount++;
             $failureCount++;
             $failureMessage .= $submission['PID'] . "\t";
 
@@ -876,10 +883,9 @@ class processProquest {
             }
 
             $this->writeLog("Moved ETD file to 'failed' FTP directory.", $fn, $etdname);
-
-            return;
         }
 
+        return true;
     }
 
 
@@ -1526,6 +1532,7 @@ class processProquest {
             $res = true;
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Ignore ingesting object into Fedora.", $fn, $etdname);
+                $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
             } else {
                 try {
                     $res = $this->repository->ingestObject($object);
