@@ -216,7 +216,7 @@ class processProquest {
     private function sendEmail($message) {
         $fn = "sendEmail";
 
-        $log_location_message = "\n\nLog file for this process can be found on the server here: " . $this->logFile . " .";
+        $log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location: " . $this->logFile . " .";
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
@@ -651,6 +651,7 @@ class processProquest {
             $res = $xslt->setParameter('mods', 'handle', $pid);
             if ($res === false) {
                 $this->writeLog("ERROR: Could not update XSLT stylesheet with PID value!", $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdname);
@@ -663,6 +664,7 @@ class processProquest {
             $mods = $xslt->transformToDoc($metadata);
             if ($mods === false) {
                 $this->writeLog("ERROR: Could not transform ETD MODS XML file!", $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdname);
@@ -675,6 +677,7 @@ class processProquest {
             $fedoraLabel = $label->transformToXml($mods);
             if ($fedoraLabel === false) {
                 $this->writeLog("ERROR: Could not generate ETD title using Fedora Label XSLT stylesheet!", $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
@@ -709,6 +712,7 @@ class processProquest {
             $res = rename($directory . "/". $submission['ETD'] , $directory . "/" . $normalizedAuthor . ".pdf");
             if ($res === false) {
                 $this->writeLog("ERROR: Could not rename ETD PDF file!", $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -720,6 +724,7 @@ class processProquest {
             $res = $mods->save($directory . "/" . $normalizedAuthor . ".xml");
             if ($res === false) {
                 $this->writeLog("ERROR: Could not create new ETD MODS file!", $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -778,6 +783,106 @@ class processProquest {
         $this->api_m = $this->repository->api->m;
     }
 
+
+    // Set global values for all ingest* functions
+    public $pidcount = 0;
+    public $successCount = 0;
+    public $failureCount = 0;
+    // Initialize messages for notification email.
+    public $successMessage = "";
+    public $failureMessage = "";
+    public $processingMessage = "";
+
+
+
+    function ingestHandlerPostProcess($status, $etdname, $etd){
+        $fn = "ingestHandlerPostProcess";
+
+        global $pidcount, $successCount, $failureCount;
+        global $successMessage, $failureMessage, $processingMessage;
+
+        $submission   = $etd["submission"];
+        $fnameFTP     = $etd["fnameFTP"];
+        $fullfnameFTP = $etd["fullfnameFTP"];
+
+        // Check if ingest was successful, and manage where to put FTP ETD file.
+        if ($status) {
+            $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
+
+            $pidcount++;
+            $successCount++;
+            $successMessage .= $submission['PID'] . "\t";
+
+            // Set success status for email message.
+            if (isset($submission['EMBARGO'])) {
+                $successMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+            } else {
+                $successMessage .= "NO EMBARGO" . "\t";
+            }
+            $successMessage .= $submission['LABEL'] . "\n";
+
+            // Move processed PDF file to a new directory. Ex: /path/to/files/processed
+            $processdirFTP = $this->settings['ftp']['processdir'];
+            $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
+
+            $this->writeLog("Currently in FTP directory: " . $this->ftp->ftp_pwd(), $fn, $etdname);
+
+            $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullProcessdirFTP, $fn, $etdname);
+
+            $ftpRes = true;
+            if ($this->debug === true) {
+                $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
+            } else {
+                $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
+            }
+
+            // Check if there was an error moving the ETD file on the FTP server.
+            if ($ftpRes === false) {
+                $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
+            }
+
+            $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
+        } else {
+            //$this->writeLog("ERROR: Ingestion of Fedora object failed.", $fn, $etdname);
+
+            $pidcount++;
+            $failureCount++;
+            $failureMessage .= $submission['PID'] . "\t";
+
+            // Set failure status for email message.
+            if (isset($submission['EMBARGO'])) {
+                $failureMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+            } else {
+                $failureMessage .= "NO EMBARGO" . "\t";
+            }
+            $failureMessage .= $submission['LABEL'] . "\n";
+
+            // Move processed PDF file to a new directory. Ex: /path/to/files/failed
+            $faildirFTP = $this->settings['ftp']['faildir'];
+            $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
+
+            $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullFaildirFTP, $fn, $etdname);
+
+            $ftpRes = true;
+            if ($this->debug === true) {
+                $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
+            } else {
+                $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
+            }
+
+            // Check if there was an error moving the ETD file on the FTP server.
+            if ($ftpRes === false) {
+                $this->writeLog("ERROR: Could not move ETD file to 'failed' FTP directory!", $fn, $etdname);
+            }
+
+            $this->writeLog("Moved ETD file to 'failed' FTP directory.", $fn, $etdname);
+
+            return;
+        }
+
+    }
+
+
     /**
      * Ingest files into Fedora
      *
@@ -813,16 +918,14 @@ class processProquest {
 
         $this->writeLog("Now Ingesting ETD files.", $fn);
 
-        $pidcount = 0;
-        $successCount = 0;
-        $failureCount = 0;
-        //$fop = '../../modules/boston_college/data/fop/cfg.xml';
-        $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
+        global $pidcount, $successCount, $failureCount;
+        global $successMessage, $failureMessage, $processingMessage;
 
-        // Initialize messages for notification email.
         $successMessage = "The following ETDs ingested successfully:\n\n";
-        $failureMessage = "\n\nThe following ETDs failed to ingest:\n\n";
+        $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n\n";
         $processingMessage = "\n\nThe following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
+
+        $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
 
         // TODO: list the file path for script log.
 
@@ -839,7 +942,28 @@ class processProquest {
                 $etdname = substr($this->localFiles[$directory]["ETD"],0,strlen($this->localFiles[$directory]["ETD"])-4);
                 $this->localFiles[$directory]['ETD_SHORTNAME'] = $etdname;
             }
-            $this->writeLog("BEGIN Ingesting ETD #" . $i . " - " . $etdname, $fn);
+            $this->writeLog("BEGIN Ingesting ETD #" . (string)$i . " - " . $etdname, $fn);
+
+
+            // Reconstruct name of zip file from the local ETD work space directory name.
+            // TODO: there must be a better way to do this...
+            $directoryArray = explode('/', $directory);
+            $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
+
+            // Build full FTP path for ETD file incase $fetchdirFTP is not the root directory.
+            $fetchdirFTP = $this->settings['ftp']['fetchdir'];
+            $fullfnameFTP = "";
+            if ($fetchdirFTP == "") {
+                $fullfnameFTP = $fnameFTP;
+            } else {
+                $fullfnameFTP = "~/" . $fetchdirFTP . "/" . $fnameFTP;
+            }
+            $this->writeLog("The full path of the ETD file on the FTP server is: " . $fullfnameFTP, $fn, $etdname);
+
+            // collect some values for ingestHandlerPostProcess()
+            $this->etd["submission"] = $submission;
+            $this->etd["fnameFTP"] = $fnameFTP;
+            $this->etd["fullfnameFTP"] = $fullfnameFTP;
 
             // Check for supplemental files, and create log message.
             if ($this->localFiles[$directory]['PROCESS'] === '1') {
@@ -853,7 +977,8 @@ class processProquest {
                 $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$directory]['PID'], $fn, $etdname);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Could not instanciate Fedora object: " . $e->getMessage(), $fn, $etdname);
-                $this->writeLog($e->getTrace(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -880,7 +1005,8 @@ class processProquest {
                 $collection = GRADUATE_THESES;
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage(), $fn, $etdname);
-                $this->writeLog($e->getTrace(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -892,7 +1018,8 @@ class processProquest {
                     $this->writeLog("Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
                 } catch (Exception $e) {
                     $this->writeLog("ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage(), $fn, $etdname);
-                    $this->writeLog($e->getTrace(), $fn, $etdname);
+                    $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
             } else {
@@ -938,6 +1065,8 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting MODS datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested MODS datastream.", $fn, $etdname);
@@ -1003,6 +1132,8 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested ARCHIVE-PDF datastream.", $fn, $etdname);
@@ -1039,6 +1170,7 @@ class processProquest {
                 $this->writeLog("PDF splash page created successfully.", $fn, $etdname);
     		} else {
                 $this->writeLog("ERROR: PDF splash page creation failed! ". $return, $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
     		    continue;
     		}
 
@@ -1073,6 +1205,7 @@ class processProquest {
                 $this->writeLog("Concatenated PDF document created successfully.", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: Concatenated PDF document creation failed! " . $return, $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             */
@@ -1080,10 +1213,9 @@ class processProquest {
             // Temporarily copying over the $pdf file as the $concattemp version since we can no longer use pdftk on RHEL 7
             $this->writeLog("WARNING: pdftk is no longer supported in RHEL. A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
 
-            if(!copy($pdf,$concattemp)){
+            if (!copy($pdf,$concattemp)) {
                 $this->writeLog("ERROR: PDF document cloning failed!", $fn, $etdname);
-            }
-            else{
+            } else {
                 $this->writeLog("PDF document cloned successfully.", $fn, $etdname);
             }
 
@@ -1105,6 +1237,8 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested PDF datastream.", $fn, $etdname);
@@ -1136,6 +1270,7 @@ class processProquest {
                 $this->writeLog("FULL_TEXT datastream generated successfully.", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: FULL_TEXT document creation failed! " . $return, $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -1152,6 +1287,7 @@ class processProquest {
             // Check if file read failed.
             if ($fulltext === false) {
                 $this->writeLog("ERROR: could not read in file: ". $fttemp, $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -1162,6 +1298,7 @@ class processProquest {
             // In the slim chance preg_replace fails.
             if ($sanitized === null) {
                 $this->writeLog("ERROR: preg_replace failed to return valid sanitized FULL_TEXT string!", $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -1174,6 +1311,8 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested FULL_TEXT datastream.", $fn, $etdname);
@@ -1203,6 +1342,7 @@ class processProquest {
                 $this->writeLog("TN datastream generated successfully.", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: TN document creation failed! " . $return, $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -1222,6 +1362,8 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting TN datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested TN datastream.", $fn, $etdname);
@@ -1251,6 +1393,7 @@ class processProquest {
                 $this->writeLog("PREVIEW datastream generated successfully.", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: REVIEW document creation failed! " . $return, $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
@@ -1270,6 +1413,8 @@ class processProquest {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested PREVIEW datastream.", $fn, $etdname);
@@ -1287,6 +1432,8 @@ class processProquest {
                 $object->ingestDatastream($policy);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
             $this->writeLog("Ingested RELS-EXT (XACML) datastream.", $fn, $etdname);
@@ -1313,6 +1460,7 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
+                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
 
@@ -1327,6 +1475,7 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
+                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
 
@@ -1358,6 +1507,8 @@ class processProquest {
                     $object->ingestDatastream($datastream);
                 } catch (Exception $e) {
                     $this->writeLog("ERROR: Ingesting RELS-INT datastream failed! " . $e->getMessage(), $fn, $etdname);
+                    $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
 
@@ -1371,21 +1522,6 @@ class processProquest {
              *
              */
 
-            // Reconstruct name of zip file from the local ETD work space directory name.
-            // TODO: there must be a better way to do this...
-            $directoryArray = explode('/', $directory);
-            $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
-
-            // Build full FTP path for ETD file incase $fetchdirFTP is not the root directory.
-            $fetchdirFTP = $this->settings['ftp']['fetchdir'];
-            $fullfnameFTP = "";
-            if ($fetchdirFTP == "") {
-                $fullfnameFTP = $fnameFTP;
-            } else {
-                $fullfnameFTP = "~/" . $fetchdirFTP . "/" . $fnameFTP;
-            }
-            $this->writeLog("The full path of the ETD file on the FTP server is: " . $fullfnameFTP, $fn, $etdname);
-
             // DEBUG: ignore Fedora ingest.
             $res = true;
             if ($this->debug === true) {
@@ -1394,92 +1530,19 @@ class processProquest {
                 try {
                     $res = $this->repository->ingestObject($object);
                     $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
+                    $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
                 } catch (Exception $e) {
                     $this->writeLog("ERROR: Could not ingest Fedora object:\n" . $e->getMessage(), $fn, $etdname);
-                    $this->writeLog($e->getTrace(), $fn, $etdname);
+                    $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
-            }
-
-            // Check if ingest was successful, and manage where to put FTP ETD file.
-            if ($res) {
-                $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
-
-                $pidcount++;
-                $successCount++;
-                $successMessage .= $submission['PID'] . "\t";
-
-                // Set success status for email message.
-                if (isset($submission['EMBARGO'])) {
-                    $successMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
-                } else {
-                    $successMessage .= "NO EMBARGO" . "\t";
-                }
-                $successMessage .= $submission['LABEL'] . "\n";
-
-                // Move processed PDF file to a new directory. Ex: /path/to/files/processed
-                $processdirFTP = $this->settings['ftp']['processdir'];
-                $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
-
-                $this->writeLog("Currently in FTP directory: " . $this->ftp->ftp_pwd(), $fn, $etdname);
-
-                $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullProcessdirFTP, $fn, $etdname);
-
-                $res = true;
-                if ($this->debug === true) {
-                    $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
-                } else {
-                    $res = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
-                }
-
-                // Check if there was an error moving the ETD file on the FTP server.
-                if ($res === false) {
-                    $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
-                    continue;
-                }
-
-                $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
-            } else {
-                $this->writeLog("ERROR: Ingestion of Fedora object failed.", $fn, $etdname);
-
-                $pidcount++;
-                $failureCount++;
-                $failureMessage .= $submission['PID'] . "\t";
-
-                // Set failure status for email message.
-                if (isset($submission['EMBARGO'])) {
-                    $failureMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
-                } else {
-                    $failureMessage .= "NO EMBARGO" . "\t";
-                }
-                $failureMessage .= $submission['LABEL'] . "\n";
-
-                // Move processed PDF file to a new directory. Ex: /path/to/files/failed
-                $faildirFTP = $this->settings['ftp']['faildir'];
-                $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
-
-                $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullFaildirFTP, $fn, $etdname);
-
-                $res = true;
-                if ($this->debug === true) {
-                    $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
-                } else {
-                    $res = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
-                }
-
-                // Check if there was an error moving the ETD file on the FTP server.
-                if ($res === false) {
-                    $this->writeLog("ERROR: Could not move ETD file to 'failed' FTP directory!", $fn, $etdname);
-                    continue;
-                }
-
-                $this->writeLog("Moved ETD file to 'failed' FTP directory.", $fn, $etdname);
             }
 
             // Make sure we give every processing loop enough time to complete.
             sleep(2);
 
-            $this->writeLog("END Ingesting ETD #" . $i . " - " . $etdname, $fn);
+            $this->writeLog("END Ingesting ETD #" . (string)$i . " - " . $etdname, $fn);
         }
 
         /**
@@ -1494,12 +1557,12 @@ class processProquest {
 
         // Simple status report output.
         $this->writeLog("Status report:" .
-                        "\tETDs ingested: " . $successCount .
-                        "\tETDs not ingested: " . $failureCount,
+                        "\tETDs ingested: " . ((string)$successCount ? (string)$successCount : "0") .
+                        "\tETDs not ingested: " . ((string)$failureCount ? (string)$failureCount : "0"),
                         $fn);
 
         /*
-        if ($failureMessage == "\n\nThe following ETDs failed to ingest:\n\n") {
+        if ($failureMessage == "\n\nThe following ETDs __FAILED__ to ingest:\n\n") {
             mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
         } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
             mail($this->settings['notify']['email'],"Message from processProquest",$failureMessage . $processingMessage);
