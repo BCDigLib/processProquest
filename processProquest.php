@@ -249,6 +249,24 @@ class processProquest {
         return true;
     }
 
+    /**  
+     * Strips out punctuation, spaces, and unicode chars from a string.
+     * 
+     * @return string A normalized string.
+    */
+    private function normalizeString($str) {
+        # remove trailing spaces
+        $str = trim($str);
+
+        # replace spaces with dashes
+        $str = str_replace(" ", "-", $str);
+
+        # remove any character that isn't alphanumeric or a dash
+        $str = preg_replace("/[^a-z0-9-]+/i", "", $str);
+
+        return $str;
+    }
+
     /**
      * Initializes an FTP connection.
      *
@@ -681,16 +699,16 @@ class processProquest {
             $xpathAuthor = new DOMXpath($mods);
             $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);
             $author = $authorElements->item(0)->C14N();
-            $this->writeLog("Generated ETD author: " . $author, $fn, $etdname);
+            $this->writeLog("Generated ETD author: [" . $author . "]", $fn, $etdname);
 
             /**
              * Normalize the ETD author string. This forms the internal file name convention.
              * Ex: Jane Anne O'Foo => Jane-Anne-OFoo
              */
-            // TODO: Need to add unicode replacements.
-            $normalizedAuthor = str_replace(array(" ",",","'",".","&apos;"), array("-","","","",""), $author);
+            #$normalizedAuthor = str_replace(array(" ",",","'",".","&apos;",'"',"&quot;"), array("-","","","","","",""), $author);
+            $normalizedAuthor = $this->normalizeString($author);
 
-            $this->writeLog("Generated normalized ETD author: " . $normalizedAuthor, $fn, $etdname);
+            $this->writeLog("Generated normalized ETD author: [" . $normalizedAuthor . "]", $fn, $etdname);
             $this->writeLog("Now using the normalized ETD author name to update ETD PDF and MODS files.", $fn, $etdname);
 
             // Create placeholder full-text text file using normalized author's name.
