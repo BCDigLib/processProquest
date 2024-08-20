@@ -940,6 +940,11 @@ class processProquest {
 
         $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
 
+        $executable_fop = '/opt/fop/fop';
+        $executable_convert = '/usr/bin/convert';
+        $executable_pdftk = '/usr/bin/pdftk';
+        $executable_pdftotext = '/usr/bin/pdftotext';
+
         // TODO: list the file path for script log.
 
         // Go through each ETD local file bundle.
@@ -1165,17 +1170,15 @@ class processProquest {
             // Source file is the original Proquest XML file.
             $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
 
-            // Use FOP (Formatting Objects Processor) to build PDF splash page.
-            $executable = "/usr/bin/fop -c $fop";
-
             // Assign PDF splash document to ETD file's directory.
             $splashtemp = $directory . "/splash.pdf";
 
             // Use the custom XSLT splash stylesheet to build the PDF splash document.
             $splashxslt = $this->settings['xslt']['splash'];
 
+            // Use FOP (Formatting Objects Processor) to build PDF splash page.
             // Execute 'fop' command and check return code.
-            $command = "$executable -xml $source -xsl $splashxslt -pdf $splashtemp";
+            $command = "$executable_fop -c $fop -xml $source -xsl $splashxslt -pdf $splashtemp";
             exec($command, $output, $return);
             $this->writeLog("Running 'fop' command to build PDF splash page.", $fn, $etdname);
 
@@ -1197,9 +1200,6 @@ class processProquest {
              */
             $this->writeLog("Next, generate concatenated PDF document.", $fn, $etdname);
 
-            // Use pdftk (PDF Toolkit) to edit PDF document.
-            $executable = '/usr/bin/pdftk';
-
             // Assign concatenated PDF document to ETD file's directory.
             $concattemp = $directory . "/concatted.pdf";
 
@@ -1209,8 +1209,9 @@ class processProquest {
             /*
             // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
 
+            // Use pdftk (PDF Toolkit) to edit PDF document.
             // Execute 'pdftk' command and check return code.
-            $command = "$executable $splashtemp $pdf cat output $concattemp";
+            $command = "$executable_pdftk $splashtemp $pdf cat output $concattemp";
             exec($command, $output, $return);
             $this->writeLog("Running 'pdftk' command to build concatenated PDF document.", $fn, $etdname);
 
@@ -1223,8 +1224,8 @@ class processProquest {
             }
             */
 
-            // Temporarily copying over the $pdf file as the $concattemp version since we can no longer use pdftk on RHEL 7
-            $this->writeLog("WARNING: pdftk is no longer supported in RHEL. A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
+            // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
+            $this->writeLog("WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
 
             if (!copy($pdf,$concattemp)) {
                 $this->writeLog("ERROR: PDF document cloning failed!", $fn, $etdname);
@@ -1268,14 +1269,12 @@ class processProquest {
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $source = $directory . "/" . $this->localFiles[$directory]['ETD'];
 
-            // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
-            $executable = '/usr/bin/pdftotext';
-
             // Assign FULL_TEXT document to ETD file's directory.
             $fttemp = $directory . "/fulltext.txt";
 
+            // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
             // Execute 'pdftotext' command and check return code.
-            $command = "$executable $source $fttemp";
+            $command = "$executable_pdftotext $source $fttemp";
             exec($command, $output, $return);
             $this->writeLog("Running 'pdftotext' command to build FULL_TEXT document.", $fn, $etdname);
 
@@ -1344,10 +1343,8 @@ class processProquest {
             $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
 
             // Use convert (from ImageMagick tool suite) to generate TN document.
-            $executable = '/usr/bin/convert';
-
             // Execute 'convert' command and check return code.
-            $command = "$executable $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
+            $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
             exec($command, $output, $return);
             $this->writeLog("Running 'convert' command to build TN document.", $fn, $etdname);
 
@@ -1395,10 +1392,8 @@ class processProquest {
             $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
 
             // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
-            $executable = '/usr/bin/convert';
-
             // Execute 'convert' command and check return code.
-            $command = "$executable $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
+            $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
             exec($command, $output, $return);
             $this->writeLog("Running 'convert' command to build PREVIEW document.", $fn, $etdname);
 
