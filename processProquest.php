@@ -101,7 +101,7 @@ class processProquest {
         $date = date("Ymd-His", time());
 
         // Set log location in case DEFAULT_LOG_FILE_LOCATION or $this->settings['log']["location"] isn't set.
-        $log_location = "/tmp/proquest-jesse-log/";
+        $log_location = "/tmp/processProquest-test/";
         if ( isset($this->settings['log']["location"]) ) {
             $log_location = $this->settings['log']["location"];
         } else if (defined(DEFAULT_LOG_FILE_LOCATION) == TRUE) {
