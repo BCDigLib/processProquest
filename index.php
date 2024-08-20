@@ -7,8 +7,7 @@
 
 error_reporting(E_ALL);
 
-#$fontpath = realpath('/usr/share/fonts/truetype/freefont/');
-$fontpath = realpath('/usr/share/fonts/truetype/freefont/');
+$fontpath = realpath('/usr/share/fonts/freesans-font/');
 putenv('GDFONTPATH='.$fontpath);
 
 require_once 'processProquest.php';
