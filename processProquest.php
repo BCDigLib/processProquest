@@ -936,7 +936,7 @@ class processProquest {
 
         $successMessage = "The following ETDs ingested successfully:\n\n";
         $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n\n";
-        $processingMessage = "\n\nThe following directories were processed in {$this->settings['ftp']['localdir']}:\n\n";
+        $processingMessage = "\n\nThe following staging directories were used:\n\n";
 
         $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
 
