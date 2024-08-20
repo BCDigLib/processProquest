@@ -934,8 +934,8 @@ class processProquest {
         global $pidcount, $successCount, $failureCount;
         global $successMessage, $failureMessage, $processingMessage;
 
-        $successMessage = "The following ETDs ingested successfully:\n\n";
-        $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n\n";
+        $successMessage = "The following ETDs ingested successfully:\n";
+        $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n";
         $processingMessage = "\n\nThe following staging directories were used:\n";
 
         $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
