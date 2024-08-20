@@ -205,7 +205,7 @@ class processProquest {
     private function sendEmail($message) {
         $fn = "sendEmail";
 
-        $log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location: " . $this->logFile . " .";
+        $log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location:\n * " . $this->logFile . " .";
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
@@ -936,7 +936,7 @@ class processProquest {
 
         $successMessage = "The following ETDs ingested successfully:\n\n";
         $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n\n";
-        $processingMessage = "\n\nThe following staging directories were used:\n\n";
+        $processingMessage = "\n\nThe following staging directories were used:\n";
 
         $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
 
@@ -952,7 +952,7 @@ class processProquest {
         foreach ($this->localFiles as $directory => $submission) {
             $i++;
 
-            $processingMessage .= $directory . "\n";
+            $processingMessage .= " * " .$directory . "\n";
 
             // Pull out the ETD shortname that was generated in getFiles()
             $etdname = $this->localFiles[$directory]['ETD_SHORTNAME'];
