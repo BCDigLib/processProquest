@@ -205,7 +205,7 @@ class processProquest {
     private function sendEmail($message) {
         $fn = "sendEmail";
 
-        $log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location:\n * " . $this->logFile . " .";
+        $log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location:\n • " . $this->logFile;
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
@@ -826,7 +826,7 @@ class processProquest {
             $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
 
             $successCount++;
-            $successMessage .= $submission['PID'] . "\t";
+            $successMessage .= " • " . $submission['PID'] . "\t";
 
             // Set success status for email message.
             if (isset($submission['EMBARGO'])) {
@@ -952,7 +952,7 @@ class processProquest {
         foreach ($this->localFiles as $directory => $submission) {
             $i++;
 
-            $processingMessage .= " * " .$directory . "\n";
+            $processingMessage .= " • " .$directory . "\n";
 
             // Pull out the ETD shortname that was generated in getFiles()
             $etdname = $this->localFiles[$directory]['ETD_SHORTNAME'];
