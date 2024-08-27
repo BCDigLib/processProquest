@@ -2,6 +2,15 @@
 
 A library for ingesting ProQuest ETDs into Islandora/Fedora DAM. This script is heavily tailored for the Boston College Library's ETD workflow.
 
+# Requirements
+
+The script requires:
+* php (any supported version)
+* Composer
+* Islandora 7.x
+* Fedora DAM
+
+
 # Installation
 Clone this repository within your `drupal/sites/all/libraries/` directory.
 
@@ -9,6 +18,9 @@ Clone this repository within your `drupal/sites/all/libraries/` directory.
 cd /var/www/html/drupal/sites/all/libraries
 git clone https://github.com/BCDigLib/processProquest
 ```
+
+Run composer to install PHPMailer
+```php composer install```
 
 # Usage
 
