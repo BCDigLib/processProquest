@@ -13,16 +13,19 @@ error_reporting(E_ALL);
 /*
  * Islandora/Fedora library.
  */
+# hacky way to pull in where the tuque library is located
+define('PROCESSPROQUEST_INI_FILE', 'processProquest.ini');
+$settings = parse_ini_file(PROCESSPROQUEST_INI_FILE, true);
+$tuqueLocation = $settings['packages']['tuque'];
 
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/RepositoryConnection.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraApi.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraApiSerializer.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/Repository.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/RepositoryException.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/FedoraRelationships.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/Cache.php';
-require_once '/var/www/html/drupal/sites/all/libraries/tuque/HttpConnection.php';
-
+require_once "{$tuqueLocation}/RepositoryConnection.php";
+require_once "{$tuqueLocation}/FedoraApi.php";
+require_once "{$tuqueLocation}/FedoraApiSerializer.php";
+require_once "{$tuqueLocation}/Repository.php";
+require_once "{$tuqueLocation}/RepositoryException.php";
+require_once "{$tuqueLocation}/FedoraRelationships.php";
+require_once "{$tuqueLocation}/Cache.php";
+require_once "{$tuqueLocation}/HttpConnection.php";
 
 /**
  * Custom FTP connection handler.
@@ -72,7 +75,7 @@ class processProquest {
      * @param string $config An ini file containing various configurations.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      */
-    public function __construct($config, $debug = DEFAULT_DEBUG_VALUE) {
+    public function __construct($config = PROCESSPROQUEST_INI_FILE, $debug = DEFAULT_DEBUG_VALUE) {
         $this->settings = parse_ini_file($config, true);
 
         // Verify that $debug is a bool value.
@@ -84,6 +87,7 @@ class processProquest {
 
         $this->writeLog("Starting processProquest script.", "");
         $this->writeLog("Running with DEBUG value: " . ($this->debug ? "TRUE" : "FALSE"), "");
+        $this->writeLog("Using configuration file: " . $config, "");
     }
 
     /**
@@ -938,12 +942,19 @@ class processProquest {
         $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n";
         $processingMessage = "\n\nThe following staging directories were used:\n";
 
-        $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
+        # $this->settings['packages']['fop_config'];
+        $fop_config = $this->settings['packages']['fop_config'];
+        # $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
 
-        $executable_fop = '/opt/fop/fop';
-        $executable_convert = '/usr/bin/convert';
-        $executable_pdftk = '/usr/bin/pdftk';
-        $executable_pdftotext = '/usr/bin/pdftotext';
+        # $executable_fop = '/opt/fop/fop';
+        # $executable_convert = '/usr/bin/convert';
+        # $executable_pdftk = '/usr/bin/pdftk';
+        # $executable_pdftotext = '/usr/bin/pdftotext';
+
+        $executable_fop = $this->settings['packages']['fop'];
+        $executable_convert = $this->settings['packages']['convert'];
+        $executable_pdftk = $this->settings['packages']['pdftk'];
+        $executable_pdftotext = $this->settings['packages']['pdftotext'];
 
         // TODO: list the file path for script log.
 
@@ -1178,7 +1189,7 @@ class processProquest {
 
             // Use FOP (Formatting Objects Processor) to build PDF splash page.
             // Execute 'fop' command and check return code.
-            $command = "$executable_fop -c $fop -xml $source -xsl $splashxslt -pdf $splashtemp";
+            $command = "$executable_fop -c $fop_config -xml $source -xsl $splashxslt -pdf $splashtemp";
             exec($command, $output, $return);
             $this->writeLog("Running 'fop' command to build PDF splash page.", $fn, $etdname);
 
