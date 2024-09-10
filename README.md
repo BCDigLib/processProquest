@@ -2,6 +2,21 @@
 
 A library for ingesting ProQuest ETDs into Islandora/Fedora DAM. This script is heavily tailored for the Boston College Library's ETD workflow.
 
+# Requirements
+The following packages are required to run this script:
+ * [fop](https://xmlgraphics.apache.org/fop/)
+ * php
+ * php-dom
+ * php-zip
+ * php-curl
+ * imagemagick
+ * xpdf
+ * poppler-utils
+
+Also recommended is the [freesans-font](https://github.com/opensourcedesign/fonts) family.
+
+Access to a live Fedora DAM instance is required.
+
 # Installation
 Clone this repository within your `drupal/sites/all/libraries/` directory.
 
@@ -36,17 +51,17 @@ Fill in the following settings.
 
 ```
 [ftp]
-server     = ftp_server.example.edu         // ftp server where ETDs are deposited
-user       = ftpUser                        // ftp user
-password   = ftpPassword                    // ftp user password
-localdir   = /tmp                           // local directory for processing files, e.g., /tmp
-fetchdir   =                                // directory to find ETDs on the ftp server. relative paths only
-processdir = processed                      // directory to place ETDs on the ftp server on success. relative paths only
-faildir    = failed                         // directory to place ETDs on the ftp server on failure. relative paths only
+server     = "ftp_server.example.edu"  // ftp server where ETDs are deposited
+user       = "ftpUser"                 // ftp user
+password   = "<password>"              // ftp user password
+localdir   = "/tmp"                    // local directory for processing files, e.g., /tmp
+fetchdir   = ""                        // directory to find ETDs on the ftp server. relative paths only
+processdir = "processed"               // directory to place ETDs on the ftp server on success. relative paths only
+faildir    = "failed"                  // directory to place ETDs on the ftp server on failure. relative paths only
 
 [xslt]
-xslt       = /path/to/proquest/crosswalk/Proquest_MODS.xsl
-label      = xsl/getLabel.xsl
+xslt       = "/opt/Proquest_MODS.xsl"  // location of various files or XPath expressions
+label      = "xsl/getLabel.xsl"
 oa         = "/DISS_submission/DISS_repository/DISS_acceptance/text()"
 embargo    = "/DISS_submission/DISS_repository/DISS_delayed_release/text()"
 creator    = "/mods:mods/mods:name[@type='personal'][@usage='primary']/mods:displayForm/text()"
@@ -54,14 +69,22 @@ supplement = "/DISS_submission/DISS_content/DISS_attachment"
 splash     = "/path/to/splash/page/stylesheet/splash.xsl"
 
 [fedora]
-url        = "ir.example.edu:8080/fedora/"  // Fedora DAM location. use localhost for local instance
-username   = "fedoraUser"                   // Fedora user
-password   = "fedoraPassword"               // Fedora user password
-namespace  = bc-ir                          // Namespace for PIDs, e.g., bc-ir:1000
+url        = "localhost:8080/fedora/"  // Fedora DAM location
+username   = "fedoraUser"              // Fedora user
+password   = "fedoraPassword"          // Fedora user password
+namespace  = "bc-ir"                   // Namespace for PIDs, e.g., bc-ir:1000
 
 [notify]
-email      = notify.me@example.edu          // email recipients 
+email      = "bar@foo.edu,baz@foo.edu" // email recipients, comma-separated
 
 [log]
-location   = /path/to/logs                  // directory to save script output logs
+location   = "/path/to/logs"           // directory to save script output logs
+
+[packages]
+tuque      = "/opt/libraries/tuque"    // location of system packages and libraries
+fop        = "/opt/fop/fop"
+fop_config = "/opt/boston_college/data/fop/cfg.xml"
+convert    = "/usr/bin/convert"
+pdftk      = "/usr/bin/pdftk"
+pdftotext  = "/usr/bin/pdftotext"
 ```
