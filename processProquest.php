@@ -380,7 +380,7 @@ class processProquest {
             $etdDir = $localdirFTP . $etdname;
 
             $this->localFiles[$etdname]['ETD_SHORTNAME'] = $etdname;
-            $this->localFiles[$etdname]['WORKING_DIR'] = $localdirFTP . $etdname;
+            $this->localFiles[$etdname]['WORKING_DIR'] = $etdDir;
             $this->localFiles[$etdname]['SUPPLEMENTS'] = [];
             $this->localFiles[$etdname]['HAS_SUPPLEMENT'] = false;
 
@@ -594,17 +594,21 @@ class processProquest {
             $this->writeLog("Searching for OA agreement...", $fn, $etdname);
 
             $openaccess = 0;
+            $openaccess_available = false;
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
             if ($oaElements->length === 0 ) {
                 $this->writeLog("No OA agreement found.", $fn, $etdname);
             } elseif ($oaElements->item(0)->C14N() === '0') {
                 $this->writeLog("No OA agreement found.", $fn, $etdname);
             } else {
+                // This value is '1' if available for Open Access.
                 $openaccess = $oaElements->item(0)->C14N();
+                $openaccess_available = true;
                 $this->writeLog("Found an OA agreement.", $fn, $etdname);
             }
 
             $this->localFiles[$file]['OA'] = $openaccess;
+            $this->localFiles[$file]['OA_AVAILABLE'] = $openaccess_available;
 
             /**
              * Get embargo permission/dates.
@@ -614,29 +618,35 @@ class processProquest {
             $this->writeLog("Searching for embargo information...", $fn, $etdname);
 
             $embargo = 0;
+            $has_embargo = false;
+            $this->localFiles[$file]['HAS_EMBARGO'] = false;
             $emElements = $xpath->query($this->settings['xslt']['embargo']);
             if ($emElements->item(0) ) {
+                $has_embargo = true;
                 // Convert date string into proper PHP date object format.
                 $embargo = $emElements->item(0)->C14N();
+                $this->writeLog("Unformatted embargo date: " . $embargo, $fn, $etdname);
                 $embargo = str_replace(" ","T",$embargo);
                 $embargo = $embargo . "Z";
-                $this->localFiles[$file]['EMBARGO'] = $embargo;
                 $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
+            } else {
+                $this->writeLog("There is no embargo on this record.", $fn, $etdname);
             }
 
             /**
-             * Check to see if the OA and embargo permissions match.
+             * Check to see if there is no OA policy, and there is no embargo.
              * If so, set the embargo permission/date to "indefinite".
              */
-            // TODO: should this be a corresponding ELSE IF clause to the previous IF clause?
-            //       This looks like $embargo would only match $openaccess if they are both 0.
             if ($openaccess === $embargo) {
                 $embargo = 'indefinite';
-                $this->localFiles[$file]['EMBARGO'] = $embargo;
+                $has_embargo = true;
+                $this->writeLog("Changing embargo date to 'indefinite'", $fn, $etdname);
                 $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
-            } else {
-                $this->writeLog("No embargo date found.", $fn, $etdname);
             }
+
+            $this->localFiles[$file]['HAS_EMBARGO'] = $has_embargo;
+            $this->localFiles[$file]['EMBARGO'] = $embargo;
+            $this->localFiles[$file]['EMBARGO_DATE'] = $embargo;
 
             /**
              * Fetch next PID from Fedora.
@@ -712,6 +722,8 @@ class processProquest {
              */
             #$normalizedAuthor = str_replace(array(" ",",","'",".","&apos;",'"',"&quot;"), array("-","","","","","",""), $author);
             $normalizedAuthor = $this->normalizeString($author);
+            $this->localFiles[$file]['AUTHOR'] = $author;
+            $this->localFiles[$file]['AUTHOR_NORMALIZED'] = $normalizedAuthor;
 
             $this->writeLog("Generated normalized ETD author: [" . $normalizedAuthor . "]", $fn, $etdname);
             $this->writeLog("Now using the normalized ETD author name to update ETD PDF and MODS files.", $fn, $etdname);
