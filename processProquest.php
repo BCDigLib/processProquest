@@ -969,6 +969,7 @@ class processProquest {
             $i++;
 
             $workingDir = $submission['WORKING_DIR'];
+            $this->localFiles[$file]['DATASTREAMS_CREATED'] = [];
 
             $processingMessage .= " • " . $workingDir . "\n";
 
@@ -1105,6 +1106,8 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "MODS");
             $this->writeLog("Ingested MODS datastream.", $fn, $etdname);
 
 
@@ -1134,7 +1137,9 @@ class processProquest {
             $datastream->state = 'I';
 
             // Ingest ARCHIVE MODS datastream into Fedora object.
+            // TODO: wrap in try/catch block
             $object->ingestDatastream($datastream);
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE_MODS");
             $this->writeLog("Ingested ARCHIVE datastream.", $fn, $etdname);
 
 
@@ -1172,6 +1177,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE-PDF");
             $this->writeLog("Ingested ARCHIVE-PDF datastream.", $fn, $etdname);
 
 
@@ -1210,6 +1216,7 @@ class processProquest {
 
             // Update ETD file's object to store splash page's file location and name.
             $this->localFiles[$file]['SPLASH'] = 'splash.pdf';
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "SPLASH");
 
             /**
              * Build concatted PDF document.
@@ -1273,6 +1280,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PDF");
             $this->writeLog("Ingested PDF datastream.", $fn, $etdname);
 
 
@@ -1345,6 +1353,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "FULL_TEXT");
             $this->writeLog("Ingested FULL_TEXT datastream.", $fn, $etdname);
 
 
@@ -1394,6 +1403,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "TN");
             $this->writeLog("Ingested TN datastream.", $fn, $etdname);
 
 
@@ -1443,6 +1453,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PREVIEW");
             $this->writeLog("Ingested PREVIEW datastream.", $fn, $etdname);
 
 
@@ -1462,6 +1473,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
+            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-EXT");
             $this->writeLog("Ingested RELS-EXT (XACML) datastream.", $fn, $etdname);
 
 
@@ -1537,7 +1549,7 @@ class processProquest {
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
-
+                array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-INT");
                 $this->writeLog("Ingested RELS-INT datastream.", $fn, $etdname);
             }
 
