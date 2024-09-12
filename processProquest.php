@@ -970,6 +970,8 @@ class processProquest {
 
             $workingDir = $submission['WORKING_DIR'];
             $this->localFiles[$file]['DATASTREAMS_CREATED'] = [];
+            $this->localFiles[$file]['INGESTED'] = false;
+            $this->localFiles[$file]['INGEST_ERRORS'] = [];
 
             $processingMessage .= " • " . $workingDir . "\n";
 
@@ -1013,7 +1015,9 @@ class processProquest {
                 $object = $this->repository->constructObject($this->localFiles[$file]['PID']);
                 $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$file]['PID'], $fn, $etdname);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Could not instanciate Fedora object: " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Could not instanciate Fedora object: " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1041,7 +1045,9 @@ class processProquest {
                 $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
                 $collection = GRADUATE_THESES;
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1054,7 +1060,9 @@ class processProquest {
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $this->writeLog("Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
                 } catch (Exception $e) {
-                    $this->writeLog("ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage(), $fn, $etdname);
+                    $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage();
+                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    $this->writeLog($errorMessage, $fn, $etdname);
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
@@ -1101,7 +1109,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting MODS datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting MODS datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1172,7 +1182,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1209,7 +1221,9 @@ class processProquest {
     		if (!$return) {
                 $this->writeLog("PDF splash page created successfully.", $fn, $etdname);
     		} else {
-                $this->writeLog("ERROR: PDF splash page creation failed! ". $return, $fn, $etdname);
+                $errorMessage = "ERROR: PDF splash page creation failed! ". $return;
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
     		    continue;
     		}
@@ -1275,7 +1289,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting PDF datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting PDF datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1307,7 +1323,9 @@ class processProquest {
             if (!$return) {
                 $this->writeLog("FULL_TEXT datastream generated successfully.", $fn, $etdname);
             } else {
-                $this->writeLog("ERROR: FULL_TEXT document creation failed! " . $return, $fn, $etdname);
+                $errorMessage = "ERROR: FULL_TEXT document creation failed!" . $return;
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1324,7 +1342,9 @@ class processProquest {
 
             // Check if file read failed.
             if ($fulltext === false) {
-                $this->writeLog("ERROR: could not read in file: ". $fttemp, $fn, $etdname);
+                $errorMessage = "ERROR: could not read in file: ". $fttemp;
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1335,7 +1355,9 @@ class processProquest {
 
             // In the slim chance preg_replace fails.
             if ($sanitized === null) {
-                $this->writeLog("ERROR: preg_replace failed to return valid sanitized FULL_TEXT string!", $fn, $etdname);
+                $errorMessage = "ERROR: preg_replace failed to return valid sanitized FULL_TEXT string!";
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1348,7 +1370,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1378,7 +1402,9 @@ class processProquest {
             if (!$return) {
                 $this->writeLog("TN datastream generated successfully.", $fn, $etdname);
             } else {
-                $this->writeLog("ERROR: TN document creation failed! " . $return, $fn, $etdname);
+                $errorMessage = "ERROR: TN document creation failed! " . $return;
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1398,7 +1424,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting TN datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting TN datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1428,7 +1456,9 @@ class processProquest {
             if (!$return) {
                 $this->writeLog("PREVIEW datastream generated successfully.", $fn, $etdname);
             } else {
-                $this->writeLog("ERROR: REVIEW document creation failed! " . $return, $fn, $etdname);
+                $errorMessage = "ERROR: REVIEW document creation failed! " . $return;
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1448,7 +1478,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($datastream);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1468,7 +1500,9 @@ class processProquest {
             try {
                 $object->ingestDatastream($policy);
             } catch (Exception $e) {
-                $this->writeLog("ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage(), $fn, $etdname);
+                $errorMessage = "ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage();
+                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
@@ -1512,7 +1546,9 @@ class processProquest {
 
                 // Check if file read failed.
                 if ($relsint === false) {
-                    $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
+                    $errorMessage = "ERROR: could not read in file: " . $relsFile;
+                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    $this->writeLog($errorMessage, $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
@@ -1544,7 +1580,9 @@ class processProquest {
                 try {
                     $object->ingestDatastream($datastream);
                 } catch (Exception $e) {
-                    $this->writeLog("ERROR: Ingesting RELS-INT datastream failed! " . $e->getMessage(), $fn, $etdname);
+                    $errorMessage = "ERROR: Ingesting RELS-INT datastream failed! " . $e->getMessage();
+                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    $this->writeLog($errorMessage, $fn, $etdname);
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
@@ -1571,7 +1609,9 @@ class processProquest {
                     $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
                     $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
                 } catch (Exception $e) {
-                    $this->writeLog("ERROR: Could not ingest Fedora object:\n" . $e->getMessage(), $fn, $etdname);
+                    $errorMessage = "ERROR: Could not ingest Fedora object: " . $e->getMessage();
+                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    $this->writeLog($errorMessage, $fn, $etdname);
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
@@ -1579,6 +1619,7 @@ class processProquest {
             }
 
             // Make sure we give every processing loop enough time to complete.
+            $this->localFiles[$file]['INGESTED'] = true;
             sleep(2);
 
             $this->writeLog("END Ingesting ETD #" . (string)$i . " - " . $etdname, $fn);
