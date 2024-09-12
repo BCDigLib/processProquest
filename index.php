@@ -10,19 +10,32 @@ error_reporting(E_ALL);
 $fontpath = realpath('/usr/share/fonts/freesans-font/');
 putenv('GDFONTPATH='.$fontpath);
 
-require_once 'processProquest.php';
+// Assign the default configuration file
+define('PROCESSPROQUEST_INI_FILE', 'processProquest.ini');
 
-// Requires a single parameter containing the location of an initialization file.
-if (!isset($argv[1])){
+// Only one optional argument is permitted.
+if (count($argv) > 2) {
     usage();
     exit(1);
 }
 
+// Load configuration file.
+$configurationFile = getValidConfigurationFile($argv);
+
+// Exit if configuration file is invalid.
+if(is_null($configurationFile)){
+    //echo "Configuration file is invalid and script can not continue.\n";
+    usage();
+    exit(1);
+}
+
+require_once 'processProquest.php';
+
 // Debug is off by default
-$debug = false;
+$debug = true;
 
 // Create the $process object.
-$process = new processProquest($argv[1], $debug);
+$process = new processProquest($configurationFile, $debug);
 
 // Initialize FTP connection.
 $process->initFTP();
@@ -41,9 +54,70 @@ $process->ingest();
 
 exit(1);
 
+/**
+ * Output usage strings.
+ *
+ */
 function usage() {
-    echo "Usage: php index.php processProquest.ini\n";
-    echo "(See README.md for configuration info)";
+    echo "Usage: php index.php [options]\n";
+    echo "  options:\n";
+    echo "    INI formatted configuration file. Default file name is 'processProquest.ini'\n";
+    echo "Example: php index.php my_custom_settings.ini\n";
+    echo "(See README.md for configuration file information)\n";
+}
+
+/**
+ * Get a valid configuration file.
+ * 
+ * Load configuration file passed as an argument, or
+ * load from a default filename if there isn't an argument found.
+ * Also check if the file is valid.
+ *
+ * @param string $arguments The $argv array.
+ * @return string|NULL Return a filename string or NULL on error.
+ */
+function getValidConfigurationFile($arguments) {
+    // Requires a single parameter containing the location of an initialization file.
+    if (isset($arguments[1])){
+        // Use the argument provided.
+        $configurationFile = $arguments[1];
+    } else {
+        // No optional second argument was found so use the default configuration file.
+        $configurationFile = PROCESSPROQUEST_INI_FILE;
+    }
+
+    // Check if the validity of the configuration file.
+    if (!validateConfig($configurationFile)){
+        // Configuration file is invalid and script can not continue.
+        return NULL;
+    }
+    return $configurationFile;
+}
+
+/**
+ * Validate configuration file.
+ * 
+ * Check if a configuration file exists, and if it is empty.
+ *
+ * @param string $configurationFile The configuration file name.
+ * @return bool Is the configuration file valid.
+ */
+function validateConfig($configurationFile) {
+    // Check if config ini file exits
+    if(!file_exists($configurationFile)) {
+        echo "ERROR: Could not find a configuration file with that name. Please check your settings and try again.\n";
+        return false;
+    }
+
+    // Check if this is an empty file
+    if ($configurationFile == False) {
+        echo "ERROR: This configuration file is empty or misformed. Please check your settings and try again.\n";
+        return false;
+    }
+
+    // TODO: check if the file contains usable values.
+
+    return true;
 }
 
 ?>

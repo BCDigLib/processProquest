@@ -10,23 +10,6 @@ error_reporting(E_ALL);
  * annotations by Jesse Martinez.
  */
 
-/*
- * Islandora/Fedora library.
- */
-# hacky way to pull in where the tuque library is located
-define('PROCESSPROQUEST_INI_FILE', 'processProquest.ini');
-$settings = parse_ini_file(PROCESSPROQUEST_INI_FILE, true);
-$tuqueLocation = $settings['packages']['tuque'];
-
-require_once "{$tuqueLocation}/RepositoryConnection.php";
-require_once "{$tuqueLocation}/FedoraApi.php";
-require_once "{$tuqueLocation}/FedoraApiSerializer.php";
-require_once "{$tuqueLocation}/Repository.php";
-require_once "{$tuqueLocation}/RepositoryException.php";
-require_once "{$tuqueLocation}/FedoraRelationships.php";
-require_once "{$tuqueLocation}/Cache.php";
-require_once "{$tuqueLocation}/HttpConnection.php";
-
 /**
  * Custom FTP connection handler.
  */
@@ -75,20 +58,19 @@ class processProquest {
      * @param string $config An ini file containing various configurations.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      */
-    public function __construct($config = PROCESSPROQUEST_INI_FILE, $debug = DEFAULT_DEBUG_VALUE) {
-        // Check if config ini file exits
-        if(!file_exists($config)) {
-            echo "ERROR: Could not find a configuration file with that name. Please check your settings and try again.\n";
-            die;
-        }
-        
-        $this->settings = parse_ini_file($config, true);
+    public function __construct($configurationFile, $debug = DEFAULT_DEBUG_VALUE) {
+        $this->settings = parse_ini_file($configurationFile, true);
 
-        // Check if this is a valid ini file
-        if ($this->settings == False) {
-            echo "ERROR: This configuration file is empty or misformed. Please check your settings and try again.\n";
-            die;
-        }
+        // Load Islandora/Fedora Tuque library.
+        $tuqueLocation = $this->settings['packages']['tuque'];
+        require_once "{$tuqueLocation}/RepositoryConnection.php";
+        require_once "{$tuqueLocation}/FedoraApi.php";
+        require_once "{$tuqueLocation}/FedoraApiSerializer.php";
+        require_once "{$tuqueLocation}/Repository.php";
+        require_once "{$tuqueLocation}/RepositoryException.php";
+        require_once "{$tuqueLocation}/FedoraRelationships.php";
+        require_once "{$tuqueLocation}/Cache.php";
+        require_once "{$tuqueLocation}/HttpConnection.php";
         
         // Verify that $debug is a bool value.
         if ( is_bool($debug) ){
@@ -97,9 +79,9 @@ class processProquest {
             $this->debug = DEFAULT_DEBUG_VALUE;
         }
 
-        $this->writeLog("Starting processProquest script.", "");
-        $this->writeLog("Running with DEBUG value: " . ($this->debug ? "TRUE" : "FALSE"), "");
-        $this->writeLog("Using configuration file: " . $config, "");
+        $this->writeLog("STATUS: Starting processProquest script.", "");
+        $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? "TRUE" : "FALSE"), "");
+        $this->writeLog("STATUS: Using configuration file: " . $configurationFile, "");
     }
 
     /**
