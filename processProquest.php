@@ -376,11 +376,13 @@ class processProquest {
             // Get the regular file name without file extension.
             $etdname = substr($filename,0,strlen($filename)-4);
 
-            // Set the path of the local working fdrectory. Ex: /tmp/processing/file_name_1234
+            // Set the path of the local working directory. Ex: /tmp/processing/file_name_1234
             $etdDir = $localdirFTP . $etdname;
 
-            // Save the shortname as a local object variable
-            $this->localFiles[$etdDir]['ETD_SHORTNAME'] = $etdname;
+            $this->localFiles[$etdname]['ETD_SHORTNAME'] = $etdname;
+            $this->localFiles[$etdname]['WORKING_DIR'] = $localdirFTP . $etdname;
+            $this->localFiles[$etdname]['SUPPLEMENTS'] = [];
+            $this->localFiles[$etdname]['HAS_SUPPLEMENT'] = false;
 
             $this->writeLog("BEGIN Gathering ETD file #" . $f . " - " . $filename, $fn);
 
@@ -390,7 +392,7 @@ class processProquest {
                 $this->writeLog("Local working directory already exists: " . $etdDir, $fn, $etdname);
             }
             else if ( !mkdir($etdDir, 0755, true) ) {
-                $this->writeLog("Failed to create local working directory: " . $etdDir, $fn, $etdname);
+                $this->writeLog("Failed to create local working directory: " . $etdDir . ". Skipping this file.", $fn, $etdname);
                 continue;
             } else {
                 $this->writeLog("Created ETD local working directory: " . $etdDir, $fn, $etdname);
@@ -413,8 +415,8 @@ class processProquest {
             }
 
             // Store location of local directory if it hasn't been stored yet.
-            if( isset($this->localFiles[$etdDir]) ) {
-                $this->localFiles[$etdDir];
+            if( isset($this->localFiles[$etdname]) ) {
+                $this->localFiles[$etdname];
             }
 
             // Unzip ETD zip file.
@@ -452,10 +454,10 @@ class processProquest {
                     // Check if this is a PDF or XML file.
                     // TODO: handle string case in comparison. Ex: "pdf" vs "PDF".
                     if (substr($file,strlen($file)-3) === 'pdf') {
-                        $this->localFiles[$etdDir]['ETD'] = $file;
+                        $this->localFiles[$etdname]['ETD'] = $file;
                         $this->writeLog("This is an PDF file.", $fn, $etdname);
                     } elseif (substr($file,strlen($file)-3) === 'xml') {
-                        $this->localFiles[$etdDir]['METADATA'] = $file;
+                        $this->localFiles[$etdname]['METADATA'] = $file;
                         $this->writeLog("This is an XML metadata file.", $fn, $etdname);
                     } else {
                         /**
@@ -463,8 +465,11 @@ class processProquest {
                          * Metadata will contain boolean key for permission in DISS_file_descr element.
                          * [0] element should always be folder.
                          */
-                        $this->localFiles[$etdDir]['UNKNOWN'.$supplement] = $file;
+                        $this->localFiles[$etdname]['UNKNOWN'.$supplement] = $file;
+                        $this->localFiles[$etdname]['HAS_SUPPLEMENT'] = true;
                         $supplement++;
+
+                        //$this->localFiles[$etdname]['SUPPLEMENTS'][]
 
                         $this->writeLog("This is a supplementary file.", $fn, $etdname);
                     }
@@ -473,17 +478,17 @@ class processProquest {
 
             /**
              * Sanity check that both:
-             *  - $this->localFiles[$etdDir]['ETD']
-             *  - $this->localFiles[$etdDir]['METADATA']
+             *  - $this->localFiles[$etdname]['ETD']
+             *  - $this->localFiles[$etdname]['METADATA']
              * are defined and are nonempty strings.
              */
             $this->writeLog("Running sanity check that ETD PDF and XML file were found...", $fn, $etdname);
-            if ( empty($this->localFiles[$etdDir]['ETD']) ) {
+            if ( empty($this->localFiles[$etdname]['ETD']) ) {
                 $this->writeLog("Warning! The ETD PDF file was not found or set!", $fn, $etdname);
             }
             $this->writeLog("Great! The ETD PDF file was found.", $fn, $etdname);
 
-            if ( empty($this->localFiles[$etdDir]['METADATA']) ) {
+            if ( empty($this->localFiles[$etdname]['METADATA']) ) {
                 $this->writeLog("Warning! The ETD XML file was not found or set!", $fn, $etdname);
             }
             $this->writeLog("Great! The ETD XML file was found.", $fn, $etdname);
@@ -563,20 +568,22 @@ class processProquest {
          * Given the array of ETD local files, generate additional metadata.
          */
         $s = 0;
-        foreach ($this->localFiles as $directory => $submission) {
+        foreach ($this->localFiles as $file => $submission) {
             $s++;
 
             // Pull out the ETD shortname that was generated in getFiles()
-            $etdname = $this->localFiles[$directory]['ETD_SHORTNAME'];
+            $etdname = $this->localFiles[$file]['ETD_SHORTNAME'];
+            $etdWorkingDir = $this->localFiles[$file]['WORKING_DIR'];
+
             if ( empty($etdname) ) {
-                $etdname = substr($this->localFiles[$directory]["ETD"],0,strlen($this->localFiles[$directory]["ETD"])-4);
-                $this->localFiles[$directory]['ETD_SHORTNAME'] = $etdname;
+                $etdname = substr($this->localFiles[$file]["ETD"],0,strlen($this->localFiles[$file]["ETD"])-4);
+                $this->localFiles[$file]['ETD_SHORTNAME'] = $etdname;
             }
             $this->writeLog("BEGIN Processing ETD #" . $s . " - " . $etdname, $fn);
 
             // Create XPath object from the ETD XML file.
             $metadata = new DOMDocument();
-            $metadata->load($directory . '//' . $submission['METADATA']);
+            $metadata->load($etdWorkingDir . '//' . $submission['METADATA']);
             $xpath = new DOMXpath($metadata);
 
             /**
@@ -597,7 +604,7 @@ class processProquest {
                 $this->writeLog("Found an OA agreement.", $fn, $etdname);
             }
 
-            $this->localFiles[$directory]['OA'] = $openaccess;
+            $this->localFiles[$file]['OA'] = $openaccess;
 
             /**
              * Get embargo permission/dates.
@@ -613,7 +620,7 @@ class processProquest {
                 $embargo = $emElements->item(0)->C14N();
                 $embargo = str_replace(" ","T",$embargo);
                 $embargo = $embargo . "Z";
-                $this->localFiles[$directory]['EMBARGO'] = $embargo;
+                $this->localFiles[$file]['EMBARGO'] = $embargo;
                 $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
             }
 
@@ -625,7 +632,7 @@ class processProquest {
             //       This looks like $embargo would only match $openaccess if they are both 0.
             if ($openaccess === $embargo) {
                 $embargo = 'indefinite';
-                $this->localFiles[$directory]['EMBARGO'] = $embargo;
+                $this->localFiles[$file]['EMBARGO'] = $embargo;
                 $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
             } else {
                 $this->writeLog("No embargo date found.", $fn, $etdname);
@@ -645,7 +652,7 @@ class processProquest {
                 $this->writeLog("Fetched new PID from Fedora: " . $pid, $fn, $etdname);
             }
 
-            $this->localFiles[$directory]['PID'] = $pid;
+            $this->localFiles[$file]['PID'] = $pid;
 
             $this->writeLog("Fedora PID value for this ETD: " . $pid, $fn, $etdname);
 
@@ -685,7 +692,7 @@ class processProquest {
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
-            $this->localFiles[$directory]['LABEL'] = $fedoraLabel;
+            $this->localFiles[$file]['LABEL'] = $fedoraLabel;
 
             $this->writeLog("Generated ETD title: " . $fedoraLabel, $fn, $etdname);
 
@@ -710,11 +717,11 @@ class processProquest {
             $this->writeLog("Now using the normalized ETD author name to update ETD PDF and MODS files.", $fn, $etdname);
 
             // Create placeholder full-text text file using normalized author's name.
-            $this->localFiles[$directory]['FULLTEXT'] = $normalizedAuthor . ".txt";
-            //$this->writeLog("Generated placeholder full text file name: " . $this->localFiles[$directory]['FULLTEXT'], $fn, $etdname);
+            $this->localFiles[$file]['FULLTEXT'] = $normalizedAuthor . ".txt";
+            //$this->writeLog("Generated placeholder full text file name: " . $this->localFiles[$file]['FULLTEXT'], $fn, $etdname);
 
             // Rename Proquest PDF using normalized author's name.
-            $res = rename($directory . "/". $submission['ETD'] , $directory . "/" . $normalizedAuthor . ".pdf");
+            $res = rename($etdWorkingDir . "/". $submission['ETD'] , $etdWorkingDir . "/" . $normalizedAuthor . ".pdf");
             if ($res === false) {
                 $this->writeLog("ERROR: Could not rename ETD PDF file!", $fn, $etdname);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
@@ -722,11 +729,11 @@ class processProquest {
             }
 
             // Update local file path for ETD PDF file.
-            $this->localFiles[$directory]['ETD'] = $normalizedAuthor . ".pdf";
-            $this->writeLog("Renamed ETD PDF file from " . $submission['ETD'] . " to " . $this->localFiles[$directory]['ETD'], $fn, $etdname);
+            $this->localFiles[$file]['ETD'] = $normalizedAuthor . ".pdf";
+            $this->writeLog("Renamed ETD PDF file from " . $submission['ETD'] . " to " . $this->localFiles[$file]['ETD'], $fn, $etdname);
 
             // Save MODS using normalized author's name.
-            $res = $mods->save($directory . "/" . $normalizedAuthor . ".xml");
+            $res = $mods->save($etdWorkingDir . "/" . $normalizedAuthor . ".xml");
             if ($res === false) {
                 $this->writeLog("ERROR: Could not create new ETD MODS file!", $fn, $etdname);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
@@ -734,8 +741,8 @@ class processProquest {
             }
 
             // Update local file path for MODS file.
-            $this->localFiles[$directory]['MODS'] = $normalizedAuthor . ".xml";
-            $this->writeLog("Created new ETD MODS file " . $this->localFiles[$directory]['MODS'], $fn, $etdname);
+            $this->localFiles[$file]['MODS'] = $normalizedAuthor . ".xml";
+            $this->writeLog("Created new ETD MODS file " . $this->localFiles[$file]['MODS'], $fn, $etdname);
 
 
             /**
@@ -746,7 +753,7 @@ class processProquest {
              * Previous comments (possibly outdated):
              *    UNKNOWN0 in lookup should mean there are other files
              *    also, Proquest MD will have DISS_attachment
-             *    ($this->localFiles[$directory]['UNKNOWN0']) or
+             *    ($this->localFiles[$file]['UNKNOWN0']) or
              */
             $suppxpath = new DOMXpath($metadata);
             $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
@@ -755,10 +762,10 @@ class processProquest {
 
             // Check if there are zero or more supplemental files.
             if ($suElements->item(0) ) {
-                $this->localFiles[$directory]['PROCESS'] = "0";
+                $this->localFiles[$file]['PROCESS'] = "0";
                 $this->writeLog("No supplemental files found.", $fn, $etdname);
             } else {
-                $this->localFiles[$directory]['PROCESS'] = "1";
+                $this->localFiles[$file]['PROCESS'] = "1";
                 $this->writeLog("Found a supplemental file(s).", $fn, $etdname);
 
                 // Keep track of how many additional PIDs will need to be generated.
@@ -936,15 +943,7 @@ class processProquest {
         $failureMessage = "\n\nWARNING!! The following ETDs __FAILED__ to ingest:\n";
         $processingMessage = "\n\nThe following staging directories were used:\n";
 
-        # $this->settings['packages']['fop_config'];
         $fop_config = $this->settings['packages']['fop_config'];
-        # $fop = '/var/www/html/drupal/sites/all/modules/boston_college/data/fop/cfg.xml';
-
-        # $executable_fop = '/opt/fop/fop';
-        # $executable_convert = '/usr/bin/convert';
-        # $executable_pdftk = '/usr/bin/pdftk';
-        # $executable_pdftotext = '/usr/bin/pdftotext';
-
         $executable_fop = $this->settings['packages']['fop'];
         $executable_convert = $this->settings['packages']['convert'];
         $executable_pdftk = $this->settings['packages']['pdftk'];
@@ -954,23 +953,25 @@ class processProquest {
 
         // Go through each ETD local file bundle.
         $i = 0;
-        foreach ($this->localFiles as $directory => $submission) {
+        foreach ($this->localFiles as $file => $submission) {
             $i++;
 
-            $processingMessage .= " • " .$directory . "\n";
+            $workingDir = $submission['WORKING_DIR'];
+
+            $processingMessage .= " • " . $workingDir . "\n";
 
             // Pull out the ETD shortname that was generated in getFiles()
-            $etdname = $this->localFiles[$directory]['ETD_SHORTNAME'];
+            $etdname = $this->localFiles[$file]['ETD_SHORTNAME'];
             if ( empty($etdname) ) {
-                $etdname = substr($this->localFiles[$directory]["ETD"],0,strlen($this->localFiles[$directory]["ETD"])-4);
-                $this->localFiles[$directory]['ETD_SHORTNAME'] = $etdname;
+                $etdname = substr($this->localFiles[$file]["ETD"],0,strlen($this->localFiles[$file]["ETD"])-4);
+                $this->localFiles[$file]['ETD_SHORTNAME'] = $etdname;
             }
             $this->writeLog("BEGIN Ingesting ETD #" . (string)$i . " - " . $etdname, $fn);
 
 
             // Reconstruct name of zip file from the local ETD work space directory name.
             // TODO: there must be a better way to do this...
-            $directoryArray = explode('/', $directory);
+            $directoryArray = explode('/', $workingDir);
             $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
             // Build full FTP path for ETD file incase $fetchdirFTP is not the root directory.
@@ -989,15 +990,15 @@ class processProquest {
             $this->etd["fullfnameFTP"] = $fullfnameFTP;
 
             // Check for supplemental files, and create log message.
-            if ($this->localFiles[$directory]['PROCESS'] === '1') {
+            if ($this->localFiles[$file]['PROCESS'] === '1') {
                 // Still Load - but notify admin about supp files.
                 $this->writeLog("Supplementary files found.", $fn, $etdname);
             }
 
             // Instantiated a Fedora object and use the generated PID as its ID.
             try {
-                $object = $this->repository->constructObject($this->localFiles[$directory]['PID']);
-                $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$directory]['PID'], $fn, $etdname);
+                $object = $this->repository->constructObject($this->localFiles[$file]['PID']);
+                $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$file]['PID'], $fn, $etdname);
             } catch (Exception $e) {
                 $this->writeLog("ERROR: Could not instanciate Fedora object: " . $e->getMessage(), $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
@@ -1006,8 +1007,8 @@ class processProquest {
             }
 
             // Assign the Fedora object label the ETD name/label
-            $object->label = $this->localFiles[$directory]['LABEL'];
-            $this->writeLog("Assigned a title to Fedora object: " . $this->localFiles[$directory]['LABEL'], $fn, $etdname);
+            $object->label = $this->localFiles[$file]['LABEL'];
+            $this->writeLog("Assigned a title to Fedora object: " . $this->localFiles[$file]['LABEL'], $fn, $etdname);
 
             // All Fedora objects are owned by the same generic account
             $object->owner = 'fedoraAdmin';
@@ -1034,7 +1035,7 @@ class processProquest {
             }
 
             // Update the Parent and Collection policies if this ETD is embargoed.
-            if (isset($this->localFiles[$directory]['EMBARGO'])) {
+            if (isset($this->localFiles[$file]['EMBARGO'])) {
                 $collection = GRADUATE_THESES_RESTRICTED;
                 try {
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
@@ -1076,12 +1077,12 @@ class processProquest {
 
             // Set various MODS datastream values.
             $datastream->label = 'MODS Record';
-            // OLD: $datastream->label = $this->localFiles[$directory]['LABEL'];
+            // OLD: $datastream->label = $this->localFiles[$file]['LABEL'];
             $datastream->mimeType = 'application/xml';
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
-            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['MODS']);
-            $this->writeLog("Selecting MODS datastream to use: " . $this->localFiles[$directory]['MODS'], $fn, $etdname);
+            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['MODS']);
+            $this->writeLog("Selecting MODS datastream to use: " . $this->localFiles[$file]['MODS'], $fn, $etdname);
 
             // Ingest MODS datastream into Fedora object.
             try {
@@ -1108,12 +1109,12 @@ class processProquest {
             $datastream = $object->constructDatastream($dsid, 'X');
 
             // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
-            $datastream->label = substr($this->localFiles[$directory]['METADATA'], 0, strlen($this->localFiles[$directory]['METADATA'])-4);
+            $datastream->label = substr($this->localFiles[$file]['METADATA'], 0, strlen($this->localFiles[$file]['METADATA'])-4);
             //$this->writeLog("Using datastream label: " . $datastream->label, $fn, $etdname);
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
-            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['METADATA']);
-            $this->writeLog("Selecting ARCHIVE datastream to use: " . $this->localFiles[$directory]['METADATA'], $fn, $etdname);
+            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['METADATA']);
+            $this->writeLog("Selecting ARCHIVE datastream to use: " . $this->localFiles[$file]['METADATA'], $fn, $etdname);
 
             // Set various ARCHIVE MODS datastream values.
             $datastream->mimeType = 'application/xml';
@@ -1138,7 +1139,7 @@ class processProquest {
             // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
             $datastream = $object->constructDatastream($dsid);
 
-            // OLD: $datastream->label = $this->localFiles[$directory]['LABEL'];
+            // OLD: $datastream->label = $this->localFiles[$file]['LABEL'];
             $datastream->label = 'ARCHIVE-PDF Datastream';
 
             // Set various ARCHIVE-PDF datastream values.
@@ -1147,8 +1148,8 @@ class processProquest {
             $datastream->state = 'I';
 
             // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $datastream->setContentFromFile($directory . "//" . $this->localFiles[$directory]['ETD']);
-            $this->writeLog("Selecting ARCHIVE-PDF datastream to use: " . $this->localFiles[$directory]['ETD'], $fn, $etdname);
+            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['ETD']);
+            $this->writeLog("Selecting ARCHIVE-PDF datastream to use: " . $this->localFiles[$file]['ETD'], $fn, $etdname);
 
             // Ingest ARCHIVE-PDF datastream into Fedora object.
             try {
@@ -1173,10 +1174,10 @@ class processProquest {
             $this->writeLog("First, generate PDF splash page.", $fn, $etdname);
 
             // Source file is the original Proquest XML file.
-            $source = $directory . "/" . $this->localFiles[$directory]['MODS'];
+            $source = $workingDir . "/" . $this->localFiles[$file]['MODS'];
 
             // Assign PDF splash document to ETD file's directory.
-            $splashtemp = $directory . "/splash.pdf";
+            $splashtemp = $workingDir . "/splash.pdf";
 
             // Use the custom XSLT splash stylesheet to build the PDF splash document.
             $splashxslt = $this->settings['xslt']['splash'];
@@ -1196,7 +1197,7 @@ class processProquest {
     		}
 
             // Update ETD file's object to store splash page's file location and name.
-            $this->localFiles[$directory]['SPLASH'] = 'splash.pdf';
+            $this->localFiles[$file]['SPLASH'] = 'splash.pdf';
 
             /**
              * Build concatted PDF document.
@@ -1206,10 +1207,10 @@ class processProquest {
             $this->writeLog("Next, generate concatenated PDF document.", $fn, $etdname);
 
             // Assign concatenated PDF document to ETD file's directory.
-            $concattemp = $directory . "/concatted.pdf";
+            $concattemp = $workingDir . "/concatted.pdf";
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $pdf = $directory . "//" . $this->localFiles[$directory]['ETD'];
+            $pdf = $workingDir . "//" . $this->localFiles[$file]['ETD'];
 
             /*
             // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
@@ -1272,10 +1273,10 @@ class processProquest {
             $this->writeLog("Generating FULL_TEXT datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $source = $directory . "/" . $this->localFiles[$directory]['ETD'];
+            $source = $workingDir . "/" . $this->localFiles[$file]['ETD'];
 
             // Assign FULL_TEXT document to ETD file's directory.
-            $fttemp = $directory . "/fulltext.txt";
+            $fttemp = $workingDir . "/fulltext.txt";
 
             // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
             // Execute 'pdftotext' command and check return code.
@@ -1345,11 +1346,11 @@ class processProquest {
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             // TODO: figure out what "[0]" means in this context.
-            $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
+            $source = $workingDir . "/" . $this->localFiles[$file]['ETD'] . "[0]";
 
             // Use convert (from ImageMagick tool suite) to generate TN document.
             // Execute 'convert' command and check return code.
-            $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $directory . "/thumbnail.jpg";
+            $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $workingDir . "/thumbnail.jpg";
             exec($command, $output, $return);
             $this->writeLog("Running 'convert' command to build TN document.", $fn, $etdname);
 
@@ -1369,7 +1370,7 @@ class processProquest {
             $datastream->mimeType = 'image/jpeg';
 
             // Set TN datastream to be the generated thumbnail image.
-            $datastream->setContentFromFile($directory . "//thumbnail.jpg");
+            $datastream->setContentFromFile($workingDir . "//thumbnail.jpg");
             $this->writeLog("Selecting TN datastream to use: thumbnail.jpg", $fn, $etdname);
 
             // Ingest TN datastream into Fedora object.
@@ -1394,11 +1395,11 @@ class processProquest {
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             // TODO: figure out what "[0]" means in this context.
-            $source = $directory . "/" . $this->localFiles[$directory]['ETD'] . "[0]";
+            $source = $workingDir . "/" . $this->localFiles[$file]['ETD'] . "[0]";
 
             // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
             // Execute 'convert' command and check return code.
-            $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $directory . "/preview.jpg";
+            $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $workingDir . "/preview.jpg";
             exec($command, $output, $return);
             $this->writeLog("Running 'convert' command to build PREVIEW document.", $fn, $etdname);
 
@@ -1418,7 +1419,7 @@ class processProquest {
             $datastream->mimeType = 'image/jpeg';
 
             // Set PREVIEW datastream to be the generated preview image.
-            $datastream->setContentFromFile($directory . "//preview.jpg");
+            $datastream->setContentFromFile($workingDir . "//preview.jpg");
             $this->writeLog("Selecting TN datastream to use: preview.jpg", $fn, $etdname);
 
             // Ingest PREVIEW datastream into Fedora object.
