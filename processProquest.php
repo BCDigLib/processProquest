@@ -76,8 +76,20 @@ class processProquest {
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      */
     public function __construct($config = PROCESSPROQUEST_INI_FILE, $debug = DEFAULT_DEBUG_VALUE) {
+        // Check if config ini file exits
+        if(!file_exists($config)) {
+            echo "ERROR: Could not find a configuration file with that name. Please check your settings and try again.\n";
+            die;
+        }
+        
         $this->settings = parse_ini_file($config, true);
 
+        // Check if this is a valid ini file
+        if ($this->settings == False) {
+            echo "ERROR: This configuration file is empty or misformed. Please check your settings and try again.\n";
+            die;
+        }
+        
         // Verify that $debug is a bool value.
         if ( is_bool($debug) ){
             $this->debug = $debug;
