@@ -32,7 +32,7 @@ if(is_null($configurationFile)){
 require_once 'processProquest.php';
 
 // Debug is off by default
-$debug = true;
+$debug = false;
 
 // Create the $process object.
 $process = new processProquest($configurationFile, $debug);
