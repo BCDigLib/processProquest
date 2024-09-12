@@ -382,7 +382,10 @@ class processProquest {
             $this->localFiles[$etdname]['ETD_SHORTNAME'] = $etdname;
             $this->localFiles[$etdname]['WORKING_DIR'] = $etdDir;
             $this->localFiles[$etdname]['SUPPLEMENTS'] = [];
-            $this->localFiles[$etdname]['HAS_SUPPLEMENT'] = false;
+            $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = false;
+
+            // Set status to 'processing'.
+            $this->localFiles[$etdname]['STATUS'] = "processing";
 
             $this->writeLog("BEGIN Gathering ETD file #" . $f . " - " . $filename, $fn);
 
@@ -432,13 +435,14 @@ class processProquest {
 
             // Go through entire zip file and process contents.
             $z = 0;
+            $this->writeLog("Expanding zip file.", $fn, $etdname);
             while ($zip_entry = zip_read($ziplisting)) {
                 $z++;
-                $this->writeLog("Now reading zip file #" . $z, $fn, $etdname);
+                // $this->writeLog("Now reading file #" . $z, $fn, $etdname);
 
                 // Get file name.
                 $file = zip_entry_name($zip_entry);
-                $this->writeLog("Zip file name: " . $file, $fn, $etdname);
+                $this->writeLog("[" . $z . "] File name: " . $file, $fn, $etdname);
 
                 /**
                  * Match for a specific string in file.
@@ -452,44 +456,68 @@ class processProquest {
                  */
                 if (preg_match('/0016/', $file)) {
                     // Check if this is a PDF or XML file.
-                    // TODO: handle string case in comparison. Ex: "pdf" vs "PDF".
-                    if (substr($file,strlen($file)-3) === 'pdf') {
+                    $fileName = strtolower(substr($file,strlen($file)-3));
+                    if ($fileName === 'pdf') {
                         $this->localFiles[$etdname]['ETD'] = $file;
-                        $this->writeLog("This is an PDF file.", $fn, $etdname);
-                    } elseif (substr($file,strlen($file)-3) === 'xml') {
+                        $this->localFiles[$etdname]['FILE_ETD'] = $file;
+                        $this->writeLog("[" . $z . "] This is a PDF file.", $fn, $etdname);
+                    } elseif ($fileName === 'xml') {
                         $this->localFiles[$etdname]['METADATA'] = $file;
-                        $this->writeLog("This is an XML metadata file.", $fn, $etdname);
+                        $this->localFiles[$etdname]['FILE_METADATA'] = $file;
+                        $this->writeLog("[" . $z . "] This is an XML file.", $fn, $etdname);
                     } else {
                         /**
                          * Supplementary files - could be permissions or data.
                          * Metadata will contain boolean key for permission in DISS_file_descr element.
                          * [0] element should always be folder.
                          */
+
+                        // Ignore directories
+                        try {
+                            if (is_dir($etdDir . "/" .$file)) {
+                                $this->writeLog("[" . $z . "] This is a directory. Skipping.", $fn, $etdname);
+                                continue;
+                            }
+                        } catch (Exception $e) {
+                            $errorMessage = "ERROR: Couldn't check if file is a directory: " . $e->getMessage();
+                            $this->writeLog($errorMessage, $fn, $etdname);
+                            $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                            continue;
+                        }
+                        
                         $this->localFiles[$etdname]['UNKNOWN'.$supplement] = $file;
-                        $this->localFiles[$etdname]['HAS_SUPPLEMENT'] = true;
+
+                        array_push($this->localFiles[$etdname]['SUPPLEMENTS'], $file);
+                        
+                        $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
                         $supplement++;
-
-                        //$this->localFiles[$etdname]['SUPPLEMENTS'][]
-
-                        $this->writeLog("This is a supplementary file.", $fn, $etdname);
+                        $this->writeLog("[" . $z . "] This is a supplementary file.", $fn, $etdname);
                     }
                 }
             }
 
             /**
-             * Sanity check that both:
+             * Check that both:
              *  - $this->localFiles[$etdname]['ETD']
              *  - $this->localFiles[$etdname]['METADATA']
              * are defined and are nonempty strings.
              */
-            $this->writeLog("Running sanity check that ETD PDF and XML file were found...", $fn, $etdname);
+            $this->writeLog("Checking that PDF and XML files were found in this zip file...", $fn, $etdname);
             if ( empty($this->localFiles[$etdname]['ETD']) ) {
-                $this->writeLog("Warning! The ETD PDF file was not found or set!", $fn, $etdname);
+                $errorMessage = "ERROR: The ETD PDF file was not found or set!";
+                $this->writeLog($errorMessage, $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
+                $this->localFiles[$etdname]['STATUS'] = "failure";
+                continue;
             }
             $this->writeLog("Great! The ETD PDF file was found.", $fn, $etdname);
 
             if ( empty($this->localFiles[$etdname]['METADATA']) ) {
-                $this->writeLog("Warning! The ETD XML file was not found or set!", $fn, $etdname);
+                $errorMessage = "ERROR: The ETD XML file was not found or set!";
+                $this->writeLog($errorMessage, $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
+                $this->localFiles[$etdname]['STATUS'] = "failure";
+                continue;
             }
             $this->writeLog("Great! The ETD XML file was found.", $fn, $etdname);
 
@@ -528,7 +556,11 @@ class processProquest {
     function processFiles() {
         $fn = "processFiles";
 
-        // Sanity check to see if there are any ETD files to process.
+        // TODO: check for:
+        //  * $this->localFiles[$etdname]['STATUS']
+        //  * $this->localFiles[$etdname]['HAS_SUPPLEMENTS']
+
+        // Check to see if there are any ETD files to process.
         if ( empty($this->localFiles) ) {
             $this->writeLog("Did not find any files to process. Quitting.", $fn);
             return true;
