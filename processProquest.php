@@ -161,7 +161,7 @@ class processProquest {
         }
 
         // Format the date and time. Ex: 2024-09-12 23:08:29
-        $time = @date('[Y-m-d H:i:s');
+        $time = @date('[Y-m-d H:i:s]');
 
         // Append message to the log file.
         if ($fd = @fopen($this->logFile, "a")) {
