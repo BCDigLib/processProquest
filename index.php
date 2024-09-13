@@ -5,7 +5,7 @@
  * and open the template in the editor.
  */
 
-error_reporting(E_ALL);
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 $fontpath = realpath('/usr/share/fonts/freesans-font/');
 putenv('GDFONTPATH='.$fontpath);
