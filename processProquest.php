@@ -26,6 +26,8 @@ define('GRADUATE_THESES_RESTRICTED','bc-ir:GraduateThesesCollectionRestricted');
 define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-log/');
 define('DEFAULT_DEBUG_VALUE', false);
 
+date_default_timezone_set("America/New_York");
+
 /**
  * Batch processes Proquest ETDs.
  *
@@ -158,8 +160,8 @@ class processProquest {
             $etd = "[" . $etd . "]";
         }
 
-        // Format the date and time. Ex: 16/Feb/2020:07:45:12
-        $time = @date('[d/M/Y:H:i:s]');
+        // Format the date and time. Ex: 2024-09-12 23:08:29
+        $time = @date('[Y-m-d H:i:s');
 
         // Append message to the log file.
         if ($fd = @fopen($this->logFile, "a")) {
