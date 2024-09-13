@@ -135,10 +135,10 @@ class processProquest {
      * Simple logging.
      *
      * @param string $message The message to log.
-     * @param string $etd The ETD name.
+     * @param string $prefix The prefix to include before the message. Is wrapped in [].
      * @return boolean Write status.
      */
-    private function writeLog($message, $function_name = "", $etd = "") {
+    private function writeLog($message, $function_name = "", $prefix = "") {
         // Check if there is a known issue with log writing.
         if ($this->logError === true){
             // Nothing we can do at this point.
@@ -155,9 +155,9 @@ class processProquest {
             }
         }
 
-        // Add some text wrapping to $etd, if set.
-        if ( !empty($etd) ) {
-            $etd = "[" . $etd . "]";
+        // Prepend $prefix to $message, if set.
+        if ( !empty($prefix) ) {
+            $message = "[{$prefix}] {$message}";
         }
 
         // Format the date and time. Ex: 2024-09-12 23:08:29
@@ -166,7 +166,7 @@ class processProquest {
         // Append message to the log file.
         if ($fd = @fopen($this->logFile, "a")) {
             //$result = fputcsv($fd, array($time, $message));
-            $res = fwrite($fd, "$time ($function_name) $etd $message" . PHP_EOL);
+            $res = fwrite($fd, "{$time} ({$function_name}) {$message}" . PHP_EOL);
 
             // Check if fwrite failed.
             if ($res === false) {
@@ -191,7 +191,7 @@ class processProquest {
         }
 
         // Finally, output to stdout
-        echo "$time ($function_name) $etd $message\n";
+        echo "$time ($function_name) $message\n";
 
         return true;
     }
