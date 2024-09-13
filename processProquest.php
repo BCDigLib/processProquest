@@ -450,6 +450,12 @@ class processProquest {
             $this->localFiles[$etdname]['WORKING_DIR'] = $etdDir;
             $this->localFiles[$etdname]['SUPPLEMENTS'] = [];
             $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = false;
+            $this->localFiles[$etdname]['ETD'] = "";
+            $this->localFiles[$etdname]['FILE_ETD'] = "";
+            $this->localFiles[$etdname]['METADATA'] = "";
+            $this->localFiles[$etdname]['FILE_METADATA'] = "";
+            $this->localFiles[$etdname]['ZIP_CONTENTS'] = [];
+            $this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'] = [];
 
             // Set status to 'processing'.
             $this->localFiles[$etdname]['STATUS'] = "processing";
@@ -504,63 +510,85 @@ class processProquest {
             $z = 0;
             $this->writeLog("Expanding zip file.", $fn, $etdname);
             // TODO: replace zip_read() with ZipArchive::statIndex
+            // FIX: supplemental files that are PDF replace the main ETD file
             while ($zip_entry = zip_read($ziplisting)) {
                 $z++;
 
                 // Get file name.
                 $file = zip_entry_name($zip_entry);
                 $this->writeLog("  [{$z}] File name: {$file}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['ZIP_CONTENTS'], $file);
 
                 /**
                  * Match for a specific string in file.
                  *
                  * Make note of expected files:
-                 *  - PDF.
-                 *  - XML.
-                 *  - all else (AKA supplementary files).
+                 *  - PDF
+                 *  - XML
+                 *  - all else are supplementary files
                  *
                  *  The String "0016" is specific to BC.
                  */
                 if (preg_match('/0016/', $file)) {
-                    // Check if this is a PDF or XML file.
                     $fileName = strtolower(substr($file,strlen($file)-3));
-                    if ($fileName === 'pdf') {
+
+                    // Check if this is a PDF file.
+                    if ($fileName === 'pdf' && empty($this->localFiles[$etdname]['ETD'])) {
                         $this->localFiles[$etdname]['ETD'] = $file;
                         $this->localFiles[$etdname]['FILE_ETD'] = $file;
                         $this->writeLog("  [{$z}] File type: PDF.", $fn, $etdname);
-                    } elseif ($fileName === 'xml') {
+                        continue;
+                    }
+
+                    // Check if this is an XML file.
+                    if ($fileName === 'xml' && empty($this->localFiles[$etdname]['METADATA'])) {
                         $this->localFiles[$etdname]['METADATA'] = $file;
                         $this->localFiles[$etdname]['FILE_METADATA'] = $file;
                         $this->writeLog("  [{$z}] File type: XML.", $fn, $etdname);
-                    } else {
-                        /**
-                         * Supplementary files - could be permissions or data.
-                         * Metadata will contain boolean key for permission in DISS_file_descr element.
-                         * [0] element should always be folder.
-                         */
+                        continue;
+                    }
 
-                        // Ignore directories
-                        try {
-                            if (is_dir($etdDir . "/" .$file)) {
-                                $this->writeLog("  [{$z}] This is a directory. Skipping.", $fn, $etdname);
-                                continue;
-                            }
-                        } catch (Exception $e) {
-                            $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
-                            $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
-                            $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                            // array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
+                    /**
+                     * Supplementary files - could be permissions or data.
+                     * Metadata will contain boolean key for permission in DISS_file_descr element.
+                     * [0] element should always be folder.
+                     */
+
+                    // Ignore directories
+                    try {
+                        if (is_dir($etdDir . "/" . $file)) {
+                            $this->writeLog("  [{$z}] This is a directory. Skipping.", $fn, $etdname);
+                            array_push($this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'], $file);
                             continue;
                         }
-                        
-                        $this->localFiles[$etdname]['UNKNOWN'.$supplement] = $file;
-
-                        array_push($this->localFiles[$etdname]['SUPPLEMENTS'], $file);
-                        
-                        $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
-                        $supplement++;
-                        $this->writeLog("  [{$z}] This is a supplementary file.", $fn, $etdname);
+                    } catch (Exception $e) {
+                        $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
+                        $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                        $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                        // array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
+                        continue;
                     }
+
+                    // Check if any directory name is in the file name.
+                    // TODO: refactor
+                    foreach ($this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'] as $dir) {
+                        if (str_contains($file, $dir)) {
+                            // This file is flagged as a supplemental file.
+                            ;
+                        } else {
+                            // Something is wrong since there are multiple files 
+                            // in the root of the zip file.
+                            $this->writeLog("  [{$z}] WARNING: potential supplementary file found in root of the zip file.", $fn, $etdname);
+                        }
+                    }
+                    
+                    $this->localFiles[$etdname]['UNKNOWN'.$supplement] = $file;
+
+                    array_push($this->localFiles[$etdname]['SUPPLEMENTS'], $file);
+                    
+                    $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
+                    $supplement++;
+                    $this->writeLog("  [{$z}] This is a supplementary file.", $fn, $etdname);
                 }
             }
 
