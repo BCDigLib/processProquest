@@ -80,8 +80,8 @@ class processProquest {
         }
 
         $this->writeLog("STATUS: Starting processProquest script.", "");
-        $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? "TRUE" : "FALSE"), "");
-        $this->writeLog("STATUS: Using configuration file: " . $configurationFile, "");
+        $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
+        $this->writeLog("STATUS: Using configuration file: {$configurationFile}", "");
     }
 
     /**
@@ -320,6 +320,11 @@ class processProquest {
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $fetchdirFTP = $this->settings['ftp']['fetchdir'];
+        if (empty($fetchdirFTP)) {
+            $fetchdirFTPRelative = "/";
+        } else {
+            $fetchdirFTPRelative = $fetchdirFTP;
+        }
 
         // Define local directory for file processing. Ex: /tmp/processed/
         $localdirFTP = $this->settings['ftp']['localdir'];
@@ -331,28 +336,31 @@ class processProquest {
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
         if ($fetchdirFTP != "") {
             if ( $this->ftp->ftp_chdir($fetchdirFTP) ) {
-                $this->writeLog("Changed to FTP directory: " . $fetchdirFTP, $fn);
+                $this->writeLog("Changed to local FTP directory: {$fetchdirFTP}", $fn);
             } else {
-                $this->writeLog("ERROR: Cound not change FTP directory: " . $fetchdirFTP , $fn);
+                $this->writeLog("ERROR: Cound not change FTP directory: {$fetchdirFTP}", $fn);
                 return false;
             }
         }
 
-        $this->writeLog("Currently in FTP directory: " . $fetchdirFTP, $fn);
+        $this->writeLog("Currently in FTP directory: {$fetchdirFTPRelative}", $fn);
 
         /**
          * Look for files that begin with a specific string.
-         * In our specific case the file prefix is "etdadmin_upload".
+         * In our specific case the file prefix is "etdadmin_upload_*".
          * Save results into $etdFiles array.
          */
-        $etdFiles = $this->ftp->ftp_nlist("etdadmin_upload*");
+        $file_regex = $this->settings['ftp']['file_regex'];
+        $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
         // Check to see if there are any ETD files to process.
         // TODO: Handle some type of error message?
         if ( empty($etdFiles) ) {
             $this->writeLog("Did not find any files to fetch. Quitting.", $fn);
-            return true;
+            return false;
         }
+
+        $this->writeLog("Found " . count($etdFiles) . " file(s).", $fn);
 
         /**
          * Loop through each match in $etdFiles.
@@ -387,18 +395,18 @@ class processProquest {
             // Set status to 'processing'.
             $this->localFiles[$etdname]['STATUS'] = "processing";
 
-            $this->writeLog("BEGIN Gathering ETD file #" . $f . " - " . $filename, $fn);
+            $this->writeLog("BEGIN Gathering ETD file #{$f} - {$filename}", $fn);
 
             // Create the local directory if it doesn't already exists.
             $this->writeLog("Now building local working directory...", $fn, $etdname);
             if ( file_exists($etdDir) ) {
-                $this->writeLog("Local working directory already exists: " . $etdDir, $fn, $etdname);
+                $this->writeLog("Local working directory already exists: {$etdDir}", $fn, $etdname);
             }
             else if ( !mkdir($etdDir, 0755, true) ) {
-                $this->writeLog("Failed to create local working directory: " . $etdDir . ". Skipping this file.", $fn, $etdname);
+                $this->writeLog("Failed to create local working directory: {$etdDir}. Skipping this file.", $fn, $etdname);
                 continue;
             } else {
-                $this->writeLog("Created ETD local working directory: " . $etdDir, $fn, $etdname);
+                $this->writeLog("Created ETD local working directory: {$etdDir}", $fn, $etdname);
             }
             $localFile = $etdDir . "/" . $filename;
 
@@ -413,7 +421,7 @@ class processProquest {
             if ( $this->ftp->ftp_get($localFile, $filename, FTP_BINARY) ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdname);
             } else {
-                $this->writeLog("ERROR: Failed to fetch file from FTP server!" . $localFile, $fn, $etdname);
+                $this->writeLog("ERROR: Failed to fetch file from FTP server: {$localFile}", $fn, $etdname);
                 continue;
             }
 
@@ -442,7 +450,7 @@ class processProquest {
 
                 // Get file name.
                 $file = zip_entry_name($zip_entry);
-                $this->writeLog("[" . $z . "] File name: " . $file, $fn, $etdname);
+                $this->writeLog("[{$z}] File name: {$file}", $fn, $etdname);
 
                 /**
                  * Match for a specific string in file.
@@ -460,11 +468,11 @@ class processProquest {
                     if ($fileName === 'pdf') {
                         $this->localFiles[$etdname]['ETD'] = $file;
                         $this->localFiles[$etdname]['FILE_ETD'] = $file;
-                        $this->writeLog("[" . $z . "] This is a PDF file.", $fn, $etdname);
+                        $this->writeLog("[{$z}] This is a PDF file.", $fn, $etdname);
                     } elseif ($fileName === 'xml') {
                         $this->localFiles[$etdname]['METADATA'] = $file;
                         $this->localFiles[$etdname]['FILE_METADATA'] = $file;
-                        $this->writeLog("[" . $z . "] This is an XML file.", $fn, $etdname);
+                        $this->writeLog("[{$z}] This is an XML file.", $fn, $etdname);
                     } else {
                         /**
                          * Supplementary files - could be permissions or data.
@@ -475,7 +483,7 @@ class processProquest {
                         // Ignore directories
                         try {
                             if (is_dir($etdDir . "/" .$file)) {
-                                $this->writeLog("[" . $z . "] This is a directory. Skipping.", $fn, $etdname);
+                                $this->writeLog("[{$z}] This is a directory. Skipping.", $fn, $etdname);
                                 continue;
                             }
                         } catch (Exception $e) {
@@ -491,7 +499,7 @@ class processProquest {
                         
                         $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
                         $supplement++;
-                        $this->writeLog("[" . $z . "] This is a supplementary file.", $fn, $etdname);
+                        $this->writeLog("[{$z}] This is a supplementary file.", $fn, $etdname);
                     }
                 }
             }
@@ -529,13 +537,13 @@ class processProquest {
                 $zip->extractTo($etdDir);
                 $zip->close();
 
-                $this->writeLog("Extracting ETD zip file: " . $localFile, $fn, $etdname);
+                $this->writeLog("Extracting ETD zip file: {$localFile}", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: Failed to extract ETD zip file! " . $res, $fn, $etdname);
                 continue;
             }
 
-            $this->writeLog("END Gathering ETD file #" . $f . " - " . $filename, $fn);
+            $this->writeLog("END Gathering ETD file #{$f} - {$filename}", $fn);
         }
 
         // Completed fetching all ETD zip files.
@@ -657,10 +665,10 @@ class processProquest {
                 $has_embargo = true;
                 // Convert date string into proper PHP date object format.
                 $embargo = $emElements->item(0)->C14N();
-                $this->writeLog("Unformatted embargo date: " . $embargo, $fn, $etdname);
+                $this->writeLog("Unformatted embargo date: {$embargo}", $fn, $etdname);
                 $embargo = str_replace(" ","T",$embargo);
                 $embargo = $embargo . "Z";
-                $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
+                $this->writeLog("Using embargo date of: {$embargo}", $fn, $etdname);
             } else {
                 $this->writeLog("There is no embargo on this record.", $fn, $etdname);
             }
@@ -673,7 +681,7 @@ class processProquest {
                 $embargo = 'indefinite';
                 $has_embargo = true;
                 $this->writeLog("Changing embargo date to 'indefinite'", $fn, $etdname);
-                $this->writeLog("Using embargo date of: " . $embargo, $fn, $etdname);
+                $this->writeLog("Using embargo date of: {$embargo}", $fn, $etdname);
             }
 
             $this->localFiles[$file]['HAS_EMBARGO'] = $has_embargo;
@@ -688,15 +696,15 @@ class processProquest {
             // DEBUG: generate random PID.
             if ($this->debug === true) {
                 $pid = "bc-ir:" . rand(50000,100000);
-                $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): " . $pid, $fn, $etdname);
+                $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}", $fn, $etdname);
             } else {
                 $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
-                $this->writeLog("Fetched new PID from Fedora: " . $pid, $fn, $etdname);
+                $this->writeLog("Fetched new PID from Fedora: {$pid}", $fn, $etdname);
             }
 
             $this->localFiles[$file]['PID'] = $pid;
 
-            $this->writeLog("Fedora PID value for this ETD: " . $pid, $fn, $etdname);
+            $this->writeLog("Fedora PID value for this ETD: {$pid}", $fn, $etdname);
 
             /**
              * Insert the PID value into the Proquest MODS XSLT stylesheet.
@@ -746,7 +754,7 @@ class processProquest {
             $xpathAuthor = new DOMXpath($mods);
             $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);
             $author = $authorElements->item(0)->C14N();
-            $this->writeLog("Generated ETD author: [" . $author . "]", $fn, $etdname);
+            $this->writeLog("Generated ETD author: [{$author}]", $fn, $etdname);
 
             /**
              * Normalize the ETD author string. This forms the internal file name convention.
@@ -757,7 +765,7 @@ class processProquest {
             $this->localFiles[$file]['AUTHOR'] = $author;
             $this->localFiles[$file]['AUTHOR_NORMALIZED'] = $normalizedAuthor;
 
-            $this->writeLog("Generated normalized ETD author: [" . $normalizedAuthor . "]", $fn, $etdname);
+            $this->writeLog("Generated normalized ETD author: [{$normalizedAuthor}]", $fn, $etdname);
             $this->writeLog("Now using the normalized ETD author name to update ETD PDF and MODS files.", $fn, $etdname);
 
             // Create placeholder full-text text file using normalized author's name.
@@ -774,7 +782,7 @@ class processProquest {
 
             // Update local file path for ETD PDF file.
             $this->localFiles[$file]['ETD'] = $normalizedAuthor . ".pdf";
-            $this->writeLog("Renamed ETD PDF file from " . $submission['ETD'] . " to " . $this->localFiles[$file]['ETD'], $fn, $etdname);
+            $this->writeLog("Renamed ETD PDF file from {$submission['ETD']} to {$this->localFiles[$file]['ETD']}", $fn, $etdname);
 
             // Save MODS using normalized author's name.
             $res = $mods->save($etdWorkingDir . "/" . $normalizedAuthor . ".xml");
@@ -786,7 +794,7 @@ class processProquest {
 
             // Update local file path for MODS file.
             $this->localFiles[$file]['MODS'] = $normalizedAuthor . ".xml";
-            $this->writeLog("Created new ETD MODS file " . $this->localFiles[$file]['MODS'], $fn, $etdname);
+            $this->writeLog("Created new ETD MODS file {$this->localFiles[$file]['MODS']}", $fn, $etdname);
 
 
             /**
@@ -816,7 +824,7 @@ class processProquest {
                 $this->toProcess++;
             }
 
-            $this->writeLog("END Processing ETD #" . $s . " - " . $etdname, $fn);
+            $this->writeLog("END Processing ETD #{$s} - {$etdname}", $fn);
         }
 
         // Completed processing all ETD files.
@@ -879,9 +887,9 @@ class processProquest {
 
             // Set success status for email message.
             if (isset($submission['EMBARGO'])) {
-                $successMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
+                $successMessage .= "EMBARGO UNTIL: {$submission['EMBARGO']}\t";
             } else {
-                $successMessage .= "NO EMBARGO" . "\t";
+                $successMessage .= "NO EMBARGO\t";
             }
             $successMessage .= $submission['LABEL'] . "\n";
 
@@ -889,9 +897,9 @@ class processProquest {
             $processdirFTP = $this->settings['ftp']['processdir'];
             $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
 
-            $this->writeLog("Currently in FTP directory: " . $this->ftp->ftp_pwd(), $fn, $etdname);
+            $this->writeLog("Currently in FTP directory: {$this->ftp->ftp_pwd()}", $fn, $etdname);
 
-            $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullProcessdirFTP, $fn, $etdname);
+            $this->writeLog("Now attempting to move {$fullfnameFTP}  into {$fullProcessdirFTP}", $fn, $etdname);
 
             $ftpRes = true;
             if ($this->debug === true) {
@@ -925,7 +933,7 @@ class processProquest {
             $faildirFTP = $this->settings['ftp']['faildir'];
             $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
 
-            $this->writeLog("Now attempting to move " . $fullfnameFTP . " into " . $fullFaildirFTP, $fn, $etdname);
+            $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullFaildirFTP}", $fn, $etdname);
 
             $ftpRes = true;
             if ($this->debug === true) {
@@ -1031,7 +1039,7 @@ class processProquest {
             } else {
                 $fullfnameFTP = "~/" . $fetchdirFTP . "/" . $fnameFTP;
             }
-            $this->writeLog("The full path of the ETD file on the FTP server is: " . $fullfnameFTP, $fn, $etdname);
+            $this->writeLog("The full path of the ETD file on the FTP server is: {$fullfnameFTP}", $fn, $etdname);
 
             // collect some values for ingestHandlerPostProcess()
             $this->etd["submission"] = $submission;
@@ -1047,7 +1055,7 @@ class processProquest {
             // Instantiated a Fedora object and use the generated PID as its ID.
             try {
                 $object = $this->repository->constructObject($this->localFiles[$file]['PID']);
-                $this->writeLog("Instantiated a Fedora object with PID: " . $this->localFiles[$file]['PID'], $fn, $etdname);
+                $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$file]['PID']}", $fn, $etdname);
             } catch (Exception $e) {
                 $errorMessage = "ERROR: Could not instanciate Fedora object: " . $e->getMessage();
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1059,7 +1067,7 @@ class processProquest {
 
             // Assign the Fedora object label the ETD name/label
             $object->label = $this->localFiles[$file]['LABEL'];
-            $this->writeLog("Assigned a title to Fedora object: " . $this->localFiles[$file]['LABEL'], $fn, $etdname);
+            $this->writeLog("Assigned a title to Fedora object: {$this->localFiles[$file]['LABEL']}", $fn, $etdname);
 
             // All Fedora objects are owned by the same generic account
             $object->owner = 'fedoraAdmin';
@@ -1136,8 +1144,8 @@ class processProquest {
             $datastream->mimeType = 'application/xml';
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
-            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['MODS']);
-            $this->writeLog("Selecting MODS datastream to use: " . $this->localFiles[$file]['MODS'], $fn, $etdname);
+            $datastream->setContentFromFile("{$workingDir}/{$this->localFiles[$file]['MODS']}");
+            $this->writeLog("Selecting MODS datastream to use: {$this->localFiles[$file]['MODS']}", $fn, $etdname);
 
             // Ingest MODS datastream into Fedora object.
             try {
@@ -1173,7 +1181,7 @@ class processProquest {
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['METADATA']);
-            $this->writeLog("Selecting ARCHIVE datastream to use: " . $this->localFiles[$file]['METADATA'], $fn, $etdname);
+            $this->writeLog("Selecting ARCHIVE datastream to use: {$this->localFiles[$file]['METADATA']}", $fn, $etdname);
 
             // Set various ARCHIVE MODS datastream values.
             $datastream->mimeType = 'application/xml';
@@ -1210,7 +1218,7 @@ class processProquest {
 
             // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['ETD']);
-            $this->writeLog("Selecting ARCHIVE-PDF datastream to use: " . $this->localFiles[$file]['ETD'], $fn, $etdname);
+            $this->writeLog("Selecting ARCHIVE-PDF datastream to use: {$this->localFiles[$file]['ETD']}", $fn, $etdname);
 
             // Ingest ARCHIVE-PDF datastream into Fedora object.
             try {
@@ -1317,7 +1325,7 @@ class processProquest {
 
             // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
             $datastream->setContentFromFile($concattemp);
-            $this->writeLog("Selecting PDF datastream to use: " . $concattemp, $fn, $etdname);
+            $this->writeLog("Selecting PDF datastream to use: {$concattemp}", $fn, $etdname);
 
             // Ingest PDF datastream into Fedora object.
             try {
@@ -1398,7 +1406,7 @@ class processProquest {
 
             // Set FULL_TEXT datastream to be sanitized version of full-text document.
             $datastream->setContentFromString($sanitized);
-            $this->writeLog("Selecting FULL_TEXT datastream to use: " . $fttemp, $fn, $etdname);
+            $this->writeLog("Selecting FULL_TEXT datastream to use: {$fttemp}", $fn, $etdname);
 
             // Ingest FULL_TEXT datastream into Fedora object.
             try {
@@ -1565,14 +1573,14 @@ class processProquest {
 
                 // Check if file read failed.
                 if ($relsint === false) {
-                    $this->writeLog("ERROR: could not read in file: " . $relsFile, $fn, $etdname);
+                    $this->writeLog("ERROR: could not read in file: {$relsFile}", $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
 
                 $relsint = str_replace('######', $submission['PID'], $relsint);
 
-                $this->writeLog("No OA policy for ETD: read in: " . $relsFile, $fn, $etdname);
+                $this->writeLog("No OA policy for ETD: read in: {$relsFile}", $fn, $etdname);
             } else if (isset($submission['EMBARGO'])) {
                 // Has an OA policy, and an embargo date.
                 $relsFile = "xsl/embargoRELS-INT.xml";
@@ -1590,7 +1598,7 @@ class processProquest {
                 $relsint = str_replace('######', $submission['PID'], $relsint);
                 $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
 
-                $this->writeLog("OA policy found and Embargo date found for ETD: read in: " . $relsFile, $fn, $etdname);
+                $this->writeLog("OA policy found and Embargo date found for ETD: read in: {$relsFile}", $fn, $etdname);
             }
 
             // TODO: handle case where there is an OA policy and no embargo date?
@@ -1608,7 +1616,7 @@ class processProquest {
 
                 // Set RELS-INT datastream to be the custom XACML policy file read in above.
                 $datastream->setContentFromString($relsint);
-                $this->writeLog("Selecting RELS-INT datastream to use: " . $relsFile, $fn, $etdname);
+                $this->writeLog("Selecting RELS-INT datastream to use: {$relsFile}", $fn, $etdname);
 
                 // Ingest RELS-INT datastream into Fedora object.
                 try {
