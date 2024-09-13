@@ -305,6 +305,29 @@ class processProquest {
         }
     }
 
+    function prepareIngestDatastream($fedoraObj, $datastreamObj, $datastreamName, $etdName) {
+        if ($this->debug === true) {
+            array_push($this->localFiles[$etdName]['DATASTREAMS_CREATED'], $datastreamName);
+            $this->writeLog("[{$datastreamName}] DEBUG: Ingested datastream.", "ingest" , $etdName);
+            return true;
+        }
+
+        // Ingest datastream into Fedora object.
+        try {
+            $fedoraObj->ingestDatastream($datastreamObj);
+        } catch (Exception $e) {
+            $errorMessage = "ERROR: Ingesting {$datastreamName} datastream failed! " . $e->getMessage();
+            array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+            $this->writeLog($errorMessage, $fn, $etdName);
+            $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdName);
+            $this->ingestHandlerPostProcess(false, $etdName, $this->etd);
+            return false;
+        }
+        array_push($this->localFiles[$etdName]['DATASTREAMS_CREATED'], $datastreamName);
+        $this->writeLog("[{$datastreamName}] Ingested datastream.", "ingest" , $etdName);
+        return true;
+    }
+
     /**
      * Gather ETD zip files from FTP server.
      *
@@ -850,7 +873,6 @@ class processProquest {
         $this->api_m = $this->repository->api->m;
     }
 
-
     // Set global values for all ingest* functions
     public $pidcount = 0;
     public $successCount = 0;
@@ -1152,19 +1174,23 @@ class processProquest {
             $this->writeLog("[MODS] Selecting file for this datastream: {$this->localFiles[$file]['MODS']}", $fn, $etdname);
 
             // Ingest MODS datastream into Fedora object.
-            try {
-                $object->ingestDatastream($datastream);
-            } catch (Exception $e) {
-                $errorMessage = "ERROR: Ingesting MODS datastream failed! " . $e->getMessage();
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
-                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+            // try {
+            //     $object->ingestDatastream($datastream);
+            // } catch (Exception $e) {
+            //     $errorMessage = "ERROR: Ingesting MODS datastream failed! " . $e->getMessage();
+            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+            //     $this->writeLog($errorMessage, $fn, $etdname);
+            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+            //     continue;
+            // }
+
+            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+
+            if (!$status) {
+                // Ingest failed. Continue to the next ETD.
                 continue;
             }
-
-            array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "MODS");
-            $this->writeLog("[MODS] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1247,7 +1273,7 @@ class processProquest {
              */
             $dsid = "PDF";
             $this->writeLog("[PDF] Generating datastream.", $fn, $etdname);
-            $this->writeLog("First, generate PDF splash page.", $fn, $etdname);
+            $this->writeLog("[PDF] First, generate PDF splash page.", $fn, $etdname);
 
             // Source file is the original Proquest XML file.
             $source = $workingDir . "/" . $this->localFiles[$file]['MODS'];
@@ -1422,7 +1448,7 @@ class processProquest {
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
-            }
+            } 
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "FULL_TEXT");
             $this->writeLog("[FULL_TEXT] Ingested datastream.", $fn, $etdname);
 
