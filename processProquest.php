@@ -549,9 +549,10 @@ class processProquest {
                                 continue;
                             }
                         } catch (Exception $e) {
-                            $errorMessage = "ERROR: Couldn't check if file is a directory: " . $e->getMessage();
-                            $this->writeLog($errorMessage, $fn, $etdname);
+                            $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
+                            $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                            // array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                             continue;
                         }
                         
@@ -574,8 +575,8 @@ class processProquest {
              */
             $this->writeLog("Checking that PDF and XML files were found in this zip file...", $fn, $etdname);
             if ( empty($this->localFiles[$etdname]['ETD']) ) {
-                $errorMessage = "ERROR: The ETD PDF file was not found or set!";
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $errorMessage = "The ETD PDF file was not found or set.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 $this->localFiles[$etdname]['STATUS'] = "failure";
                 continue;
@@ -583,8 +584,8 @@ class processProquest {
             $this->writeLog("Great! The ETD PDF file was found.", $fn, $etdname);
 
             if ( empty($this->localFiles[$etdname]['METADATA']) ) {
-                $errorMessage = "ERROR: The ETD XML file was not found or set!";
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $errorMessage = "The ETD XML file was not found or set.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 $this->localFiles[$etdname]['STATUS'] = "failure";
                 continue;
@@ -601,11 +602,14 @@ class processProquest {
 
                 $this->writeLog("Extracting ETD zip file to: {$localFile}", $fn, $etdname);
             } else {
-                $this->writeLog("ERROR: Failed to extract ETD zip file! " . $res, $fn, $etdname);
+                $errorMessage = "Failed to extract ETD zip file: " . $res;
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 continue;
             }
 
             $this->writeLog("END Gathering ETD file #{$f} - {$filename}", $fn);
+            $this->localFiles[$etdname]['STATUS'] = "success";
         }
 
         // Completed fetching all ETD zip files.
