@@ -345,6 +345,7 @@ class processProquest {
             }
         }
 
+        // TODO: use relative or absolute path?
         $this->writeLog("Currently in FTP directory: {$fetchdirFTPRelative}", $fn);
 
         /**
@@ -470,11 +471,11 @@ class processProquest {
                     if ($fileName === 'pdf') {
                         $this->localFiles[$etdname]['ETD'] = $file;
                         $this->localFiles[$etdname]['FILE_ETD'] = $file;
-                        $this->writeLog("  [{$z}] This is a PDF file.", $fn, $etdname);
+                        $this->writeLog("  [{$z}] File type: PDF.", $fn, $etdname);
                     } elseif ($fileName === 'xml') {
                         $this->localFiles[$etdname]['METADATA'] = $file;
                         $this->localFiles[$etdname]['FILE_METADATA'] = $file;
-                        $this->writeLog("  [{$z}] This is an XML file.", $fn, $etdname);
+                        $this->writeLog("  [{$z}] File type: XML.", $fn, $etdname);
                     } else {
                         /**
                          * Supplementary files - could be permissions or data.
@@ -899,6 +900,7 @@ class processProquest {
             $processdirFTP = $this->settings['ftp']['processdir'];
             $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
 
+            // TODO: use relative or absolute path?
             $this->writeLog("Currently in FTP directory: {$this->ftp->ftp_pwd()}", $fn, $etdname);
 
             $this->writeLog("Now attempting to move {$fullfnameFTP}  into {$fullProcessdirFTP}", $fn, $etdname);
@@ -1082,7 +1084,7 @@ class processProquest {
              *
              *
              */
-            $this->writeLog("Generating RELS-EXT (XACML) datastream.", $fn, $etdname);
+            $this->writeLog("[RELS-EXT] Generating (XACML) datastream.", $fn, $etdname);
 
             // Set the default Parent and Collection policies for the Fedora object.
             try {
@@ -1102,7 +1104,7 @@ class processProquest {
                 $collection = GRADUATE_THESES_RESTRICTED;
                 try {
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
-                    $this->writeLog("Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
+                    $this->writeLog("[RELS-EXT] Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
                 } catch (Exception $e) {
                     $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage();
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1112,7 +1114,7 @@ class processProquest {
                     continue;
                 }
             } else {
-                $this->writeLog("Adding to Graduate Theses collection.", $fn, $etdname);
+                $this->writeLog("[RELS-EXT] Adding to Graduate Theses collection.", $fn, $etdname);
             }
 
             // Update the Fedora object's relationship policies
@@ -1125,8 +1127,8 @@ class processProquest {
 
             // Get Parent XACML policy.
             $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
-            $this->writeLog("Fetching Islandora XACML datastream.", $fn, $etdname);
-            $this->writeLog("Deferring RELS-EXT (XACML) datastream ingestion until other datastreams are generated.", $fn, $etdname);
+            $this->writeLog("[RELS-EXT] Fetching Islandora XACML datastream.", $fn, $etdname);
+            $this->writeLog("[RELS-EXT] Deferring RELS-EXT (XACML) datastream ingestion until other datastreams are generated.", $fn, $etdname);
 
 
             /**
@@ -1135,7 +1137,7 @@ class processProquest {
              *
              */
             $dsid = 'MODS';
-            $this->writeLog("Generating MODS datastream.", $fn, $etdname);
+            $this->writeLog("[MODS] Generating datastream.", $fn, $etdname);
 
             // Build Fedora object MODS datastream.
             $datastream = $object->constructDatastream($dsid, 'X');
@@ -1146,8 +1148,8 @@ class processProquest {
             $datastream->mimeType = 'application/xml';
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
-            $datastream->setContentFromFile("{$workingDir}/{$this->localFiles[$file]['MODS']}");
-            $this->writeLog("Selecting MODS datastream to use: {$this->localFiles[$file]['MODS']}", $fn, $etdname);
+            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['MODS']);
+            $this->writeLog("[MODS] Selecting file for this datastream: {$this->localFiles[$file]['MODS']}", $fn, $etdname);
 
             // Ingest MODS datastream into Fedora object.
             try {
@@ -1162,7 +1164,7 @@ class processProquest {
             }
 
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "MODS");
-            $this->writeLog("Ingested MODS datastream.", $fn, $etdname);
+            $this->writeLog("[MODS] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1172,7 +1174,7 @@ class processProquest {
              * Original filename is used as label for identification.
              */
             $dsid = 'ARCHIVE';
-            $this->writeLog("Generating ARCHIVE datastream.", $fn, $etdname);
+            $this->writeLog("[ARCHIVE] Generating datastream.", $fn, $etdname);
 
             // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
             $datastream = $object->constructDatastream($dsid, 'X');
@@ -1183,7 +1185,7 @@ class processProquest {
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['METADATA']);
-            $this->writeLog("Selecting ARCHIVE datastream to use: {$this->localFiles[$file]['METADATA']}", $fn, $etdname);
+            $this->writeLog("[ARCHIVE] Selecting file for this datastream: {$this->localFiles[$file]['METADATA']}", $fn, $etdname);
 
             // Set various ARCHIVE MODS datastream values.
             $datastream->mimeType = 'application/xml';
@@ -1194,7 +1196,7 @@ class processProquest {
             // TODO: wrap in try/catch block
             $object->ingestDatastream($datastream);
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE_MODS");
-            $this->writeLog("Ingested ARCHIVE datastream.", $fn, $etdname);
+            $this->writeLog("[ARCHIVE] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1204,7 +1206,7 @@ class processProquest {
              * Splash paged PDF will be PDF dsid.
              */
             $dsid = 'ARCHIVE-PDF';
-            $this->writeLog("Generating ARCHIVE-PDF datastream.", $fn, $etdname);
+            $this->writeLog("[ARCHIVE-PDF] Generating datastream.", $fn, $etdname);
 
             // Default Control Group is M.
             // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
@@ -1220,7 +1222,7 @@ class processProquest {
 
             // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['ETD']);
-            $this->writeLog("Selecting ARCHIVE-PDF datastream to use: {$this->localFiles[$file]['ETD']}", $fn, $etdname);
+            $this->writeLog("[ARCHIVE-PDF] Selecting file for this datastream: {$this->localFiles[$file]['ETD']}", $fn, $etdname);
 
             // Ingest ARCHIVE-PDF datastream into Fedora object.
             try {
@@ -1234,7 +1236,7 @@ class processProquest {
                 continue;
             }
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE-PDF");
-            $this->writeLog("Ingested ARCHIVE-PDF datastream.", $fn, $etdname);
+            $this->writeLog("[ARCHIVE-PDF] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1244,7 +1246,7 @@ class processProquest {
              * Then, concatenate splash page onto ETD PDF for final PDF.
              */
             $dsid = "PDF";
-            $this->writeLog("Generating PDF datastream.", $fn, $etdname);
+            $this->writeLog("[PDF] Generating datastream.", $fn, $etdname);
             $this->writeLog("First, generate PDF splash page.", $fn, $etdname);
 
             // Source file is the original Proquest XML file.
@@ -1260,10 +1262,10 @@ class processProquest {
             // Execute 'fop' command and check return code.
             $command = "$executable_fop -c $fop_config -xml $source -xsl $splashxslt -pdf $splashtemp";
             exec($command, $output, $return);
-            $this->writeLog("Running 'fop' command to build PDF splash page.", $fn, $etdname);
+            $this->writeLog("[PDF] Running 'fop' command to build PDF splash page.", $fn, $etdname);
 
     		if (!$return) {
-                $this->writeLog("PDF splash page created successfully.", $fn, $etdname);
+                $this->writeLog("[PDF] Splash page created successfully.", $fn, $etdname);
     		} else {
                 $errorMessage = "ERROR: PDF splash page creation failed! ". $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1281,7 +1283,7 @@ class processProquest {
              *
              * Load splash page PDF to core PDF if under embargo. -- TODO: find out when/how this happens
              */
-            $this->writeLog("Next, generate concatenated PDF document.", $fn, $etdname);
+            $this->writeLog("[PDF] Next, generate concatenated PDF document.", $fn, $etdname);
 
             // Assign concatenated PDF document to ETD file's directory.
             $concattemp = $workingDir . "/concatted.pdf";
@@ -1308,12 +1310,12 @@ class processProquest {
             */
 
             // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
-            $this->writeLog("WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
+            $this->writeLog("[PDF] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
 
             if (!copy($pdf,$concattemp)) {
                 $this->writeLog("ERROR: PDF document cloning failed!", $fn, $etdname);
             } else {
-                $this->writeLog("PDF document cloned successfully.", $fn, $etdname);
+                $this->writeLog("[PDF] PDF document cloned successfully.", $fn, $etdname);
             }
 
             // Default Control Group is M
@@ -1327,7 +1329,7 @@ class processProquest {
 
             // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
             $datastream->setContentFromFile($concattemp);
-            $this->writeLog("Selecting PDF datastream to use: {$concattemp}", $fn, $etdname);
+            $this->writeLog("[PDF] Selecting file for datastream: {$concattemp}", $fn, $etdname);
 
             // Ingest PDF datastream into Fedora object.
             try {
@@ -1341,7 +1343,7 @@ class processProquest {
                 continue;
             }
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PDF");
-            $this->writeLog("Ingested PDF datastream.", $fn, $etdname);
+            $this->writeLog("[PDF] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1350,7 +1352,7 @@ class processProquest {
              *
              */
             $dsid = "FULL_TEXT";
-            $this->writeLog("Generating FULL_TEXT datastream.", $fn, $etdname);
+            $this->writeLog("[FULL_TEXT] Generating datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $source = $workingDir . "/" . $this->localFiles[$file]['ETD'];
@@ -1362,10 +1364,10 @@ class processProquest {
             // Execute 'pdftotext' command and check return code.
             $command = "$executable_pdftotext $source $fttemp";
             exec($command, $output, $return);
-            $this->writeLog("Running 'pdftotext' command to build FULL_TEXT document.", $fn, $etdname);
+            $this->writeLog("[FULL_TEXT] Running 'pdftotext' command.", $fn, $etdname);
 
             if (!$return) {
-                $this->writeLog("FULL_TEXT datastream generated successfully.", $fn, $etdname);
+                $this->writeLog("[FULL_TEXT] datastream generated successfully.", $fn, $etdname);
             } else {
                 $errorMessage = "ERROR: FULL_TEXT document creation failed!" . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1408,7 +1410,7 @@ class processProquest {
 
             // Set FULL_TEXT datastream to be sanitized version of full-text document.
             $datastream->setContentFromString($sanitized);
-            $this->writeLog("Selecting FULL_TEXT datastream to use: {$fttemp}", $fn, $etdname);
+            $this->writeLog("[FULL_TEXT] Selecting file for datastream: {$fttemp}", $fn, $etdname);
 
             // Ingest FULL_TEXT datastream into Fedora object.
             try {
@@ -1422,7 +1424,7 @@ class processProquest {
                 continue;
             }
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "FULL_TEXT");
-            $this->writeLog("Ingested FULL_TEXT datastream.", $fn, $etdname);
+            $this->writeLog("[FULL_TEXT] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1431,7 +1433,7 @@ class processProquest {
              *
              */
             $dsid = "TN";
-            $this->writeLog("Generating TN (thumbnail) datastream.", $fn, $etdname);
+            $this->writeLog("[TN] Generating (thumbnail) datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             // TODO: figure out what "[0]" means in this context.
@@ -1441,10 +1443,10 @@ class processProquest {
             // Execute 'convert' command and check return code.
             $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $workingDir . "/thumbnail.jpg";
             exec($command, $output, $return);
-            $this->writeLog("Running 'convert' command to build TN document.", $fn, $etdname);
+            $this->writeLog("[TN] Running 'convert' command to build TN document.", $fn, $etdname);
 
             if (!$return) {
-                $this->writeLog("TN datastream generated successfully.", $fn, $etdname);
+                $this->writeLog("[TN] Datastream generated successfully.", $fn, $etdname);
             } else {
                 $errorMessage = "ERROR: TN document creation failed! " . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1462,7 +1464,7 @@ class processProquest {
 
             // Set TN datastream to be the generated thumbnail image.
             $datastream->setContentFromFile($workingDir . "//thumbnail.jpg");
-            $this->writeLog("Selecting TN datastream to use: thumbnail.jpg", $fn, $etdname);
+            $this->writeLog("[TN] Selecting file for datastream: thumbnail.jpg", $fn, $etdname);
 
             // Ingest TN datastream into Fedora object.
             try {
@@ -1476,7 +1478,7 @@ class processProquest {
                 continue;
             }
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "TN");
-            $this->writeLog("Ingested TN datastream.", $fn, $etdname);
+            $this->writeLog("[TN] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1485,7 +1487,7 @@ class processProquest {
              *
              */
             $dsid = "PREVIEW";
-            $this->writeLog("Generating PREVIEW datastream.", $fn, $etdname);
+            $this->writeLog("[PREVIEW] Generating datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             // TODO: figure out what "[0]" means in this context.
@@ -1495,10 +1497,10 @@ class processProquest {
             // Execute 'convert' command and check return code.
             $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $workingDir . "/preview.jpg";
             exec($command, $output, $return);
-            $this->writeLog("Running 'convert' command to build PREVIEW document.", $fn, $etdname);
+            $this->writeLog("[PREVIEW] Running 'convert' command to build PREVIEW document.", $fn, $etdname);
 
             if (!$return) {
-                $this->writeLog("PREVIEW datastream generated successfully.", $fn, $etdname);
+                $this->writeLog("[PREVIEW] PREVIEW datastream generated successfully.", $fn, $etdname);
             } else {
                 $errorMessage = "ERROR: REVIEW document creation failed! " . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1516,7 +1518,7 @@ class processProquest {
 
             // Set PREVIEW datastream to be the generated preview image.
             $datastream->setContentFromFile($workingDir . "//preview.jpg");
-            $this->writeLog("Selecting TN datastream to use: preview.jpg", $fn, $etdname);
+            $this->writeLog("[PREVIEW] Selecting TN datastream to use: preview.jpg", $fn, $etdname);
 
             // Ingest PREVIEW datastream into Fedora object.
             try {
@@ -1530,7 +1532,7 @@ class processProquest {
                 continue;
             }
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PREVIEW");
-            $this->writeLog("Ingested PREVIEW datastream.", $fn, $etdname);
+            $this->writeLog("[PREVIEW] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1539,7 +1541,7 @@ class processProquest {
              *
              */
             // TODO: understand why this command is down here and not in an earlier POLICY datastream section.
-            $this->writeLog("Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
+            $this->writeLog("[RELS-EXT] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
 
             try {
                 $object->ingestDatastream($policy);
@@ -1552,7 +1554,7 @@ class processProquest {
                 continue;
             }
             array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-EXT");
-            $this->writeLog("Ingested RELS-EXT (XACML) datastream.", $fn, $etdname);
+            $this->writeLog("[RELS-EXT] Ingested datastream.", $fn, $etdname);
 
 
             /**
@@ -1561,9 +1563,9 @@ class processProquest {
              * This checks if there is an OA policy set for this ETD.
              * If there is, then set Embargo date in the custom XACML policy file.
              */
-            $this->writeLog("Generating RELS-INT datastream.", $fn, $etdname);
+            $this->writeLog("[RELS-INT] Generating datastream.", $fn, $etdname);
 
-            $this->writeLog("Reading in custom RELS XSLT file...", $fn, $etdname);
+            $this->writeLog("[RELS-INT] Reading in custom RELS XSLT file...", $fn, $etdname);
 
             // $submission['OA'] is either '0' for no OA policy, or some non-zero value.
             $relsint = '';
@@ -1582,7 +1584,7 @@ class processProquest {
 
                 $relsint = str_replace('######', $submission['PID'], $relsint);
 
-                $this->writeLog("No OA policy for ETD: read in: {$relsFile}", $fn, $etdname);
+                $this->writeLog("[RELS-INT] No OA policy for ETD: read in: {$relsFile}", $fn, $etdname);
             } else if (isset($submission['EMBARGO'])) {
                 // Has an OA policy, and an embargo date.
                 $relsFile = "xsl/embargoRELS-INT.xml";
@@ -1600,7 +1602,7 @@ class processProquest {
                 $relsint = str_replace('######', $submission['PID'], $relsint);
                 $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
 
-                $this->writeLog("OA policy found and Embargo date found for ETD: read in: {$relsFile}", $fn, $etdname);
+                $this->writeLog("[RELS-INT] OA policy found and Embargo date found for ETD: read in: {$relsFile}", $fn, $etdname);
             }
 
             // TODO: handle case where there is an OA policy and no embargo date?
@@ -1618,7 +1620,7 @@ class processProquest {
 
                 // Set RELS-INT datastream to be the custom XACML policy file read in above.
                 $datastream->setContentFromString($relsint);
-                $this->writeLog("Selecting RELS-INT datastream to use: {$relsFile}", $fn, $etdname);
+                $this->writeLog("[RELS-INT] Selecting fire for datastream: {$relsFile}", $fn, $etdname);
 
                 // Ingest RELS-INT datastream into Fedora object.
                 try {
@@ -1632,7 +1634,7 @@ class processProquest {
                     continue;
                 }
                 array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-INT");
-                $this->writeLog("Ingested RELS-INT datastream.", $fn, $etdname);
+                $this->writeLog("[RELS-INT] Ingested datastream.", $fn, $etdname);
             }
 
 
