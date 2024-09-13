@@ -360,7 +360,7 @@ class processProquest {
      *
      * @return boolean Success value.
      * 
-     * @throws Exception if the working directory isn't reachable, or empty
+     * @throws Exception if the working directory isn't reachable
      */
     function getFiles() {
         $fn = "getFiles";
@@ -411,13 +411,11 @@ class processProquest {
         // TODO: check for exceptions
         $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
-        // Check to see if there are any ETD files to process.
+        // Return false if there are no ETD files to process.
         if ( empty($etdFiles) ) {
             $errorMessage = "Did not find any files to fetch.";
             $this->writeLog($errorMessage, $fn);
-
-            throw new Exception($errorMessage);
-            // return false;
+            return false;
         }
 
         $this->writeLog("Found " . count($etdFiles) . " file(s).", $fn);
@@ -614,6 +612,8 @@ class processProquest {
 
         // Completed fetching all ETD zip files.
         $this->writeLog("Completed fetching all ETD zip files from FTP server.", $fn);
+
+        return true;
     }
 
     /**
@@ -632,17 +632,11 @@ class processProquest {
     function processFiles() {
         $fn = "processFiles";
 
-        // TODO: check for:
-        //  * $this->localFiles[$etdname]['STATUS']
-        //  * $this->localFiles[$etdname]['HAS_SUPPLEMENTS']
-
-        // Check to see if there are any ETD files to process.
+        // Return false if there are no ETD files to process.
         if ( empty($this->localFiles) ) {
             $errorMessage = "Did not find any files to process.";
             $this->writeLog($errorMessage, $fn);
-
-            throw new Exception($errorMessage);
-            //return false;
+            return false;
         }
 
         $this->writeLog("Now processing ETD files.", $fn);
@@ -687,6 +681,10 @@ class processProquest {
         $s = 0;
         foreach ($this->localFiles as $file => $submission) {
             $s++;
+
+            // TODO: check for:
+            //  * $this->localFiles[$etdname]['STATUS']
+            //  * $this->localFiles[$etdname]['HAS_SUPPLEMENTS']
 
             // Pull out the ETD shortname that was generated in getFiles()
             $etdname = $this->localFiles[$file]['ETD_SHORTNAME'];
@@ -789,8 +787,11 @@ class processProquest {
              */
             $res = $xslt->setParameter('mods', 'handle', $pid);
             if ($res === false) {
-                $this->writeLog("ERROR: Could not update XSLT stylesheet with PID value!", $fn, $etdname);
+                $errorMessage = "Could not update XSLT stylesheet with PID value.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // TODO: set status to failure and run ingestHandlerPostProcess()
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdname);
@@ -802,8 +803,11 @@ class processProquest {
              */
             $mods = $xslt->transformToDoc($metadata);
             if ($mods === false) {
-                $this->writeLog("ERROR: Could not transform ETD MODS XML file!", $fn, $etdname);
+                $errorMessage = "Could not transform ETD MODS XML file.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // TODO: set status to failure and run ingestHandlerPostProcess()
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdname);
@@ -815,8 +819,11 @@ class processProquest {
              */
             $fedoraLabel = $label->transformToXml($mods);
             if ($fedoraLabel === false) {
-                $this->writeLog("ERROR: Could not generate ETD title using Fedora Label XSLT stylesheet!", $fn, $etdname);
+                $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // TODO: set status to failure and run ingestHandlerPostProcess()
                 continue;
             }
             $this->localFiles[$file]['LABEL'] = $fedoraLabel;
@@ -852,8 +859,11 @@ class processProquest {
             // Rename Proquest PDF using normalized author's name.
             $res = rename($etdWorkingDir . "/". $submission['ETD'] , $etdWorkingDir . "/" . $normalizedAuthor . ".pdf");
             if ($res === false) {
-                $this->writeLog("ERROR: Could not rename ETD PDF file!", $fn, $etdname);
+                $errorMessage = "Could not rename ETD PDF file.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // TODO: set status to failure and run ingestHandlerPostProcess()
                 continue;
             }
 
@@ -864,8 +874,11 @@ class processProquest {
             // Save MODS using normalized author's name.
             $res = $mods->save($etdWorkingDir . "/" . $normalizedAuthor . ".xml");
             if ($res === false) {
-                $this->writeLog("ERROR: Could not create new ETD MODS file!", $fn, $etdname);
+                $errorMessage = "Could not create new ETD MODS file.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // TODO: set status to failure and run ingestHandlerPostProcess()
                 continue;
             }
 
@@ -906,6 +919,8 @@ class processProquest {
 
         // Completed processing all ETD files.
         $this->writeLog("Completed processing all ETD files.", $fn);
+
+        return true;
     }
 
     /**
@@ -978,14 +993,13 @@ class processProquest {
 
             $this->writeLog("Now attempting to move {$fullfnameFTP}  into {$fullProcessdirFTP}", $fn, $etdname);
 
-            $ftpRes = true;
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
                 return true;
-            } else {
-                $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
             }
-
+                
+            $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
+            
             // Check if there was an error moving the ETD file on the FTP server.
             if ($ftpRes === false) {
                 $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
@@ -1012,14 +1026,12 @@ class processProquest {
 
             $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullFaildirFTP}", $fn, $etdname);
 
-            $ftpRes = true;
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
                 return true;
-            } else {
-                // TODO: catch exceptions
-                $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
             }
+
+            $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
 
             // Check if there was an error moving the ETD file on the FTP server.
             if ($ftpRes === false) {
@@ -1057,13 +1069,10 @@ class processProquest {
 
         // Check to see if there are any ETD files to process.
         if ( empty($this->localFiles) ) {
-            $this->writeLog("Did not find any files to ingest. Quitting.", $fn);
-
             // Shortcut to sending email update.
-            $message = "No ETD files to process.";
+            $message = "No ETD files to ingest.";
+            $this->writeLog($message, $fn);
             $res = $this->sendEmail($message);
-
-            // throw new Exception("Did not find any files to ingest.");
             return false;
         }
 
@@ -1830,13 +1839,13 @@ class processProquest {
         // No Failures: hide failure message.
         if ($failureCount == 0) {
             $res = $this->sendEmail($successMessage . $processingMessage);
-            return;
+            return true;
         }
 
         // No successes, but some failures: hide success message.
         if ($successCount == 0) {
             $res = $this->sendEmail($failureMessage . $processingMessage);
-            return;
+            return true;
         }
 
         // Everything else: send all message types.
@@ -1844,6 +1853,8 @@ class processProquest {
 
         // Completed ingesting all ETD files.
         $this->writeLog("Completed ingesting all ETD files.", $fn);
+
+        return true;
     }
 }
 ?>
