@@ -91,6 +91,8 @@ class processProquest {
      *
      * @param string $file_name The name to give the log file.
      * @return boolean Log init status.
+     * 
+     * @throws Exception if the log file isn't writable.
      */
     private function initLog($file_name = null) {
         // Set log file name.
@@ -120,9 +122,12 @@ class processProquest {
 
             // In case of complete file creation error.
             if ($res === false) {
-                echo "ERROR: Can't write to log file! " . $res;
+                $errorMessage = "Can't write to log file: " . $res;
+                echo "ERROR: {$errorMessage}";
                 $this->logError = true;
-                return false;
+
+                throw new Exception($errorMessage);
+                //return false;
             }
         }
 
@@ -147,10 +152,10 @@ class processProquest {
 
         // Check if $this->$logFile is set, and run initLog if not.
         if ( empty($this->logFile) ) {
-            $res = $this->initLog();
-
-            // If initLog fails then we can't write to logs.
-            if ($res === false) {
+            try {
+                $res = $this->initLog();
+            } catch(Exception $e) {
+                // If initLog fails then we can't write to logs.
                 return false;
             }
         }
@@ -273,6 +278,8 @@ class processProquest {
      * Calls on proquestFTP.php
      *
      * @return boolean Success value.
+     * 
+     * @throws Exception if the FTP connection failed.
      */
     function initFTP() {
         $fn = "initFTP";
@@ -300,11 +307,24 @@ class processProquest {
             return true;
         } else {
             // TODO: get ftp error message
+            // TODO: raise exception
             $this->writeLog("ERROR: FTP connection failed!", $fn);
             return false;
         }
     }
 
+    /**
+     * Prepares Fedora datastreams for ingestion.
+     *
+     * @param $fedoraObj A Fedora connection object.
+     * @param $datastreamObj A datastream object, usually a file.
+     * @param $datastreamName The name of the datastream.
+     * @param $etdName The name of the ETD file being processed.
+     * 
+     * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
+     */
     function prepareIngestDatastream($fedoraObj, $datastreamObj, $datastreamName, $etdName) {
         if ($this->debug === true) {
             array_push($this->localFiles[$etdName]['DATASTREAMS_CREATED'], $datastreamName);
@@ -316,12 +336,14 @@ class processProquest {
         try {
             $fedoraObj->ingestDatastream($datastreamObj);
         } catch (Exception $e) {
-            $errorMessage = "ERROR: Ingesting {$datastreamName} datastream failed! " . $e->getMessage();
+            $errorMessage = "ERROR: {$datastreamName} datastream ingest failed: " . $e->getMessage();
             array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
             $this->writeLog($errorMessage, $fn, $etdName);
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdName);
             $this->ingestHandlerPostProcess(false, $etdName, $this->etd);
-            return false;
+
+            throw new Exception($errorMessage);
+            // return false;
         }
         array_push($this->localFiles[$etdName]['DATASTREAMS_CREATED'], $datastreamName);
         $this->writeLog("[{$datastreamName}] Ingested datastream.", "ingest" , $etdName);
@@ -337,6 +359,8 @@ class processProquest {
      * Lastly, expand zip file contents into local directory.
      *
      * @return boolean Success value.
+     * 
+     * @throws Exception if the working directory isn't reachable, or empty
      */
     function getFiles() {
         $fn = "getFiles";
@@ -354,17 +378,24 @@ class processProquest {
         // Define local directory for file processing. Ex: /tmp/processed/
         $localdirFTP = $this->settings['ftp']['localdir'];
         if ( empty($localdirFTP) ) {
-            $this->writeLog("ERROR: Local working directory not set!", $fn);
-            return false;
+            $errorMessage = "Local working directory not set.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
         if ($fetchdirFTP != "") {
+            // TODO: check for exceptions
             if ( $this->ftp->ftp_chdir($fetchdirFTP) ) {
                 $this->writeLog("Changed to local FTP directory: {$fetchdirFTP}", $fn);
             } else {
-                $this->writeLog("ERROR: Cound not change FTP directory: {$fetchdirFTP}", $fn);
-                return false;
+                $errorMessage = "Cound not change FTP directory: {$fetchdirFTP}";
+                $this->writeLog("ERROR: {$errorMessage}", $fn);
+
+                throw new Exception($errorMessage);
+                // return false;
             }
         }
 
@@ -377,13 +408,16 @@ class processProquest {
          * Save results into $etdFiles array.
          */
         $file_regex = $this->settings['ftp']['file_regex'];
+        // TODO: check for exceptions
         $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
         // Check to see if there are any ETD files to process.
-        // TODO: Handle some type of error message?
         if ( empty($etdFiles) ) {
-            $this->writeLog("Did not find any files to fetch. Quitting.", $fn);
-            return false;
+            $errorMessage = "Did not find any files to fetch.";
+            $this->writeLog($errorMessage, $fn);
+
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         $this->writeLog("Found " . count($etdFiles) . " file(s).", $fn);
@@ -444,6 +478,7 @@ class processProquest {
              * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
              * File is saved locally as a binary file.
              */
+            // TODO: check for exceptions
             if ( $this->ftp->ftp_get($localFile, $filename, FTP_BINARY) ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdname);
             } else {
@@ -457,6 +492,7 @@ class processProquest {
             }
 
             // Unzip ETD zip file.
+            // TODO: check for exceptions
             $ziplisting = zip_open($localFile);
 
             // zip_open returns a resource handle on success and an integer on error.
@@ -586,6 +622,8 @@ class processProquest {
      *  - PID, title, author values.
      *
      * @return boolean Success value.
+     * 
+     * @throws Exception if XSLT files can't be found.
      */
     function processFiles() {
         $fn = "processFiles";
@@ -596,8 +634,11 @@ class processProquest {
 
         // Check to see if there are any ETD files to process.
         if ( empty($this->localFiles) ) {
-            $this->writeLog("Did not find any files to process. Quitting.", $fn);
-            return true;
+            $errorMessage = "Did not find any files to process.";
+            $this->writeLog($errorMessage, $fn);
+
+            throw new Exception($errorMessage);
+            //return false;
         }
 
         $this->writeLog("Now processing ETD files.", $fn);
@@ -612,8 +653,11 @@ class processProquest {
         if ( $xslt->importStyleSheet($proquestxslt) ) {
             $this->writeLog("Loaded MODS XSLT stylesheet.", $fn);
         } else {
-            $this->writeLog("ERROR: Failed to load MODS XSLT stylesheet!", $fn);
-            return false;
+            $errorMessage = "Failed to load MODS XSLT stylesheet.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         /**
@@ -626,8 +670,11 @@ class processProquest {
         if ( $label->importStyleSheet($labelxslt) ) {
             $this->writeLog("Loaded Fedora Label XSLT stylesheet.", $fn);
         } else {
-            $this->writeLog("ERROR: Failed to load Fedora Label XSLT stylesheet!", $fn);
-            return false;
+            $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         /**
@@ -861,7 +908,7 @@ class processProquest {
      * Initializes a connection to a Fedora file repository server.
      */
     function initFedoraConnection() {
-
+        // TODO: catch exceptions
         $this->connection = new RepositoryConnection($this->settings['fedora']['url'],
                                                      $this->settings['fedora']['username'],
                                                      $this->settings['fedora']['password']);
@@ -966,6 +1013,7 @@ class processProquest {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
                 return true;
             } else {
+                // TODO: catch exceptions
                 $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
             }
 
@@ -1011,7 +1059,8 @@ class processProquest {
             $message = "No ETD files to process.";
             $res = $this->sendEmail($message);
 
-            return true;
+            // throw new Exception("Did not find any files to ingest.");
+            return false;
         }
 
         $this->writeLog("Now Ingesting ETD files.", $fn);
@@ -1186,13 +1235,12 @@ class processProquest {
             //     continue;
             // }
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
-
 
             /**
              * Build ARCHIVE MODS datastream.
@@ -1225,13 +1273,12 @@ class processProquest {
             //array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE_MODS");
             //$this->writeLog("[ARCHIVE] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
-
 
             /**
              * Build ARCHIVE-PDF datastream.
@@ -1272,9 +1319,9 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE-PDF");
             // $this->writeLog("[ARCHIVE-PDF] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
@@ -1385,9 +1432,9 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PDF");
             // $this->writeLog("[PDF] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
@@ -1472,9 +1519,9 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "FULL_TEXT");
             // $this->writeLog("[FULL_TEXT] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
@@ -1532,9 +1579,9 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "TN");
             // $this->writeLog("[TN] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
@@ -1592,9 +1639,9 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PREVIEW");
             // $this->writeLog("[PREVIEW] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-            if (!$status) {
+            try {
+                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+            } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
@@ -1708,9 +1755,9 @@ class processProquest {
                 // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-INT");
                 // $this->writeLog("[RELS-INT] Ingested datastream.", $fn, $etdname);
 
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
-
-                if (!$status) {
+                try {
+                    $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                } catch(Exception $e) {
                     // Ingest failed. Continue to the next ETD.
                     continue;
                 }

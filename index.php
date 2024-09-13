@@ -38,21 +38,34 @@ $debug = false;
 $process = new processProquest($configurationFile, $debug);
 
 // Initialize FTP connection.
-$process->initFTP();
+// Exit when an exception is caught.
+try {
+    $process->initFTP();
+} catch(Exception $e) {
+    exit(1);
+}
 
 // Get zip files from FTP server, unzip and store locally.
-$process->getFiles();
+// Exit when an exception is caught.
+try {
+    $process->getFiles();
+} catch(Exception $e) {
+    exit(1);
+}
 
 // Connect to Fedora through API.
 $process->initFedoraConnection();
 
 // Process each zip file.
-$process->processFiles();
+// Exit when an exception is caught.
+try {
+    $process->processFiles();
+} catch(Exception $e) {
+    exit(1);
+}
 
 // Ingest each processed zip file into Fedora.
 $process->ingest();
-
-exit(1);
 
 /**
  * Output usage strings.
@@ -119,5 +132,7 @@ function validateConfig($configurationFile) {
 
     return true;
 }
+
+exit(1);
 
 ?>
