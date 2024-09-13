@@ -209,7 +209,7 @@ class processProquest {
         $email_subject = "Message from processProquest";
         $email_message = $message . $log_location_message;
 
-        // Sanity checks.
+        // Check for empty email values.
         if ( empty($email_to) ) {
             $this->writeLog("ERROR: Email to: field is empty!", $fn);
             return false;
@@ -347,7 +347,7 @@ class processProquest {
          */
         $etdFiles = $this->ftp->ftp_nlist("etdadmin_upload*");
 
-        // Sanity check to see if there are any ETD files to process.
+        // Check to see if there are any ETD files to process.
         // TODO: Handle some type of error message?
         if ( empty($etdFiles) ) {
             $this->writeLog("Did not find any files to fetch. Quitting.", $fn);
@@ -367,7 +367,7 @@ class processProquest {
              * Ex: etd_file_name_1234.zip -> /tmp/processing/etd_file_name_1234
              */
 
-            // Sanity check to see if filename is more than four chars. Continue if string fails.
+            // Check to see if filename is more than four chars. Continue if string fails.
             if (strlen($filename) <= 4) {
                 $this->writeLog("Warning! File name only has " . strlen($filename) . " characters. Skipping this file." , $fn);
                 continue;
@@ -969,7 +969,7 @@ class processProquest {
     function ingest() {
         $fn = "ingest";
 
-        // Sanity check to see if there are any ETD files to process.
+        // Check to see if there are any ETD files to process.
         if ( empty($this->localFiles) ) {
             $this->writeLog("Did not find any files to ingest. Quitting.", $fn);
 
