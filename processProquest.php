@@ -446,13 +446,13 @@ class processProquest {
             // Go through entire zip file and process contents.
             $z = 0;
             $this->writeLog("Expanding zip file.", $fn, $etdname);
+            // TODO: replace zip_read() with ZipArchive::statIndex
             while ($zip_entry = zip_read($ziplisting)) {
                 $z++;
-                // $this->writeLog("Now reading file #" . $z, $fn, $etdname);
 
                 // Get file name.
                 $file = zip_entry_name($zip_entry);
-                $this->writeLog("[{$z}] File name: {$file}", $fn, $etdname);
+                $this->writeLog("  [{$z}] File name: {$file}", $fn, $etdname);
 
                 /**
                  * Match for a specific string in file.
@@ -470,11 +470,11 @@ class processProquest {
                     if ($fileName === 'pdf') {
                         $this->localFiles[$etdname]['ETD'] = $file;
                         $this->localFiles[$etdname]['FILE_ETD'] = $file;
-                        $this->writeLog("[{$z}] This is a PDF file.", $fn, $etdname);
+                        $this->writeLog("  [{$z}] This is a PDF file.", $fn, $etdname);
                     } elseif ($fileName === 'xml') {
                         $this->localFiles[$etdname]['METADATA'] = $file;
                         $this->localFiles[$etdname]['FILE_METADATA'] = $file;
-                        $this->writeLog("[{$z}] This is an XML file.", $fn, $etdname);
+                        $this->writeLog("  [{$z}] This is an XML file.", $fn, $etdname);
                     } else {
                         /**
                          * Supplementary files - could be permissions or data.
@@ -485,7 +485,7 @@ class processProquest {
                         // Ignore directories
                         try {
                             if (is_dir($etdDir . "/" .$file)) {
-                                $this->writeLog("[{$z}] This is a directory. Skipping.", $fn, $etdname);
+                                $this->writeLog("  [{$z}] This is a directory. Skipping.", $fn, $etdname);
                                 continue;
                             }
                         } catch (Exception $e) {
@@ -501,7 +501,7 @@ class processProquest {
                         
                         $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
                         $supplement++;
-                        $this->writeLog("[{$z}] This is a supplementary file.", $fn, $etdname);
+                        $this->writeLog("  [{$z}] This is a supplementary file.", $fn, $etdname);
                     }
                 }
             }
@@ -539,7 +539,7 @@ class processProquest {
                 $zip->extractTo($etdDir);
                 $zip->close();
 
-                $this->writeLog("Extracting ETD zip file: {$localFile}", $fn, $etdname);
+                $this->writeLog("Extracting ETD zip file to: {$localFile}", $fn, $etdname);
             } else {
                 $this->writeLog("ERROR: Failed to extract ETD zip file! " . $res, $fn, $etdname);
                 continue;
