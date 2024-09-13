@@ -291,8 +291,10 @@ class processProquest {
         $passwordFTP = $this->settings['ftp']['password'];
 
         if (empty($urlFTP) || empty($userFTP) || empty($passwordFTP)) {
-            $this->writeLog("ERROR: FTP login values missing!", $fn);
-            return false;
+            $errorMessage = "FTP login values missing!";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         // Create ftp object used for connection.
@@ -307,9 +309,10 @@ class processProquest {
             return true;
         } else {
             // TODO: get ftp error message
-            // TODO: raise exception
-            $this->writeLog("ERROR: FTP connection failed!", $fn);
-            return false;
+            $errorMessage = "FTP connection failed.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+            throw new Exception($errorMessage);
+            // return false;
         }
     }
 
@@ -387,7 +390,6 @@ class processProquest {
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
         if ($fetchdirFTP != "") {
-            // TODO: check for exceptions
             if ( $this->ftp->ftp_chdir($fetchdirFTP) ) {
                 $this->writeLog("Changed to local FTP directory: {$fetchdirFTP}", $fn);
             } else {
@@ -408,7 +410,6 @@ class processProquest {
          * Save results into $etdFiles array.
          */
         $file_regex = $this->settings['ftp']['file_regex'];
-        // TODO: check for exceptions
         $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
         // Return false if there are no ETD files to process.
@@ -476,7 +477,6 @@ class processProquest {
              * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
              * File is saved locally as a binary file.
              */
-            // TODO: check for exceptions
             if ( $this->ftp->ftp_get($localFile, $filename, FTP_BINARY) ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdname);
             } else {
@@ -490,7 +490,6 @@ class processProquest {
             }
 
             // Unzip ETD zip file.
-            // TODO: check for exceptions
             $ziplisting = zip_open($localFile);
 
             // zip_open returns a resource handle on success and an integer on error.
