@@ -231,9 +231,9 @@ class processProquest {
         $res = true;
         if ($this->debug === true) {
             $this->writeLog("DEBUG: Not sending email notification.", $fn);
+            return true;
         } else {
             $res = mail($email_to, $email_subject, $email_message);
-	    return true;
         }
 
         // Check mail success.
@@ -685,7 +685,7 @@ class processProquest {
              * Prepend PID with locally defined Fedora namespace.
              * Ex: "bc-ir:" for BC.
              */
-            // DEBUG: make up PID.
+            // DEBUG: generate random PID.
             if ($this->debug === true) {
                 $pid = "bc-ir:" . rand(50000,100000);
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): " . $pid, $fn, $etdname);
@@ -896,6 +896,7 @@ class processProquest {
             $ftpRes = true;
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
+                return true;
             } else {
                 $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
             }
@@ -929,6 +930,7 @@ class processProquest {
             $ftpRes = true;
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
+                return true;
             } else {
                 $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
             }
