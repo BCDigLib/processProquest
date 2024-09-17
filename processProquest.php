@@ -952,18 +952,43 @@ class processProquest {
 
     /**
      * Initializes a connection to a Fedora file repository server.
+     * 
+     * @return Boolean Success value.
+     * 
+     * @throws Exception if Fedora connection fails.
      */
     function initFedoraConnection() {
-        // TODO: catch exceptions
-        $this->connection = new RepositoryConnection($this->settings['fedora']['url'],
-                                                     $this->settings['fedora']['username'],
-                                                     $this->settings['fedora']['password']);
+        $fn = "initFedoraConnection";
 
-        $this->api = new FedoraApi($this->connection);
-        $this->repository = new FedoraRepository($this->api, new simpleCache());
+        // Tuque library exceptions defined here:
+        // https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
+        $url = $this->settings['fedora']['url'];
+        $user = $this->settings['fedora']['username'];
+        $pass = $this->settings['fedora']['password'];
+
+        // Check all values exist.
+        if (empty($url) || empty($user) || empty($pass)) {
+            $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+            return false;
+        }
+
+        // Make Fedora repository connection.
+        try {
+            $this->connection = new RepositoryConnection($url, $user, $pass);
+            $this->api = new FedoraApi($this->connection);
+            $this->repository = new FedoraRepository($this->api, new simpleCache());
+            $this->writeLog("Connected to the Fedora repository.", $fn);
+        } catch(Exception $e) { // RepositoryException
+            $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
+            $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn);
+            return false;
+        }
 
         // Fedora Management API.
         $this->api_m = $this->repository->api->m;
+        return true;
     }
 
     // Set global values for all ingest* functions
@@ -982,6 +1007,7 @@ class processProquest {
      * @param boolean $status The success status of the calling function.
      * @param string $etdname The name of the ETD to print.
      * @param object $etd An object containing the ETD submission metadata.
+     * 
      * @return boolean Returns true.
      */
     function ingestHandlerPostProcess($status, $etdname, $etd){
@@ -1090,6 +1116,8 @@ class processProquest {
      * Next, it ingests the completed object into Fedora.
      * Then, tidies up ETD files on FTP server.
      * Lastly, send out notification email.
+     * 
+     * @return boolean Success value
      */
     function ingest() {
         $fn = "ingest";
@@ -1202,7 +1230,7 @@ class processProquest {
             try {
                 $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
                 $collection = GRADUATE_THESES;
-            } catch (Exception $e) {
+            } catch (Exception $e) { // RepositoryException
                 $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage();
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog($errorMessage, $fn, $etdname);
@@ -1217,7 +1245,7 @@ class processProquest {
                 try {
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $this->writeLog("[RELS-EXT] Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
-                } catch (Exception $e) {
+                } catch (Exception $e) { // RepositoryException
                     $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage();
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                     $this->writeLog($errorMessage, $fn, $etdname);

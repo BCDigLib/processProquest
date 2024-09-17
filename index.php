@@ -58,7 +58,10 @@ try {
 }
 
 // Connect to Fedora through API.
-$process->initFedoraConnection();
+if (!$process->initFedoraConnection()) {
+    echo "Could not make a connection to the Fedora repository. Exiting.";
+    exit(1);
+}
 
 // Process each zip file.
 // Exit when an exception is caught.
