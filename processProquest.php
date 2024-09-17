@@ -131,6 +131,7 @@ class processProquest {
                 echo "ERROR: {$errorMessage}";
                 $this->logError = true;
 
+                // TODO: send email?
                 array_push($this->processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
             }
@@ -303,6 +304,7 @@ class processProquest {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -322,6 +324,7 @@ class processProquest {
             $errorMessage = "FTP connection failed.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -396,6 +399,7 @@ class processProquest {
             $errorMessage = "Local working directory not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -408,6 +412,7 @@ class processProquest {
                 $errorMessage = "Cound not change FTP directory: {$fetchdirFTP}";
                 $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+                // TODO: send email
                 array_push($this->processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
             }
@@ -429,6 +434,7 @@ class processProquest {
             $errorMessage = "Did not find any files to fetch.";
             $this->writeLog($errorMessage, $fn);
 
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -678,6 +684,7 @@ class processProquest {
             $errorMessage = "Did not find any files to process.";
             $this->writeLog($errorMessage, $fn);
             
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -697,6 +704,7 @@ class processProquest {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -714,6 +722,7 @@ class processProquest {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -1135,6 +1144,7 @@ class processProquest {
             $this->writeLog($message, $fn);
             $res = $this->sendEmail($message);
 
+            // TODO: send email
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
