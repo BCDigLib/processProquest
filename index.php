@@ -48,11 +48,7 @@ try {
 // Get zip files from FTP server, unzip and store locally.
 // Exit when an exception is caught.
 try {
-    if(!$process->getFiles()) {
-        // There are no ETD files to process.
-        echo "No more ETD files to gather. Exiting.";
-        exit(1);
-    }
+    $process->getFiles();
 } catch(Exception $e) {
     exit(1);
 }
@@ -66,19 +62,16 @@ if (!$process->initFedoraConnection()) {
 // Process each zip file.
 // Exit when an exception is caught.
 try {
-    if(!$process->processFiles()) {
-        // There are no ETD files to process
-        echo "No more ETD files to process. Exiting.";
-        exit(1);
-    }
+    $process->processFiles();
 } catch(Exception $e) {
     exit(1);
 }
 
 // Ingest each processed zip file into Fedora.
-if (!$process->ingest()) {
-    // There are no ETD files to process
-    echo "No more ETD files to ingest. Exiting.";
+// Exit when an exception is caught.
+try {
+    $process->ingest();
+} catch(Exception $e) {
     exit(1);
 }
 

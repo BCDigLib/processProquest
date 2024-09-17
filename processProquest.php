@@ -425,7 +425,9 @@ class processProquest {
         if ( empty($etdFiles) ) {
             $errorMessage = "Did not find any files to fetch.";
             $this->writeLog($errorMessage, $fn);
-            return false;
+
+            throw new Exception($errorMessage);
+            //return false;
         }
 
         $this->writeLog("Found " . count($etdFiles) . " file(s).", $fn);
@@ -672,7 +674,9 @@ class processProquest {
         if ( empty($this->localFiles) ) {
             $errorMessage = "Did not find any files to process.";
             $this->writeLog($errorMessage, $fn);
-            return false;
+            
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         $this->writeLog("Now processing ETD files.", $fn);
@@ -1115,6 +1119,8 @@ class processProquest {
      * Lastly, send out notification email.
      * 
      * @return boolean Success value
+     * 
+     * @throws Exception if there are no ETDs to ingest
      */
     function ingest() {
         $fn = "ingest";
@@ -1125,7 +1131,9 @@ class processProquest {
             $message = "No ETD files to ingest.";
             $this->writeLog($message, $fn);
             $res = $this->sendEmail($message);
-            return false;
+
+            throw new Exception($errorMessage);
+            // return false;
         }
 
         $this->writeLog("Now Ingesting ETD files.", $fn);
