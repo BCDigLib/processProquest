@@ -51,6 +51,7 @@ class processProquest {
     protected $toProcess = 0;   // Number of PIDs for supplementary files.
     protected $logFile = "";
     protected $logError = false;
+    protected $processingErrors = [];
 
     // Set global values for all ingest* functions
     protected $pidcount = 0;
@@ -135,8 +136,8 @@ class processProquest {
                 echo "ERROR: {$errorMessage}";
                 $this->logError = true;
 
+                array_push($processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
-                //return false;
             }
         }
 
@@ -300,10 +301,11 @@ class processProquest {
         $passwordFTP = $this->settings['ftp']['password'];
 
         if (empty($urlFTP) || empty($userFTP) || empty($passwordFTP)) {
-            $errorMessage = "FTP login values missing!";
+            $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
+
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
 
         // Create ftp object used for connection.
@@ -320,8 +322,9 @@ class processProquest {
             // TODO: get ftp error message
             $errorMessage = "FTP connection failed.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
+
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
     }
 
@@ -348,15 +351,16 @@ class processProquest {
         try {
             $fedoraObj->ingestDatastream($datastreamObj);
         } catch (Exception $e) {
-            $errorMessage = "ERROR: {$datastreamName} datastream ingest failed: " . $e->getMessage();
+            $errorMessage = "{$datastreamName} datastream ingest failed: " . $e->getMessage();
             array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            $this->writeLog($errorMessage, $fn, $etdName);
+            $this->writeLog("ERROR: {$errorMessage}", $fn, $etdName);
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdName);
             $this->ingestHandlerPostProcess(false, $etdName, $this->etd);
 
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
+
         array_push($this->localFiles[$etdName]['DATASTREAMS_CREATED'], $datastreamName);
         $this->writeLog("[{$datastreamName}] Ingested datastream.", "ingest" , $etdName);
         return true;
@@ -392,9 +396,9 @@ class processProquest {
         if ( empty($localdirFTP) ) {
             $errorMessage = "Local working directory not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
-
+            
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
@@ -405,8 +409,8 @@ class processProquest {
                 $errorMessage = "Cound not change FTP directory: {$fetchdirFTP}";
                 $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+                array_push($processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
-                // return false;
             }
         }
 
@@ -421,13 +425,13 @@ class processProquest {
         $file_regex = $this->settings['ftp']['file_regex'];
         $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
-        // Return false if there are no ETD files to process.
+        // Throw exception if there are no ETD files to process.
         if ( empty($etdFiles) ) {
             $errorMessage = "Did not find any files to fetch.";
             $this->writeLog($errorMessage, $fn);
 
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            //return false;
         }
 
         $this->writeLog("Found " . count($etdFiles) . " file(s).", $fn);
@@ -675,8 +679,8 @@ class processProquest {
             $errorMessage = "Did not find any files to process.";
             $this->writeLog($errorMessage, $fn);
             
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
 
         $this->writeLog("Now processing ETD files.", $fn);
@@ -694,8 +698,8 @@ class processProquest {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
 
         /**
@@ -711,8 +715,8 @@ class processProquest {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
 
         /**
@@ -1132,8 +1136,8 @@ class processProquest {
             $this->writeLog($message, $fn);
             $res = $this->sendEmail($message);
 
+            array_push($processingErrors, $errorMessage);
             throw new Exception($errorMessage);
-            // return false;
         }
 
         $this->writeLog("Now Ingesting ETD files.", $fn);
