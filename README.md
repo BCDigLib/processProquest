@@ -10,7 +10,7 @@ The following packages are required to run this script:
  * php-zip
  * php-curl
  * imagemagick
- * xpdf
+ * xpdf (only used for local PHP debugging)
  * poppler-utils
 
 Also recommended is the [freesans-font](https://github.com/opensourcedesign/fonts) family.
