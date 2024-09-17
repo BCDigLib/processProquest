@@ -19,29 +19,61 @@ if (count($argv) > 2) {
     exit(1);
 }
 
-// Load configuration file.
-$configurationFile = getValidConfigurationFile($argv);
+// Load configuration settings.
+$configurationArray = getConfigurationSettings($argv);
+$configurationFile = $configurationArray['file'];
+$configurationSettings = $configurationArray['settings'];
+
+echo "configurationFile: {$configurationFile}\n";
 
 // Exit if configuration file is invalid.
-if(is_null($configurationFile)){
-    //echo "Configuration file is invalid and script can not continue.\n";
+if(is_null($configurationSettings)){
     usage();
     exit(1);
 }
 
+// Debug is off by default.
+$debugDefault = false;
+
+// Check debug value from $configurationSettings
+$debugConfiguration = NULL;
+if (isset($configurationSettings['script']['debug'])) {
+    $debugConfiguration = $configurationSettings['script']['debug'];
+}
+
+// Fetch the env var PROCESSPROQUEST_DEBUG value if it exists
+$debugEnvVar = getenv('PROCESSPROQUEST_DEBUG');
+
+/*
+ * Debug value is set in descending order:
+ *  1) $debugEnvVar - PROCESSPROQUEST_DEBUG env var
+ *  2) $debugConfiguration - [script] debug in configuration file
+ *  3) $debugDefault
+*/
+if ($debugEnvVar) {
+    $debug = boolval($debugEnvVar);
+} elseif ($debugConfiguration) {
+    $debug = boolval($debugConfiguration);
+} else {
+    $debug = boolval($debugDefault);
+}
+
+// echo "debugDefault: " . ($debugDefault ? 'TRUE' : 'FALSE') . "\n";
+// echo "debugConfiguration: {$debugConfiguration}\n";
+// echo "PROCESSPROQUEST_DEBUG: {$debugEnvVar}\n";
+// echo "\nDebug: {$debug}\n";
+
 require_once 'processProquest.php';
 
-// Debug is off by default
-$debug = false;
-
 // Create the $process object.
-$process = new processProquest($configurationFile, $debug);
+$process = new processProquest($configurationArray, $debug);
 
 // Initialize FTP connection.
 // Exit when an exception is caught.
 try {
     $process->initFTP();
 } catch(Exception $e) {
+    echo "Exiting.\n";
     exit(1);
 }
 
@@ -50,6 +82,7 @@ try {
 try {
     $process->getFiles();
 } catch(Exception $e) {
+    echo "Exiting.\n";
     exit(1);
 }
 
@@ -64,6 +97,7 @@ if (!$process->initFedoraConnection()) {
 try {
     $process->processFiles();
 } catch(Exception $e) {
+    echo "Exiting.\n";
     exit(1);
 }
 
@@ -72,6 +106,7 @@ try {
 try {
     $process->ingest();
 } catch(Exception $e) {
+    echo "Exiting.\n";
     exit(1);
 }
 
@@ -95,9 +130,10 @@ function usage() {
  * Also check if the file is valid.
  *
  * @param string $arguments The $argv array.
- * @return string|NULL Return a filename string or NULL on error.
+ * 
+ * @return object|NULL Return the configuration settings or NULL on error.
  */
-function getValidConfigurationFile($arguments) {
+function getConfigurationSettings($arguments) {
     // Requires a single parameter containing the location of an initialization file.
     if (isset($arguments[1])){
         // Use the argument provided.
@@ -112,7 +148,20 @@ function getValidConfigurationFile($arguments) {
         // Configuration file is invalid and script can not continue.
         return NULL;
     }
-    return $configurationFile;
+
+    // Read in configuration settings.
+    $configurationSettings = parse_ini_file($configurationFile, true);
+
+    if (empty($configurationSettings)) {
+        return NULL;
+    }
+
+    $configurationArray = array(
+        "file" => $configurationFile,
+        "settings" => $configurationSettings
+    );
+
+    return $configurationArray;
 }
 
 /**
@@ -121,6 +170,7 @@ function getValidConfigurationFile($arguments) {
  * Check if a configuration file exists, and if it is empty.
  *
  * @param string $configurationFile The configuration file name.
+ * 
  * @return bool Is the configuration file valid.
  */
 function validateConfig($configurationFile) {
@@ -135,8 +185,6 @@ function validateConfig($configurationFile) {
         echo "ERROR: This configuration file is empty or misformed. Please check your settings and try again.\n";
         return false;
     }
-
-    // TODO: check if the file contains usable values.
 
     return true;
 }

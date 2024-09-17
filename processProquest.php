@@ -67,11 +67,17 @@ class processProquest {
      *
      * This builds a local '$this' object that contains various script settings.
      *
-     * @param string $config An ini file containing various configurations.
+     * @param array $configurationArray An array containing the configuration file and values.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      */
-    public function __construct($configurationFile, $debug = DEFAULT_DEBUG_VALUE) {
-        $this->settings = parse_ini_file($configurationFile, true);
+    public function __construct($configurationArray, $debug = DEFAULT_DEBUG_VALUE) {
+        $this->configurationFile = $configurationArray["file"];
+        $this->settings = $configurationArray["settings"];
+        $this->debug = boolval($debug);
+
+        $this->writeLog("STATUS: Starting processProquest script.", "");
+        $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
+        $this->writeLog("STATUS: Using configuration file: {$this->configurationFile}", "");
 
         // Load Islandora/Fedora Tuque library.
         $tuqueLocation = $this->settings['packages']['tuque'];
@@ -83,17 +89,6 @@ class processProquest {
         require_once "{$tuqueLocation}/FedoraRelationships.php";
         require_once "{$tuqueLocation}/Cache.php";
         require_once "{$tuqueLocation}/HttpConnection.php";
-        
-        // Verify that $debug is a bool value.
-        if ( is_bool($debug) ){
-            $this->debug = $debug;
-        } else {
-            $this->debug = DEFAULT_DEBUG_VALUE;
-        }
-
-        $this->writeLog("STATUS: Starting processProquest script.", "");
-        $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
-        $this->writeLog("STATUS: Using configuration file: {$configurationFile}", "");
     }
 
     /**
@@ -136,7 +131,7 @@ class processProquest {
                 echo "ERROR: {$errorMessage}";
                 $this->logError = true;
 
-                array_push($processingErrors, $errorMessage);
+                array_push($this->processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
             }
         }
@@ -206,7 +201,11 @@ class processProquest {
         }
 
         // Finally, output to stdout
-        echo "$time ($function_name) $message\n";
+        if ($this->debug) {
+            echo "$time [DEBUG] ($function_name) $message\n";
+        } else {
+            echo "$time ($function_name) $message\n";
+        }
 
         return true;
     }
@@ -304,7 +303,7 @@ class processProquest {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -323,7 +322,7 @@ class processProquest {
             $errorMessage = "FTP connection failed.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
     }
@@ -357,7 +356,7 @@ class processProquest {
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdName);
             $this->ingestHandlerPostProcess(false, $etdName, $this->etd);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -397,7 +396,7 @@ class processProquest {
             $errorMessage = "Local working directory not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -409,7 +408,7 @@ class processProquest {
                 $errorMessage = "Cound not change FTP directory: {$fetchdirFTP}";
                 $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-                array_push($processingErrors, $errorMessage);
+                array_push($this->processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
             }
         }
@@ -430,7 +429,7 @@ class processProquest {
             $errorMessage = "Did not find any files to fetch.";
             $this->writeLog($errorMessage, $fn);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -679,7 +678,7 @@ class processProquest {
             $errorMessage = "Did not find any files to process.";
             $this->writeLog($errorMessage, $fn);
             
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -698,7 +697,7 @@ class processProquest {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -715,7 +714,7 @@ class processProquest {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
@@ -1136,7 +1135,7 @@ class processProquest {
             $this->writeLog($message, $fn);
             $res = $this->sendEmail($message);
 
-            array_push($processingErrors, $errorMessage);
+            array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
