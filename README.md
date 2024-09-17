@@ -34,7 +34,7 @@ cd /var/www/html/drupal/sites/all/libraries
 php index.php processProquest.ini
 ```
 
-> An optional configuration file can be given as the second argument. If you leave out this configuration argument then the script will look for a default "processProquest.ini" file.
+> Note: An optional configuration file can be given as the second argument. If you leave out this configuration argument then the script will look for a default "processProquest.ini" file.
 
 ## Debug
 
@@ -43,15 +43,21 @@ Debug mode will execute the script but will **ignore** the following tasks:
 * save datastreams (datastreams are generated but not saved)
 * send notification email (email notification will be generated but not sent)
 
-There are two ways to enable debugging. First, edit the configuration file and set `[script] debug` to "true". 
+There are two ways to enable debugging. 
 
-The second way is to set an environmental variable on the command line when invoking this script.
+1. Edit the configuration file and set:
+```
+[script] 
+debug = "true"
+``` 
 
-Example: 
+2. Set an environmental variable on the command line when invoking this script.
 
+Example:
 ```
 PROCESSPROQUEST_DEBUG=true php index.php processProquest.ini 
 ```
+> Note: The environmental variable will overwrite the debug value set in the configuration file.
 
 
 # Configuration
