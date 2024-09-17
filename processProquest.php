@@ -1226,7 +1226,7 @@ class processProquest {
             // Set the default Parent and Collection policies for the Fedora object.
             try {
                 $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
-                $collection = GRADUATE_THESES;
+                $collectionName = GRADUATE_THESES;
             } catch (Exception $e) { // RepositoryException
                 $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage();
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1238,7 +1238,7 @@ class processProquest {
 
             // Update the Parent and Collection policies if this ETD is embargoed.
             if (isset($this->localFiles[$file]['EMBARGO'])) {
-                $collection = GRADUATE_THESES_RESTRICTED;
+                $collectionName = GRADUATE_THESES_RESTRICTED;
                 try {
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $this->writeLog("[RELS-EXT] Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
@@ -1256,7 +1256,7 @@ class processProquest {
 
             // Update the Fedora object's relationship policies
             $fedoraObj->models = array('bc-ir:graduateETDCModel');
-            $fedoraObj->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', $collection);
+            $fedoraObj->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', $collectionName);
 
             // Set various other Fedora object settings.
             $fedoraObj->checksumType = 'SHA-256';
