@@ -1194,7 +1194,7 @@ class processProquest {
 
             // Instantiated a Fedora object and use the generated PID as its ID.
             try {
-                $object = $this->repository->constructObject($this->localFiles[$file]['PID']);
+                $fedoraObj = $this->repository->constructObject($this->localFiles[$file]['PID']);
                 $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$file]['PID']}", $fn, $etdname);
             } catch (Exception $e) {
                 $errorMessage = "ERROR: Could not instanciate Fedora object: " . $e->getMessage();
@@ -1206,11 +1206,11 @@ class processProquest {
             }
 
             // Assign the Fedora object label the ETD name/label
-            $object->label = $this->localFiles[$file]['LABEL'];
+            $fedoraObj->label = $this->localFiles[$file]['LABEL'];
             $this->writeLog("Assigned a title to Fedora object: {$this->localFiles[$file]['LABEL']}", $fn, $etdname);
 
             // All Fedora objects are owned by the same generic account
-            $object->owner = 'fedoraAdmin';
+            $fedoraObj->owner = 'fedoraAdmin';
 
             $this->writeLog("Now generating Fedora datastreams.", $fn, $etdname);
 
@@ -1255,12 +1255,12 @@ class processProquest {
             }
 
             // Update the Fedora object's relationship policies
-            $object->models = array('bc-ir:graduateETDCModel');
-            $object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', $collection);
+            $fedoraObj->models = array('bc-ir:graduateETDCModel');
+            $fedoraObj->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', $collection);
 
             // Set various other Fedora object settings.
-            $object->checksumType = 'SHA-256';
-            $object->state = 'I';
+            $fedoraObj->checksumType = 'SHA-256';
+            $fedoraObj->state = 'I';
 
             // Get Parent XACML policy.
             $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
@@ -1277,7 +1277,7 @@ class processProquest {
             $this->writeLog("[MODS] Generating datastream.", $fn, $etdname);
 
             // Build Fedora object MODS datastream.
-            $datastream = $object->constructDatastream($dsid, 'X');
+            $datastream = $fedoraObj->constructDatastream($dsid, 'X');
 
             // Set various MODS datastream values.
             $datastream->label = 'MODS Record';
@@ -1290,7 +1290,7 @@ class processProquest {
 
             // Ingest MODS datastream into Fedora object.
             // try {
-            //     $object->ingestDatastream($datastream);
+            //     $fedoraObj->ingestDatastream($datastream);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting MODS datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1301,7 +1301,7 @@ class processProquest {
             // }
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1317,7 +1317,7 @@ class processProquest {
             $this->writeLog("[ARCHIVE] Generating datastream.", $fn, $etdname);
 
             // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
-            $datastream = $object->constructDatastream($dsid, 'X');
+            $datastream = $fedoraObj->constructDatastream($dsid, 'X');
 
             // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
             $datastream->label = substr($this->localFiles[$file]['METADATA'], 0, strlen($this->localFiles[$file]['METADATA'])-4);
@@ -1334,12 +1334,12 @@ class processProquest {
 
             // Ingest ARCHIVE MODS datastream into Fedora object.
             // TODO: wrap in try/catch block
-            //$object->ingestDatastream($datastream);
+            //$fedoraObj->ingestDatastream($datastream);
             //array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE_MODS");
             //$this->writeLog("[ARCHIVE] Ingested datastream.", $fn, $etdname);
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1356,7 +1356,7 @@ class processProquest {
 
             // Default Control Group is M.
             // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
-            $datastream = $object->constructDatastream($dsid);
+            $datastream = $fedoraObj->constructDatastream($dsid);
 
             // OLD: $datastream->label = $this->localFiles[$file]['LABEL'];
             $datastream->label = 'ARCHIVE-PDF Datastream';
@@ -1372,7 +1372,7 @@ class processProquest {
 
             // Ingest ARCHIVE-PDF datastream into Fedora object.
             // try {
-            //     $object->ingestDatastream($datastream);
+            //     $fedoraObj->ingestDatastream($datastream);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1385,7 +1385,7 @@ class processProquest {
             // $this->writeLog("[ARCHIVE-PDF] Ingested datastream.", $fn, $etdname);
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1472,7 +1472,7 @@ class processProquest {
 
             // Default Control Group is M
             // Build Fedora object PDF datastream.
-            $datastream = $object->constructDatastream($dsid);
+            $datastream = $fedoraObj->constructDatastream($dsid);
 
             // Set various PDF datastream values.
             $datastream->label = 'PDF Datastream';
@@ -1485,7 +1485,7 @@ class processProquest {
 
             // Ingest PDF datastream into Fedora object.
             // try {
-            //     $object->ingestDatastream($datastream);
+            //     $fedoraObj->ingestDatastream($datastream);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting PDF datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1498,7 +1498,7 @@ class processProquest {
             // $this->writeLog("[PDF] Ingested datastream.", $fn, $etdname);
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1535,7 +1535,7 @@ class processProquest {
             }
 
             // Build Fedora object FULL_TEXT datastream.
-            $datastream = $object->constructDatastream($dsid);
+            $datastream = $fedoraObj->constructDatastream($dsid);
 
             // Set various FULL_TEXT datastream values.
             $datastream->label = 'FULL_TEXT';
@@ -1572,7 +1572,7 @@ class processProquest {
 
             // Ingest FULL_TEXT datastream into Fedora object.
             // try {
-            //     $object->ingestDatastream($datastream);
+            //     $fedoraObj->ingestDatastream($datastream);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1585,7 +1585,7 @@ class processProquest {
             // $this->writeLog("[FULL_TEXT] Ingested datastream.", $fn, $etdname);
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1620,7 +1620,7 @@ class processProquest {
             }
 
             // Build Fedora object TN datastream.
-            $datastream = $object->constructDatastream($dsid);
+            $datastream = $fedoraObj->constructDatastream($dsid);
 
             // Set various TN datastream values.
             $datastream->label = 'TN';
@@ -1632,7 +1632,7 @@ class processProquest {
 
             // Ingest TN datastream into Fedora object.
             // try {
-            //     $object->ingestDatastream($datastream);
+            //     $fedoraObj->ingestDatastream($datastream);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting TN datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1645,7 +1645,7 @@ class processProquest {
             // $this->writeLog("[TN] Ingested datastream.", $fn, $etdname);
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1680,7 +1680,7 @@ class processProquest {
             }
 
             // Build Fedora object PREVIEW datastream.
-            $datastream = $object->constructDatastream($dsid);
+            $datastream = $fedoraObj->constructDatastream($dsid);
 
             // Set various PREVIEW datastream values.
             $datastream->label = 'PREVIEW';
@@ -1692,7 +1692,7 @@ class processProquest {
 
             // Ingest PREVIEW datastream into Fedora object.
             // try {
-            //     $object->ingestDatastream($datastream);
+            //     $fedoraObj->ingestDatastream($datastream);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1705,7 +1705,7 @@ class processProquest {
             // $this->writeLog("[PREVIEW] Ingested datastream.", $fn, $etdname);
 
             try {
-                $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
@@ -1721,7 +1721,7 @@ class processProquest {
             $this->writeLog("[RELS-EXT] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
 
             // try {
-            //     $object->ingestDatastream($policy);
+            //     $fedoraObj->ingestDatastream($policy);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1733,7 +1733,7 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-EXT");
             // $this->writeLog("[RELS-EXT] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($object, $policy, $dsid, $etdname);
+            $status = $this->prepareIngestDatastream($fedoraObj, $policy, $dsid, $etdname);
 
             if (!$status) {
                 // Ingest failed. Continue to the next ETD.
@@ -1796,7 +1796,7 @@ class processProquest {
                 $dsid = "RELS-INT";
 
                 // Build Fedora object RELS-INT datastream.
-                $datastream = $object->constructDatastream($dsid);
+                $datastream = $fedoraObj->constructDatastream($dsid);
 
                 // Set various RELS-INT datastream values.
                 $datastream->label = 'Fedora Relationship Metadata';
@@ -1808,7 +1808,7 @@ class processProquest {
 
                 // Ingest RELS-INT datastream into Fedora object.
                 // try {
-                //     $object->ingestDatastream($datastream);
+                //     $fedoraObj->ingestDatastream($datastream);
                 // } catch (Exception $e) {
                 //     $errorMessage = "ERROR: Ingesting RELS-INT datastream failed! " . $e->getMessage();
                 //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1821,7 +1821,7 @@ class processProquest {
                 // $this->writeLog("[RELS-INT] Ingested datastream.", $fn, $etdname);
 
                 try {
-                    $status = $this->prepareIngestDatastream($object, $datastream, $dsid, $etdname);
+                    $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
                 } catch(Exception $e) {
                     // Ingest failed. Continue to the next ETD.
                     continue;
@@ -1842,7 +1842,7 @@ class processProquest {
                 $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
             } else {
                 try {
-                    $res = $this->repository->ingestObject($object);
+                    $res = $this->repository->ingestObject($fedoraObj);
                     $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
                     $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
                 } catch (Exception $e) {
