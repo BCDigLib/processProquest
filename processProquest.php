@@ -52,6 +52,7 @@ class processProquest {
     protected $logFile = "";
     protected $logError = false;
     protected $processingErrors = [];
+    protected $allFoundETDs = [];
 
     // Set global values for all ingest* functions
     protected $pidcount = 0;
@@ -131,7 +132,7 @@ class processProquest {
                 echo "ERROR: {$errorMessage}";
                 $this->logError = true;
 
-                // TODO: send email?
+                // TODO: call postProcess()?
                 array_push($this->processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
             }
@@ -304,7 +305,7 @@ class processProquest {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -324,7 +325,7 @@ class processProquest {
             $errorMessage = "FTP connection failed.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -359,6 +360,7 @@ class processProquest {
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdName);
             $this->ingestHandlerPostProcess(false, $etdName, $this->etd);
 
+            // TODO: call postProcess()?
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -399,7 +401,7 @@ class processProquest {
             $errorMessage = "Local working directory not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -412,7 +414,7 @@ class processProquest {
                 $errorMessage = "Cound not change FTP directory: {$fetchdirFTP}";
                 $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-                // TODO: send email
+                // TODO: call postProcess()
                 array_push($this->processingErrors, $errorMessage);
                 throw new Exception($errorMessage);
             }
@@ -429,12 +431,14 @@ class processProquest {
         $file_regex = $this->settings['ftp']['file_regex'];
         $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
+        $this->allFoundETDs = $etdFiles;
+
         // Throw exception if there are no ETD files to process.
         if ( empty($etdFiles) ) {
-            $errorMessage = "Did not find any files to fetch.";
+            $errorMessage = "Did not find any ETD files on the FTP server.";
             $this->writeLog($errorMessage, $fn);
 
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -681,10 +685,10 @@ class processProquest {
 
         // Return false if there are no ETD files to process.
         if ( empty($this->localFiles) ) {
-            $errorMessage = "Did not find any files to process.";
+            $errorMessage = "Did not find any ETD files to process.";
             $this->writeLog($errorMessage, $fn);
             
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -704,7 +708,7 @@ class processProquest {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -722,7 +726,7 @@ class processProquest {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
 
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -1111,6 +1115,42 @@ class processProquest {
         return true;
     }
 
+
+    /**
+     * Parse script results and compose email body. 
+     */
+    function postProcess() {
+        /*
+         * Steps: 
+         *  check $this->processingErrors[]
+         *  check $this->allFoundETDs[]
+         *  check each $this->localFiles[] as local
+         *      local["HAS_SUPPLEMENTS]
+         *      local["STATUS"]
+         *      local["PID"]
+         *      local["LABEL"]
+         *      local["AUTHOR"]
+         *      local["HAS_EMBARGO"]
+         *      local["EMBARGO_DATE"]
+         *      local["INGESTED"] ??
+        */
+
+        // If there are any processingErrors then we can assume there
+        // weren't any ETDs fetches or processed.
+        if (count($this->processingErrors) > 0) {
+            // Pull out all error messages
+            foreach ($this->processingErrors as $message) {
+                continue;
+            }
+
+            // Send email
+
+            return;
+        }
+
+        return true;
+    }
+
     /**
      * Ingest files into Fedora
      *
@@ -1144,7 +1184,7 @@ class processProquest {
             $this->writeLog($message, $fn);
             $res = $this->sendEmail($message);
 
-            // TODO: send email
+            // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
