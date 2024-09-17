@@ -52,6 +52,15 @@ class processProquest {
     protected $logFile = "";
     protected $logError = false;
 
+    // Set global values for all ingest* functions
+    protected $pidcount = 0;
+    protected $successCount = 0;
+    protected $failureCount = 0;
+    // Initialize messages for notification email.
+    protected $successMessage = "";
+    protected $failureMessage = "";
+    protected $processingMessage = "";
+
     /**
      * Class constructor.
      *
@@ -363,7 +372,7 @@ class processProquest {
      *
      * @return boolean Success value.
      * 
-     * @throws Exception if the working directory isn't reachable
+     * @throws Exception if the working directory isn't reachable.
      */
     function getFiles() {
         $fn = "getFiles";
@@ -954,14 +963,9 @@ class processProquest {
      * Initializes a connection to a Fedora file repository server.
      * 
      * @return Boolean Success value.
-     * 
-     * @throws Exception if Fedora connection fails.
      */
     function initFedoraConnection() {
         $fn = "initFedoraConnection";
-
-        // Tuque library exceptions defined here:
-        // https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
         $url = $this->settings['fedora']['url'];
         $user = $this->settings['fedora']['username'];
         $pass = $this->settings['fedora']['password'];
@@ -974,6 +978,8 @@ class processProquest {
         }
 
         // Make Fedora repository connection.
+        // Tuque library exceptions defined here:
+        // https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
         try {
             $this->connection = new RepositoryConnection($url, $user, $pass);
             $this->api = new FedoraApi($this->connection);
@@ -991,16 +997,6 @@ class processProquest {
         return true;
     }
 
-    // Set global values for all ingest* functions
-    public $pidcount = 0;
-    public $successCount = 0;
-    public $failureCount = 0;
-    // Initialize messages for notification email.
-    public $successMessage = "";
-    public $failureMessage = "";
-    public $processingMessage = "";
-
-
     /**
      * Manages the post-process handling of an ETD ingest
      *
@@ -1008,7 +1004,7 @@ class processProquest {
      * @param string $etdname The name of the ETD to print.
      * @param object $etd An object containing the ETD submission metadata.
      * 
-     * @return boolean Returns true.
+     * @return boolean Sucess value.
      */
     function ingestHandlerPostProcess($status, $etdname, $etd){
         $fn = "ingestHandlerPostProcess";
@@ -1056,6 +1052,7 @@ class processProquest {
             // Check if there was an error moving the ETD file on the FTP server.
             if ($ftpRes === false) {
                 $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
+                return false;
             }
 
             $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
@@ -1089,6 +1086,7 @@ class processProquest {
             // Check if there was an error moving the ETD file on the FTP server.
             if ($ftpRes === false) {
                 $this->writeLog("ERROR: Could not move ETD file to 'failed' FTP directory!", $fn, $etdname);
+                return false;
             }
 
             $this->writeLog("Moved ETD file to 'failed' FTP directory.", $fn, $etdname);
@@ -1096,7 +1094,6 @@ class processProquest {
 
         return true;
     }
-
 
     /**
      * Ingest files into Fedora
