@@ -1263,7 +1263,7 @@ class processProquest {
             $fedoraObj->state = 'I';
 
             // Get Parent XACML policy.
-            $policy = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
+            $policyObj = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
             $this->writeLog("[RELS-EXT] Fetching Islandora XACML datastream.", $fn, $etdname);
             $this->writeLog("[RELS-EXT] Deferring RELS-EXT (XACML) datastream ingestion until other datastreams are generated.", $fn, $etdname);
 
@@ -1721,7 +1721,7 @@ class processProquest {
             $this->writeLog("[RELS-EXT] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
 
             // try {
-            //     $fedoraObj->ingestDatastream($policy);
+            //     $fedoraObj->ingestDatastream($policyObj);
             // } catch (Exception $e) {
             //     $errorMessage = "ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage();
             //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
@@ -1733,7 +1733,7 @@ class processProquest {
             // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-EXT");
             // $this->writeLog("[RELS-EXT] Ingested datastream.", $fn, $etdname);
 
-            $status = $this->prepareIngestDatastream($fedoraObj, $policy, $dsid, $etdname);
+            $status = $this->prepareIngestDatastream($fedoraObj, $policyObj, $dsid, $etdname);
 
             if (!$status) {
                 // Ingest failed. Continue to the next ETD.
