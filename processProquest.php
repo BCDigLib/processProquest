@@ -40,28 +40,37 @@ date_default_timezone_set("America/New_York");
  */
 class processProquest {
 
-    public $settings;
-    public $debug;
-    protected $ftp;
-    protected $localFiles = [];
-    protected $connection;
-    protected $api;
-    protected $api_m;
-    protected $repository;
-    protected $toProcess = 0;   // Number of PIDs for supplementary files.
-    protected $logFile = "";
-    protected $logError = false;
-    protected $processingErrors = [];
-    protected $allFoundETDs = [];
+    public $settings;                       // Object to store script settings
+    public $debug;                          // Debug bool
+    protected $ftp;                         // FTP connection object
+    protected $localFiles = [];             // Object to store all ETD metadata
+    protected $connection;                  // Repository connection object
+    protected $api;                         // Fedora API connection object
+    protected $api_m;                       // Fedora API iterator object
+    protected $repository;                  // Repository connection object
+    protected $toProcess = 0;               // Number of PIDs for supplemental files; remove
+    protected $logFile = "";                // Log file name
+    protected $logError = false;            // Track if there was an error; remove
+    protected $processingErrors = [];       // Keep track of processing errors
+    protected $allFoundETDs = [];           // List of all found ETD zip files
+    protected $allSupplementalETDs = [];    // List of all ETDs with supplemental files
+
+    protected $countTotalETDs = 0;          // Total ETDs count
+    protected $countTotalValidETDs = 0;     // Total ETDs that are valid files
+    protected $countTotalInvalidETDs = 0;   // Total ETDS that are invalid files
+    protected $countSupplementalETDs = 0;   // Total ETDs with supplemental files
+    protected $countProcessedETDs = 0;      // Total ETDs successfully processed
+    protected $countFailedETDs = 0;         // Total ETDs failed to process
 
     // Set global values for all ingest* functions
-    protected $pidcount = 0;
-    protected $successCount = 0;
-    protected $failureCount = 0;
+    protected $pidcount = 0;        // remove
+    protected $successCount = 0;    // remove
+    protected $failureCount = 0;    // remove
+
     // Initialize messages for notification email.
-    protected $successMessage = "";
-    protected $failureMessage = "";
-    protected $processingMessage = "";
+    protected $successMessage = "";     // remove
+    protected $failureMessage = "";     // remove
+    protected $processingMessage = "";  // remove
 
     /**
      * Class constructor.
@@ -362,6 +371,7 @@ class processProquest {
 
             // TODO: call postProcess()?
             array_push($this->processingErrors, $errorMessage);
+            $this->countFailedETDs++;
             throw new Exception($errorMessage);
         }
 
@@ -385,6 +395,7 @@ class processProquest {
     function getFiles() {
         $fn = "getFiles";
 
+        $this->writeLog("########################", $fn);
         $this->writeLog("Fetching ETD files from FTP server.", $fn);
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
@@ -432,18 +443,19 @@ class processProquest {
         $etdFiles = $this->ftp->ftp_nlist($file_regex);
 
         $this->allFoundETDs = $etdFiles;
+        $this->countTotalETDs = count($etdFiles);
 
         // Throw exception if there are no ETD files to process.
         if ( empty($etdFiles) ) {
             $errorMessage = "Did not find any ETD files on the FTP server.";
-            $this->writeLog($errorMessage, $fn);
+            $this->writeLog("WARNING: {$errorMessage}", $fn);
 
             // TODO: call postProcess()
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
 
-        $this->writeLog("Found " . count($etdFiles) . " file(s).", $fn);
+        $this->writeLog("Found {$this->countTotalETDs} ETD file(s).", $fn);
 
         /**
          * Loop through each match in $etdFiles.
@@ -458,17 +470,25 @@ class processProquest {
              * Ex: etd_file_name_1234.zip -> /tmp/processing/etd_file_name_1234
              */
 
-            // Check to see if filename is more than four chars. Continue if string fails.
-            if (strlen($filename) <= 4) {
-                $this->writeLog("Warning! File name only has " . strlen($filename) . " characters. Skipping this file." , $fn);
-                continue;
-            }
-
             // Get the regular file name without file extension.
             $etdname = substr($filename,0,strlen($filename)-4);
 
             // Set the path of the local working directory. Ex: /tmp/processing/file_name_1234
             $etdDir = $localdirFTP . $etdname;
+
+            $this->writeLog("------------------------------", $fn);
+            $this->writeLog("BEGIN Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdname);
+
+            // Check to see if filename is more than four chars. Continue if string fails.
+            if (strlen($filename) <= 4) {
+                $this->writeLog("Warning! File name only has " . strlen($filename) . " characters. Moving to the next ETD." , $fn, $etdname);
+                $this->countTotalInvalidETDs++;
+                continue;
+            }
+            $this->writeLog("Is file valid... true.", $fn, $etdname);
+
+            // Increment number of valid ETDs.
+            $this->countTotalValidETDs++;
 
             $this->localFiles[$etdname]['ETD_SHORTNAME'] = $etdname;
             $this->localFiles[$etdname]['WORKING_DIR'] = $etdDir;
@@ -484,18 +504,18 @@ class processProquest {
             // Set status to 'processing'.
             $this->localFiles[$etdname]['STATUS'] = "processing";
 
-            $this->writeLog("BEGIN Gathering ETD file #{$f} - {$filename}", $fn);
-
             // Create the local directory if it doesn't already exists.
-            $this->writeLog("Now building local working directory...", $fn, $etdname);
             if ( file_exists($etdDir) ) {
-                $this->writeLog("Local working directory already exists: {$etdDir}", $fn, $etdname);
+                $this->writeLog("Using the existing local working directory:", $fn, $etdname);
+                $this->writeLog("   {$etdDir}", $fn, $etdname);
             }
             else if ( !mkdir($etdDir, 0755, true) ) {
-                $this->writeLog("Failed to create local working directory: {$etdDir}. Skipping this file.", $fn, $etdname);
+                $errorMessage = "Failed to create local working directory: {$etdDir}. Moving to the next ETD.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 continue;
             } else {
-                $this->writeLog("Created ETD local working directory: {$etdDir}", $fn, $etdname);
+                $this->writeLog("Created local working directory: {$etdDir}", $fn, $etdname);
             }
             $localFile = $etdDir . "/" . $filename;
 
@@ -510,7 +530,9 @@ class processProquest {
             if ( $this->ftp->ftp_get($localFile, $filename, FTP_BINARY) ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdname);
             } else {
-                $this->writeLog("ERROR: Failed to fetch file from FTP server: {$localFile}", $fn, $etdname);
+                $errorMessage = "Failed to fetch file from FTP server: {$localFile}. Moving to the next ETD.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 continue;
             }
 
@@ -524,7 +546,9 @@ class processProquest {
 
             // zip_open returns a resource handle on success and an integer on error.
             if (!is_resource($ziplisting)) {
-                $this->writeLog("ERROR: Failed to open zip file!", $fn, $etdname);
+                $errorMessage = "Failed to open zip file. Moving to the next ETD.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 continue;
             }
 
@@ -532,9 +556,9 @@ class processProquest {
 
             // Go through entire zip file and process contents.
             $z = 0;
-            $this->writeLog("Expanding zip file.", $fn, $etdname);
+            $this->writeLog("Expanded the zip file and found the following files:", $fn, $etdname);
+            
             // TODO: replace zip_read() with ZipArchive::statIndex
-            // FIX: supplemental files that are PDF replace the main ETD file
             while ($zip_entry = zip_read($ziplisting)) {
                 $z++;
 
@@ -560,7 +584,7 @@ class processProquest {
                     if ($fileName === 'pdf' && empty($this->localFiles[$etdname]['ETD'])) {
                         $this->localFiles[$etdname]['ETD'] = $file;
                         $this->localFiles[$etdname]['FILE_ETD'] = $file;
-                        $this->writeLog("  [{$z}] File type: PDF.", $fn, $etdname);
+                        $this->writeLog("      File type: PDF.", $fn, $etdname);
                         continue;
                     }
 
@@ -568,7 +592,7 @@ class processProquest {
                     if ($fileName === 'xml' && empty($this->localFiles[$etdname]['METADATA'])) {
                         $this->localFiles[$etdname]['METADATA'] = $file;
                         $this->localFiles[$etdname]['FILE_METADATA'] = $file;
-                        $this->writeLog("  [{$z}] File type: XML.", $fn, $etdname);
+                        $this->writeLog("      File type: XML.", $fn, $etdname);
                         continue;
                     }
 
@@ -581,7 +605,7 @@ class processProquest {
                     // Ignore directories
                     try {
                         if (is_dir($etdDir . "/" . $file)) {
-                            $this->writeLog("  [{$z}] This is a directory. Skipping.", $fn, $etdname);
+                            $this->writeLog("      This is a directory. Skipping.", $fn, $etdname);
                             array_push($this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'], $file);
                             continue;
                         }
@@ -602,19 +626,26 @@ class processProquest {
                         } else {
                             // Something is wrong since there are multiple files 
                             // in the root of the zip file.
-                            $this->writeLog("  [{$z}] WARNING: potential supplementary file found in root of the zip file.", $fn, $etdname);
+                            $this->writeLog("      WARNING: potential supplementary file found in root of the zip file.", $fn, $etdname);
                         }
                     }
                     
+                    // TODO: remove this
                     $this->localFiles[$etdname]['UNKNOWN'.$supplement] = $file;
+                    $supplement++;
 
                     array_push($this->localFiles[$etdname]['SUPPLEMENTS'], $file);
-                    
                     $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
-                    $supplement++;
-                    $this->writeLog("  [{$z}] This is a supplementary file.", $fn, $etdname);
+                    $this->countSupplementalETDs++;
+                    array_push($this->allSupplementalETDs, $file);
+                    $this->writeLog("      This is a supplementary file.", $fn, $etdname);
                 }
             }
+
+            // At this point we can leave this function if the ETD has supplemental files.
+            $this->writeLog("This ETD has supplementary files. No further processing is required. Moving to the next ETD.", $fn, $etdname);
+            $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdname);
+            continue;
 
             /**
              * Check that both:
@@ -657,11 +688,12 @@ class processProquest {
                 continue;
             }
 
-            $this->writeLog("END Gathering ETD file #{$f} - {$filename}", $fn);
+            $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]", $fn);
             $this->localFiles[$etdname]['STATUS'] = "success";
         }
 
         // Completed fetching all ETD zip files.
+        $this->writeLog("------------------------------", $fn);
         $this->writeLog("Completed fetching all ETD zip files from FTP server.", $fn);
 
         return true;
@@ -693,7 +725,8 @@ class processProquest {
             throw new Exception($errorMessage);
         }
 
-        $this->writeLog("Now processing ETD files.", $fn);
+        $this->writeLog("########################", $fn);
+        $this->writeLog("Now processing {$this->countTotalValidETDs} ETD file(s).", $fn);
 
         /**
          * Load Proquest MODS XSLT stylesheet.
@@ -750,7 +783,15 @@ class processProquest {
                 $etdname = substr($this->localFiles[$file]["ETD"],0,strlen($this->localFiles[$file]["ETD"])-4);
                 $this->localFiles[$file]['ETD_SHORTNAME'] = $etdname;
             }
-            $this->writeLog("BEGIN Processing ETD #" . $s . " - " . $etdname, $fn);
+            $this->writeLog("------------------------------", $fn);
+            $this->writeLog("BEGIN Processing ETD file [{$s} of {$this->countTotalETDs}]", $fn, $etdname);
+
+            // No need to process ETDs that have supplemental files.
+            if ($this->localFiles[$file]["HAS_SUPPLEMENTS"]) {
+                $this->writeLog("SKIP Processing ETD since it contains supplemental files.", $fn, $etdname);
+                $this->writeLog("END Processing ETD file [{$s} of {$this->countTotalValidETDs}]", $fn, $etdname);
+                continue;
+            }
 
             // Create XPath object from the ETD XML file.
             $metadata = new DOMDocument();
@@ -970,10 +1011,11 @@ class processProquest {
                 $this->toProcess++;
             }
 
-            $this->writeLog("END Processing ETD #{$s} - {$etdname}", $fn);
+            $this->writeLog("END Processing ETD [#{$s} of {$this->countTotalETDs}]", $fn, $etdname);
         }
 
         // Completed processing all ETD files.
+        $this->writeLog("------------------------------", $fn);
         $this->writeLog("Completed processing all ETD files.", $fn);
 
         return true;
@@ -1152,7 +1194,16 @@ class processProquest {
             return;
         }
 
-        
+        // Loop through every ETD with supplemental files
+        if ($this->countSupplementalETDs > 0) {
+            $this->writeLog("The following ETD(s) have supplemental files and were not ingested.", $fn);
+
+            foreach ($this->allSupplementalETDs as $local) { 
+                $this->writeLog(" * {$local['ETD_SHORTNAME']}", $fn);
+            }
+        }
+
+        // Loop through every 
 
         return true;
     }
@@ -1195,7 +1246,8 @@ class processProquest {
             throw new Exception($errorMessage);
         }
 
-        $this->writeLog("Now Ingesting ETD files.", $fn);
+        $this->writeLog("########################", $fn);
+        $this->writeLog("Now Ingesting {$this->countTotalETDs} ETD file(s).", $fn);
 
         global $pidcount, $successCount, $failureCount;
         global $successMessage, $failureMessage, $processingMessage;
@@ -1230,8 +1282,15 @@ class processProquest {
                 $etdname = substr($this->localFiles[$file]["ETD"],0,strlen($this->localFiles[$file]["ETD"])-4);
                 $this->localFiles[$file]['ETD_SHORTNAME'] = $etdname;
             }
-            $this->writeLog("BEGIN Ingesting ETD #" . (string)$i . " - " . $etdname, $fn);
+            $this->writeLog("------------------------------", $fn);
+            $this->writeLog("BEGIN Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdname);
 
+            // No need to process ETDs that have supplemental files.
+            if ($this->localFiles[$file]["HAS_SUPPLEMENTS"]) {
+                $this->writeLog("SKIP Ingesting ETD since it contains supplemental files.", $fn, $etdname);
+                $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdname);
+                continue;
+            }
 
             // Reconstruct name of zip file from the local ETD work space directory name.
             // TODO: there must be a better way to do this...
@@ -1809,10 +1868,14 @@ class processProquest {
 
             // Make sure we give every processing loop enough time to complete.
             $this->localFiles[$file]['INGESTED'] = true;
+            $this->countProcessedETDs++;
             sleep(2);
 
-            $this->writeLog("END Ingesting ETD #" . (string)$i . " - " . $etdname, $fn);
+            $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdname);
         }
+
+        $this->writeLog("------------------------------", $fn);
+        $this->writeLog("Completed ingesting all ETD files.", $fn);
 
         /**
          * Send email message on status of all processed ETD files.
