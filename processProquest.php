@@ -54,6 +54,10 @@ class processProquest {
     protected $processingErrors = [];       // Keep track of processing errors
     protected $allFoundETDs = [];           // List of all found ETD zip files
     protected $allSupplementalETDs = [];    // List of all ETDs with supplemental files
+    protected $allRegularETDs = [];         // List of all ETDs without supplemental files
+    protected $allIngestedETDs = [];        // List of all ETDs that were successfully ingested
+    protected $allFailedETDs = [];          // List of all ETDs that failed to ingest
+    protected $allInvalidETDs = [];         // List of all ETDs that have invalid zip files
 
     protected $countTotalETDs = 0;          // Total ETDs count
     protected $countTotalValidETDs = 0;     // Total ETDs that are valid files
@@ -483,6 +487,7 @@ class processProquest {
             if (strlen($filename) <= 4) {
                 $this->writeLog("Warning! File name only has " . strlen($filename) . " characters. Moving to the next ETD." , $fn, $etdname);
                 $this->countTotalInvalidETDs++;
+                array_push($this->allInvalidETDs, $filename);
                 continue;
             }
             $this->writeLog("Is file valid... true.", $fn, $etdname);
@@ -637,7 +642,7 @@ class processProquest {
                     array_push($this->localFiles[$etdname]['SUPPLEMENTS'], $file);
                     $this->localFiles[$etdname]['HAS_SUPPLEMENTS'] = true;
                     $this->countSupplementalETDs++;
-                    array_push($this->allSupplementalETDs, $file);
+                    array_push($this->allSupplementalETDs, $filename);
                     $this->writeLog("      This is a supplementary file.", $fn, $etdname);
                 }
             }
@@ -648,6 +653,8 @@ class processProquest {
                 $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdname);
                 $this->localFiles[$etdname]['STATUS'] = "skipped";
                 continue;
+            } else {
+                array_push($this->allRegularETDs, $filename);
             }
 
             /**
@@ -893,6 +900,7 @@ class processProquest {
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localFiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdname);
@@ -909,6 +917,7 @@ class processProquest {
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdname);
@@ -925,6 +934,7 @@ class processProquest {
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
             $this->localFiles[$file]['LABEL'] = $fedoraLabel;
@@ -965,6 +975,7 @@ class processProquest {
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -980,6 +991,7 @@ class processProquest {
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1191,12 +1203,9 @@ class processProquest {
             // Pull out all error messages
             $this->writeLog("The script failed to complete due to the following issues:", $fn);
             foreach ($this->processingErrors as $message) {
-                $this->writeLog(" * {$message}", $fn);
+                $this->writeLog(" · {$message}", $fn);
                 continue;
             }
-
-            // Send email
-            return;
         }
 
         // Loop through every ETD with supplemental files
@@ -1204,11 +1213,13 @@ class processProquest {
             $this->writeLog("The following ETD(s) have supplemental files and were not ingested.", $fn);
 
             foreach ($this->allSupplementalETDs as $local) { 
-                $this->writeLog(" * {$local['ETD_SHORTNAME']}", $fn);
+                $this->writeLog(" · {$local['ETD_SHORTNAME']}", $fn);
             }
         }
 
-        // Loop through every 
+        // Move files in FTP server
+
+        // Send email
 
         return true;
     }
@@ -1334,6 +1345,7 @@ class processProquest {
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1366,6 +1378,7 @@ class processProquest {
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1382,6 +1395,7 @@ class processProquest {
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                     // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     $this->localfiles[$file]["STATUS"] = "failed";
+                    array_push($this->allFailedETDs, $filename);
                     continue;
                 }
             } else {
@@ -1529,6 +1543,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
     		    continue;
     		}
 
@@ -1626,6 +1641,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1646,6 +1662,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1660,6 +1677,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1701,6 +1719,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1748,6 +1767,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 $this->localfiles[$file]["STATUS"] = "failed";
+                array_push($this->allFailedETDs, $filename);
                 continue;
             }
 
@@ -1811,6 +1831,7 @@ class processProquest {
                     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                     // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     $this->localfiles[$file]["STATUS"] = "failed";
+                    array_push($this->allFailedETDs, $filename);
                     continue;
                 }
 
@@ -1829,6 +1850,7 @@ class processProquest {
                     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                     // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     $this->localfiles[$file]["STATUS"] = "failed";
+                    array_push($this->allFailedETDs, $filename);
                     continue;
                 }
 
@@ -1889,6 +1911,7 @@ class processProquest {
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                     // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     $this->localfiles[$file]["STATUS"] = "failed";
+                    array_push($this->allFailedETDs, $filename);
                     continue;
                 }
             }
@@ -1896,6 +1919,7 @@ class processProquest {
             $this->localFiles[$file]["STATUS"] = "ingested";
             $this->localFiles[$file]['INGESTED'] = true;
             $this->countProcessedETDs++;
+            array_push($this->allIngestedETDs, $this->localFiles[$file]["ETD_SHORTNAME"]);
 
             // Make sure we give every processing loop enough time to complete.
             sleep(2);
