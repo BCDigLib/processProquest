@@ -1494,8 +1494,8 @@ class processProquest {
              * Then, concatenate splash page onto ETD PDF for final PDF.
              */
             $dsid = "PDF";
-            $this->writeLog("[PDF] Generating datastream.", $fn, $etdname);
-            $this->writeLog("[PDF] First, generate PDF splash page.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] First, generate PDF splash page.", $fn, $etdname);
 
             // Source file is the original Proquest XML file.
             $source = $workingDir . "/" . $this->localFiles[$file]['MODS'];
@@ -1510,14 +1510,14 @@ class processProquest {
             // Execute 'fop' command and check return code.
             $command = "$executable_fop -c $fop_config -xml $source -xsl $splashxslt -pdf $splashtemp";
             exec($command, $output, $return);
-            $this->writeLog("[PDF] Running 'fop' command to build PDF splash page.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Running 'fop' command to build PDF splash page.", $fn, $etdname);
 
     		if (!$return) {
-                $this->writeLog("[PDF] Splash page created successfully.", $fn, $etdname);
+                $this->writeLog("[{$dsid}] Splash page created successfully.", $fn, $etdname);
     		} else {
-                $errorMessage = "ERROR: PDF splash page creation failed! ". $return;
+                $errorMessage = "PDF splash page creation failed! ". $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
     		    continue;
     		}
@@ -1531,7 +1531,7 @@ class processProquest {
              *
              * Load splash page PDF to core PDF if under embargo. -- TODO: find out when/how this happens
              */
-            $this->writeLog("[PDF] Next, generate concatenated PDF document.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Next, generate concatenated PDF document.", $fn, $etdname);
 
             // Assign concatenated PDF document to ETD file's directory.
             $concattemp = $workingDir . "/concatted.pdf";
@@ -1558,12 +1558,13 @@ class processProquest {
             */
 
             // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
-            $this->writeLog("[PDF] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdname);
 
             if (!copy($pdf,$concattemp)) {
-                $this->writeLog("ERROR: PDF document cloning failed!", $fn, $etdname);
+                // TODO: handle this error case
+                $this->writeLog("[{$dsid}] ERROR: PDF document cloning failed!", $fn, $etdname);
             } else {
-                $this->writeLog("[PDF] PDF document cloned successfully.", $fn, $etdname);
+                $this->writeLog("[{$dsid}] PDF document cloned successfully.", $fn, $etdname);
             }
 
             // Default Control Group is M
@@ -1577,7 +1578,7 @@ class processProquest {
 
             // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
             $datastream->setContentFromFile($concattemp);
-            $this->writeLog("[PDF] Selecting file for datastream: {$concattemp}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for datastream: {$concattemp}", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1592,7 +1593,7 @@ class processProquest {
              *
              */
             $dsid = "FULL_TEXT";
-            $this->writeLog("[FULL_TEXT] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $source = $workingDir . "/" . $this->localFiles[$file]['ETD'];
@@ -1604,14 +1605,14 @@ class processProquest {
             // Execute 'pdftotext' command and check return code.
             $command = "$executable_pdftotext $source $fttemp";
             exec($command, $output, $return);
-            $this->writeLog("[FULL_TEXT] Running 'pdftotext' command.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Running 'pdftotext' command.", $fn, $etdname);
 
             if (!$return) {
-                $this->writeLog("[FULL_TEXT] datastream generated successfully.", $fn, $etdname);
+                $this->writeLog("[{$dsid}] datastream generated successfully.", $fn, $etdname);
             } else {
-                $errorMessage = "ERROR: FULL_TEXT document creation failed!" . $return;
+                $errorMessage = "FULL_TEXT document creation failed!" . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1628,9 +1629,9 @@ class processProquest {
 
             // Check if file read failed.
             if ($fulltext === false) {
-                $errorMessage = "ERROR: could not read in file: ". $fttemp;
+                $errorMessage = "Could not read in file: ". $fttemp;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1641,16 +1642,16 @@ class processProquest {
 
             // In the slim chance preg_replace fails.
             if ($sanitized === null) {
-                $errorMessage = "ERROR: preg_replace failed to return valid sanitized FULL_TEXT string!";
+                $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string!";
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
 
             // Set FULL_TEXT datastream to be sanitized version of full-text document.
             $datastream->setContentFromString($sanitized);
-            $this->writeLog("[FULL_TEXT] Selecting file for datastream: {$fttemp}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for datastream: {$fttemp}", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1665,7 +1666,7 @@ class processProquest {
              *
              */
             $dsid = "TN";
-            $this->writeLog("[TN] Generating (thumbnail) datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating (thumbnail) datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             // TODO: figure out what "[0]" means in this context.
@@ -1675,14 +1676,14 @@ class processProquest {
             // Execute 'convert' command and check return code.
             $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $workingDir . "/thumbnail.jpg";
             exec($command, $output, $return);
-            $this->writeLog("[TN] Running 'convert' command to build TN document.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Running 'convert' command to build TN document.", $fn, $etdname);
 
             if (!$return) {
-                $this->writeLog("[TN] Datastream generated successfully.", $fn, $etdname);
+                $this->writeLog("[{$dsid}] Datastream generated successfully.", $fn, $etdname);
             } else {
-                $errorMessage = "ERROR: TN document creation failed! " . $return;
+                $errorMessage = "TN document creation failed! " . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1696,7 +1697,7 @@ class processProquest {
 
             // Set TN datastream to be the generated thumbnail image.
             $datastream->setContentFromFile($workingDir . "//thumbnail.jpg");
-            $this->writeLog("[TN] Selecting file for datastream: thumbnail.jpg", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for datastream: thumbnail.jpg", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1711,7 +1712,7 @@ class processProquest {
              *
              */
             $dsid = "PREVIEW";
-            $this->writeLog("[PREVIEW] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             // TODO: figure out what "[0]" means in this context.
@@ -1721,14 +1722,14 @@ class processProquest {
             // Execute 'convert' command and check return code.
             $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $workingDir . "/preview.jpg";
             exec($command, $output, $return);
-            $this->writeLog("[PREVIEW] Running 'convert' command to build PREVIEW document.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Running 'convert' command to build PREVIEW document.", $fn, $etdname);
 
             if (!$return) {
-                $this->writeLog("[PREVIEW] PREVIEW datastream generated successfully.", $fn, $etdname);
+                $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.", $fn, $etdname);
             } else {
-                $errorMessage = "ERROR: REVIEW document creation failed! " . $return;
+                $errorMessage = "PREVIEW document creation failed! " . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                 $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                 continue;
             }
@@ -1742,7 +1743,7 @@ class processProquest {
 
             // Set PREVIEW datastream to be the generated preview image.
             $datastream->setContentFromFile($workingDir . "//preview.jpg");
-            $this->writeLog("[PREVIEW] Selecting TN datastream to use: preview.jpg", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting TN datastream to use: preview.jpg", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1758,7 +1759,7 @@ class processProquest {
              */
             // TODO: understand why this command is down here and not in an earlier POLICY datastream section.
             $dsid = "RELS-EXT";
-            $this->writeLog("[RELS-EXT] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
 
             $status = $this->prepareIngestDatastream($fedoraObj, $policyObj, $dsid, $etdname);
 
@@ -1775,8 +1776,8 @@ class processProquest {
              * If there is, then set Embargo date in the custom XACML policy file.
              */
             $dsid = "RELS-INT";
-            $this->writeLog("[RELS-INT] Generating datastream.", $fn, $etdname);
-            $this->writeLog("[RELS-INT] Reading in custom RELS XSLT file...", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Reading in custom RELS XSLT file...", $fn, $etdname);
 
             // $submission['OA'] is either '0' for no OA policy, or some non-zero value.
             $relsint = '';
@@ -1788,14 +1789,15 @@ class processProquest {
 
                 // Check if file read failed.
                 if ($relsint === false) {
-                    $this->writeLog("ERROR: could not read in file: {$relsFile}", $fn, $etdname);
+                    $errorMessage = "Could not read in file: " . $relsFile;
+                    $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
 
                 $relsint = str_replace('######', $submission['PID'], $relsint);
 
-                $this->writeLog("[RELS-INT] No OA policy for ETD: read in: {$relsFile}", $fn, $etdname);
+                $this->writeLog("[{$dsid}] No OA policy for ETD: read in: {$relsFile}", $fn, $etdname);
             } else if (isset($submission['EMBARGO'])) {
                 // Has an OA policy, and an embargo date.
                 $relsFile = "xsl/embargoRELS-INT.xml";
@@ -1803,9 +1805,9 @@ class processProquest {
 
                 // Check if file read failed.
                 if ($relsint === false) {
-                    $errorMessage = "ERROR: could not read in file: " . $relsFile;
+                    $errorMessage = "Could not read in file: " . $relsFile;
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                    $this->writeLog($errorMessage, $fn, $etdname);
+                    $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
                 }
@@ -1813,7 +1815,7 @@ class processProquest {
                 $relsint = str_replace('######', $submission['PID'], $relsint);
                 $relsint = str_replace('$$$$$$', $submission['EMBARGO'], $relsint);
 
-                $this->writeLog("[RELS-INT] OA policy found and Embargo date found for ETD: read in: {$relsFile}", $fn, $etdname);
+                $this->writeLog("[{$dsid}] OA policy found and Embargo date found for ETD: read in: {$relsFile}", $fn, $etdname);
             }
 
             // TODO: handle case where there is an OA policy and no embargo date?
@@ -1831,7 +1833,7 @@ class processProquest {
 
                 // Set RELS-INT datastream to be the custom XACML policy file read in above.
                 $datastream->setContentFromString($relsint);
-                $this->writeLog("[RELS-INT] Selecting fire for datastream: {$relsFile}", $fn, $etdname);
+                $this->writeLog("[{$dsid}] Selecting fire for datastream: {$relsFile}", $fn, $etdname);
 
                 try {
                     $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1841,6 +1843,8 @@ class processProquest {
                 }
             }
 
+            // Completed datastream completion
+            $this->writeLog("Created all datastreams.", $fn, $etdname);
 
             /**
              * Ingest full object into Fedora.
@@ -1856,12 +1860,12 @@ class processProquest {
             } else {
                 try {
                     $res = $this->repository->ingestObject($fedoraObj);
-                    $this->writeLog("Starting ingestion of Fedora object...", $fn, $etdname);
+                    $this->writeLog("START ingestion of Fedora object...", $fn, $etdname);
                     $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
                 } catch (Exception $e) {
-                    $errorMessage = "ERROR: Could not ingest Fedora object: " . $e->getMessage();
+                    $errorMessage = "Could not ingest Fedora object: " . $e->getMessage();
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                    $this->writeLog($errorMessage, $fn, $etdname);
+                    $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
                     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
                     continue;
@@ -1889,39 +1893,36 @@ class processProquest {
          */
         $res = true;
 
-        // Simple status report output.
-        $this->writeLog("Status report:" .
-                        "\tETDs ingested: " . ((string)$successCount ? (string)$successCount : "0") .
-                        "\tETDs not ingested: " . ((string)$failureCount ? (string)$failureCount : "0"),
-                        $fn);
+        // // Simple status report output.
+        // $this->writeLog("Status report:" .
+        //                 "\tETDs ingested: " . ((string)$successCount ? (string)$successCount : "0") .
+        //                 "\tETDs not ingested: " . ((string)$failureCount ? (string)$failureCount : "0"),
+        //                 $fn);
 
-        /*
-        if ($failureMessage == "\n\nThe following ETDs __FAILED__ to ingest:\n\n") {
-            mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
-        } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
-            mail($this->settings['notify']['email'],"Message from processProquest",$failureMessage . $processingMessage);
-        } else {
-            mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
-        }
-        */
+        // /*
+        // if ($failureMessage == "\n\nThe following ETDs __FAILED__ to ingest:\n\n") {
+        //     mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $processingMessage);
+        // } elseif ($successMessage == "The following ETDs successfully ingested:\n\n") {
+        //     mail($this->settings['notify']['email'],"Message from processProquest",$failureMessage . $processingMessage);
+        // } else {
+        //     mail($this->settings['notify']['email'],"Message from processProquest",$successMessage . $failureMessage . $processingMessage);
+        // }
+        // */
 
-        // No Failures: hide failure message.
-        if ($failureCount == 0) {
-            $res = $this->sendEmail($successMessage . $processingMessage);
-            return true;
-        }
+        // // No Failures: hide failure message.
+        // if ($failureCount == 0) {
+        //     $res = $this->sendEmail($successMessage . $processingMessage);
+        //     return true;
+        // }
 
-        // No successes, but some failures: hide success message.
-        if ($successCount == 0) {
-            $res = $this->sendEmail($failureMessage . $processingMessage);
-            return true;
-        }
+        // // No successes, but some failures: hide success message.
+        // if ($successCount == 0) {
+        //     $res = $this->sendEmail($failureMessage . $processingMessage);
+        //     return true;
+        // }
 
-        // Everything else: send all message types.
-        $res = $this->sendEmail($successMessage . $failureMessage . $processingMessage);
-
-        // Completed ingesting all ETD files.
-        $this->writeLog("Completed ingesting all ETD files.", $fn);
+        // // Everything else: send all message types.
+        // $res = $this->sendEmail($successMessage . $failureMessage . $processingMessage);
 
         return true;
     }
