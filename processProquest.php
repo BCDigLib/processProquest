@@ -367,7 +367,7 @@ class processProquest {
             array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
             $this->writeLog("ERROR: {$errorMessage}", $fn, $etdName);
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdName);
-            $this->ingestHandlerPostProcess(false, $etdName, $this->etd);
+            //$this->ingestHandlerPostProcess(false, $etdName, $this->etd);
 
             // TODO: call postProcess()?
             array_push($this->processingErrors, $errorMessage);
@@ -892,7 +892,7 @@ class processProquest {
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-                // TODO: set status to failure and run ingestHandlerPostProcess()
+                $this->localFiles[$file]["STATUS"] = "failed";
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdname);
@@ -908,7 +908,7 @@ class processProquest {
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-                // TODO: set status to failure and run ingestHandlerPostProcess()
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdname);
@@ -924,7 +924,7 @@ class processProquest {
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-                // TODO: set status to failure and run ingestHandlerPostProcess()
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
             $this->localFiles[$file]['LABEL'] = $fedoraLabel;
@@ -964,7 +964,7 @@ class processProquest {
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-                // TODO: set status to failure and run ingestHandlerPostProcess()
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -979,7 +979,7 @@ class processProquest {
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                 array_push($this->localFiles[$etdname]['INGEST_ERRORS'], $errorMessage);
                 //$this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-                // TODO: set status to failure and run ingestHandlerPostProcess()
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1313,9 +1313,9 @@ class processProquest {
             $this->writeLog("The full path of the ETD file on the FTP server is: {$fullfnameFTP}", $fn, $etdname);
 
             // collect some values for ingestHandlerPostProcess()
-            $this->etd["submission"] = $submission;
-            $this->etd["fnameFTP"] = $fnameFTP;
-            $this->etd["fullfnameFTP"] = $fullfnameFTP;
+            // $this->etd["submission"] = $submission;
+            // $this->etd["fnameFTP"] = $fnameFTP;
+            // $this->etd["fullfnameFTP"] = $fullfnameFTP;
 
             // Check for supplemental files, and create log message.
             // if ($this->localFiles[$file]['PROCESS'] === '1') {
@@ -1332,7 +1332,8 @@ class processProquest {
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1363,7 +1364,8 @@ class processProquest {
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog($errorMessage, $fn, $etdname);
                 $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1378,7 +1380,8 @@ class processProquest {
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                     $this->writeLog($errorMessage, $fn, $etdname);
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    $this->localfiles[$file]["STATUS"] = "failed";
                     continue;
                 }
             } else {
@@ -1524,7 +1527,8 @@ class processProquest {
                 $errorMessage = "PDF splash page creation failed! ". $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
     		    continue;
     		}
 
@@ -1620,7 +1624,8 @@ class processProquest {
                 $errorMessage = "FULL_TEXT document creation failed!" . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1639,7 +1644,8 @@ class processProquest {
                 $errorMessage = "Could not read in file: ". $fttemp;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1652,7 +1658,8 @@ class processProquest {
                 $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string!";
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1692,7 +1699,8 @@ class processProquest {
                 $errorMessage = "TN document creation failed! " . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1738,7 +1746,8 @@ class processProquest {
                 $errorMessage = "PREVIEW document creation failed! " . $return;
                 array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                $this->localfiles[$file]["STATUS"] = "failed";
                 continue;
             }
 
@@ -1798,8 +1807,10 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $errorMessage = "Could not read in file: " . $relsFile;
+                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    $this->localfiles[$file]["STATUS"] = "failed";
                     continue;
                 }
 
@@ -1816,7 +1827,8 @@ class processProquest {
                     $errorMessage = "Could not read in file: " . $relsFile;
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    $this->localfiles[$file]["STATUS"] = "failed";
                     continue;
                 }
 
@@ -1864,25 +1876,28 @@ class processProquest {
             $res = true;
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Ignore ingesting object into Fedora.", $fn, $etdname);
-                $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
+                // $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
             } else {
                 try {
                     $res = $this->repository->ingestObject($fedoraObj);
                     $this->writeLog("START ingestion of Fedora object...", $fn, $etdname);
-                    $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
+                    // $this->ingestHandlerPostProcess(true, $etdname, $this->etd);
                 } catch (Exception $e) {
                     $errorMessage = "Could not ingest Fedora object: " . $e->getMessage();
                     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                     $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
                     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                    $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    // $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
+                    $this->localfiles[$file]["STATUS"] = "failed";
                     continue;
                 }
             }
 
-            // Make sure we give every processing loop enough time to complete.
+            $this->localFiles[$file]["STATUS"] = "ingested";
             $this->localFiles[$file]['INGESTED'] = true;
             $this->countProcessedETDs++;
+
+            // Make sure we give every processing loop enough time to complete.
             sleep(2);
 
             $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdname);
@@ -1890,6 +1905,9 @@ class processProquest {
 
         $this->writeLog("------------------------------", $fn);
         $this->writeLog("Completed ingesting all ETD files.", $fn);
+
+        // At this point run postProcess() to complete the workflow.
+        // $this->postProcess();
 
         /**
          * Send email message on status of all processed ETD files.
