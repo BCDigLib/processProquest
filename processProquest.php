@@ -43,7 +43,7 @@ class processProquest {
     public $settings;
     public $debug;
     protected $ftp;
-    protected $localFiles;      // array
+    protected $localFiles = [];
     protected $connection;
     protected $api;
     protected $api_m;
@@ -343,7 +343,7 @@ class processProquest {
      * 
      * @throws Exception if the datastream ingest failed.
      */
-    function prepareIngestDatastream($fedoraObj, $datastreamObj, $datastreamName, $etdName) {
+    private function prepareIngestDatastream($fedoraObj, $datastreamObj, $datastreamName, $etdName) {
         if ($this->debug === true) {
             array_push($this->localFiles[$etdName]['DATASTREAMS_CREATED'], $datastreamName);
             $this->writeLog("[{$datastreamName}] DEBUG: Did not ingest datastream.", "ingest" , $etdName);
@@ -1026,7 +1026,7 @@ class processProquest {
      * 
      * @return boolean Sucess value.
      */
-    function ingestHandlerPostProcess($status, $etdname, $etd){
+    private function ingestHandlerPostProcess($status, $etdname, $etd){
         $fn = "ingestHandlerPostProcess";
 
         global $pidcount, $successCount, $failureCount;
@@ -1119,7 +1119,7 @@ class processProquest {
     /**
      * Parse script results and compose email body.
      */
-    function postProcess() {
+    private function postProcess() {
         /*
          * Steps: 
          *  check $this->processingErrors[]
