@@ -502,7 +502,7 @@ class processProquest {
             $this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'] = [];
 
             // Set status to 'processing'.
-            $this->localFiles[$etdname]['STATUS'] = "processing";
+            $this->localFiles[$etdname]['STATUS'] = "unprocessed";
 
             // Create the local directory if it doesn't already exists.
             if ( file_exists($etdDir) ) {
@@ -645,6 +645,7 @@ class processProquest {
             // At this point we can leave this function if the ETD has supplemental files.
             $this->writeLog("This ETD has supplementary files. No further processing is required. Moving to the next ETD.", $fn, $etdname);
             $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdname);
+            $this->localFiles[$etdname]['STATUS'] = "skipped";
             continue;
 
             /**
@@ -1011,6 +1012,7 @@ class processProquest {
                 $this->toProcess++;
             }
 
+            $this->localFiles[$etdname]['STATUS'] = "processed";
             $this->writeLog("END Processing ETD [#{$s} of {$this->countTotalETDs}]", $fn, $etdname);
         }
 
