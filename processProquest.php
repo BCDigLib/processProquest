@@ -1117,7 +1117,7 @@ class processProquest {
 
 
     /**
-     * Parse script results and compose email body. 
+     * Parse script results and compose email body.
      */
     function postProcess() {
         /*
@@ -1134,19 +1134,25 @@ class processProquest {
          *      local["EMBARGO_DATE"]
          *      local["INGESTED"] ??
         */
+        $fn = "postProcess";
+
+        $this->writeLog("Parsing script results.", $fn, $etdname);
 
         // If there are any processingErrors then we can assume there
         // weren't any ETDs fetches or processed.
         if (count($this->processingErrors) > 0) {
             // Pull out all error messages
+            $this->writeLog("The script failed to complete due to the following issues:", $fn);
             foreach ($this->processingErrors as $message) {
+                $this->writeLog(" * {$message}", $fn);
                 continue;
             }
 
             // Send email
-
             return;
         }
+
+        
 
         return true;
     }
