@@ -664,7 +664,7 @@ class processProquest {
                 $this->localFiles[$etdname]['STATUS'] = "failure";
                 continue;
             }
-            $this->writeLog("Great! The ETD PDF file was found.", $fn, $etdname);
+            $this->writeLog("✓ The ETD PDF file was found.", $fn, $etdname);
 
             if ( empty($this->localFiles[$etdname]['METADATA']) ) {
                 $errorMessage = "The ETD XML file was not found or set.";
@@ -673,7 +673,7 @@ class processProquest {
                 $this->localFiles[$etdname]['STATUS'] = "failure";
                 continue;
             }
-            $this->writeLog("Great! The ETD XML file was found.", $fn, $etdname);
+            $this->writeLog("✓ The ETD XML file was found.", $fn, $etdname);
 
             $zip = new ZipArchive;
 
@@ -683,7 +683,8 @@ class processProquest {
                 $zip->extractTo($etdDir);
                 $zip->close();
 
-                $this->writeLog("Extracting ETD zip file to: {$localFile}", $fn, $etdname);
+                $this->writeLog("Extracting ETD zip file to local working directory.", $fn, $etdname);
+                // $this->writeLog("   {$etdDir}", $fn, $etdname);
             } else {
                 $errorMessage = "Failed to extract ETD zip file: " . $res;
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
@@ -1000,19 +1001,19 @@ class processProquest {
             $suppxpath = new DOMXpath($metadata);
             $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
 
-            $this->writeLog("Checking for existence supplemental files...", $fn, $etdname);
+            // $this->writeLog("Checking for existence supplemental files...", $fn, $etdname);
 
-            // Check if there are zero or more supplemental files.
-            if ($suElements->item(0) ) {
-                $this->localFiles[$file]['PROCESS'] = "0";
-                $this->writeLog("No supplemental files found.", $fn, $etdname);
-            } else {
-                $this->localFiles[$file]['PROCESS'] = "1";
-                $this->writeLog("Found a supplemental file(s).", $fn, $etdname);
+            // // Check if there are zero or more supplemental files.
+            // if ($suElements->item(0) ) {
+            //     $this->localFiles[$file]['PROCESS'] = "0";
+            //     $this->writeLog("No supplemental files found.", $fn, $etdname);
+            // } else {
+            //     $this->localFiles[$file]['PROCESS'] = "1";
+            //     $this->writeLog("Found a supplemental file(s).", $fn, $etdname);
 
-                // Keep track of how many additional PIDs will need to be generated.
-                $this->toProcess++;
-            }
+            //     // Keep track of how many additional PIDs will need to be generated.
+            //     $this->toProcess++;
+            // }
 
             $this->localFiles[$etdname]['STATUS'] = "processed";
             $this->writeLog("END Processing ETD [#{$s} of {$this->countTotalETDs}]", $fn, $etdname);
@@ -1106,13 +1107,13 @@ class processProquest {
             // TODO: use relative or absolute path?
             $this->writeLog("Currently in FTP directory: {$this->ftp->ftp_pwd()}", $fn, $etdname);
 
-            $this->writeLog("Now attempting to move {$fullfnameFTP}  into {$fullProcessdirFTP}", $fn, $etdname);
+            $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullProcessdirFTP}", $fn, $etdname);
 
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
                 return true;
             }
-                
+
             $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
             
             // Check if there was an error moving the ETD file on the FTP server.
@@ -1317,10 +1318,10 @@ class processProquest {
             $this->etd["fullfnameFTP"] = $fullfnameFTP;
 
             // Check for supplemental files, and create log message.
-            if ($this->localFiles[$file]['PROCESS'] === '1') {
-                // Still Load - but notify admin about supp files.
-                $this->writeLog("Supplementary files found.", $fn, $etdname);
-            }
+            // if ($this->localFiles[$file]['PROCESS'] === '1') {
+            //     // Still Load - but notify admin about supp files.
+            //     $this->writeLog("Supplementary files found.", $fn, $etdname);
+            // }
 
             // Instantiated a Fedora object and use the generated PID as its ID.
             try {
