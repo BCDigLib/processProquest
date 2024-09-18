@@ -1219,6 +1219,21 @@ class processProquest {
     }
 
     /**
+     * Process a failed datastream ingest.
+     * 
+     * @param string $errorMessage the error message to display
+     * @param integer $fileIndex the localFiles index
+     * @param string $etdname the name of the ETD file 
+     */
+    private function datastreamIngestFailed($errorMessage, $fileIndex, $etdname) {
+        array_push($this->localFiles[$fileIndex]['INGEST_ERRORS'], $errorMessage);
+        $this->writeLog($errorMessage, "ingest", $etdname);
+        $this->writeLog("trace:\n" . $e->getTraceAsString(), "ingest", $etdname);
+        $this->localfiles[$fileIndex]["STATUS"] = "failed";
+        array_push($this->allFailedETDs, $this->localFiles[$fileIndex]["ETD_SHORTNAME"]);
+    }
+
+    /**
      * Ingest files into Fedora
      *
      * This creates and ingests the following Fedora datastreams:
@@ -1334,11 +1349,12 @@ class processProquest {
                 $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$file]['PID']}", $fn, $etdname);
             } catch (Exception $e) {
                 $errorMessage = "ERROR: Could not instanciate Fedora object: " . $e->getMessage();
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
-                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog($errorMessage, $fn, $etdname);
+                // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1366,11 +1382,12 @@ class processProquest {
                 $collectionName = GRADUATE_THESES;
             } catch (Exception $e) { // RepositoryException
                 $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage();
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog($errorMessage, $fn, $etdname);
-                $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog($errorMessage, $fn, $etdname);
+                // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1382,11 +1399,12 @@ class processProquest {
                     $this->writeLog("[RELS-EXT] Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
                 } catch (Exception $e) { // RepositoryException
                     $errorMessage = "ERROR: Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage();
-                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                    $this->writeLog($errorMessage, $fn, $etdname);
-                    $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                    $this->localfiles[$file]["STATUS"] = "failed";
-                    array_push($this->allFailedETDs, $filename);
+                    // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    // $this->writeLog($errorMessage, $fn, $etdname);
+                    // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                    // $this->localfiles[$file]["STATUS"] = "failed";
+                    // array_push($this->allFailedETDs, $filename);
+                    $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                     continue;
                 }
             } else {
@@ -1530,10 +1548,11 @@ class processProquest {
                 $this->writeLog("[{$dsid}] Splash page created successfully.", $fn, $etdname);
     		} else {
                 $errorMessage = "PDF splash page creation failed! ". $return;
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
     		    continue;
     		}
 
@@ -1627,10 +1646,11 @@ class processProquest {
                 $this->writeLog("[{$dsid}] datastream generated successfully.", $fn, $etdname);
             } else {
                 $errorMessage = "FULL_TEXT document creation failed!" . $return;
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1647,10 +1667,11 @@ class processProquest {
             // Check if file read failed.
             if ($fulltext === false) {
                 $errorMessage = "Could not read in file: ". $fttemp;
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1661,10 +1682,11 @@ class processProquest {
             // In the slim chance preg_replace fails.
             if ($sanitized === null) {
                 $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string!";
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1702,10 +1724,11 @@ class processProquest {
                 $this->writeLog("[{$dsid}] Datastream generated successfully.", $fn, $etdname);
             } else {
                 $errorMessage = "TN document creation failed! " . $return;
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1749,10 +1772,11 @@ class processProquest {
                 $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.", $fn, $etdname);
             } else {
                 $errorMessage = "PREVIEW document creation failed! " . $return;
-                array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                $this->localfiles[$file]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $filename);
+                // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                // $this->localfiles[$file]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $filename);
+                $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                 continue;
             }
 
@@ -1812,10 +1836,11 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $errorMessage = "Could not read in file: " . $relsFile;
-                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                    $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                    $this->localfiles[$file]["STATUS"] = "failed";
-                    array_push($this->allFailedETDs, $filename);
+                    // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                    // $this->localfiles[$file]["STATUS"] = "failed";
+                    // array_push($this->allFailedETDs, $filename);
+                    $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                     continue;
                 }
 
@@ -1830,10 +1855,11 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $errorMessage = "Could not read in file: " . $relsFile;
-                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                    $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
-                    $this->localfiles[$file]["STATUS"] = "failed";
-                    array_push($this->allFailedETDs, $filename);
+                    // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    // $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdname);
+                    // $this->localfiles[$file]["STATUS"] = "failed";
+                    // array_push($this->allFailedETDs, $filename);
+                    $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                     continue;
                 }
 
@@ -1887,11 +1913,12 @@ class processProquest {
                     $this->writeLog("START ingestion of Fedora object...", $fn, $etdname);
                 } catch (Exception $e) {
                     $errorMessage = "Could not ingest Fedora object: " . $e->getMessage();
-                    array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                    $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
-                    $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                    $this->localfiles[$file]["STATUS"] = "failed";
-                    array_push($this->allFailedETDs, $filename);
+                    // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
+                    // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdname);
+                    // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
+                    // $this->localfiles[$file]["STATUS"] = "failed";
+                    // array_push($this->allFailedETDs, $filename);
+                    $this->datastreamIngestFailed($errorMessage, $file, $etdname);
                     continue;
                 }
             }
