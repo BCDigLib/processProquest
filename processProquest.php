@@ -642,11 +642,13 @@ class processProquest {
                 }
             }
 
-            // At this point we can leave this function if the ETD has supplemental files.
-            $this->writeLog("This ETD has supplementary files. No further processing is required. Moving to the next ETD.", $fn, $etdname);
-            $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdname);
-            $this->localFiles[$etdname]['STATUS'] = "skipped";
-            continue;
+            if ($this->localFiles[$etdname]['HAS_SUPPLEMENTS']){
+                // At this point we can leave this function if the ETD has supplemental files.
+                $this->writeLog("This ETD has supplementary files. No further processing is required. Moving to the next ETD.", $fn, $etdname);
+                $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdname);
+                $this->localFiles[$etdname]['STATUS'] = "skipped";
+                continue;
+            }
 
             /**
              * Check that both:
