@@ -1405,7 +1405,7 @@ class processProquest {
              *
              */
             $dsid = 'MODS';
-            $this->writeLog("[MODS] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
 
             // Build Fedora object MODS datastream.
             $datastream = $fedoraObj->constructDatastream($dsid, 'X');
@@ -1417,7 +1417,8 @@ class processProquest {
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['MODS']);
-            $this->writeLog("[MODS] Selecting file for this datastream: {$this->localFiles[$file]['MODS']}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for this datastream:", $fn, $etdname);
+            $this->writeLog("[{$dsid}]   {$this->localFiles[$file]['MODS']}", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1433,7 +1434,7 @@ class processProquest {
              * Original filename is used as label for identification.
              */
             $dsid = 'ARCHIVE';
-            $this->writeLog("[ARCHIVE] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
 
             // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
             $datastream = $fedoraObj->constructDatastream($dsid, 'X');
@@ -1444,7 +1445,8 @@ class processProquest {
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['METADATA']);
-            $this->writeLog("[ARCHIVE] Selecting file for this datastream: {$this->localFiles[$file]['METADATA']}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for this datastream:", $fn, $etdname);
+            $this->writeLog("[{$dsid}]    {$this->localFiles[$file]['METADATA']}", $fn, $etdname);
 
             // Set various ARCHIVE MODS datastream values.
             $datastream->mimeType = 'application/xml';
@@ -1465,7 +1467,7 @@ class processProquest {
              * Splash paged PDF will be PDF dsid.
              */
             $dsid = 'ARCHIVE-PDF';
-            $this->writeLog("[ARCHIVE-PDF] Generating datastream.", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdname);
 
             // Default Control Group is M.
             // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
@@ -1481,7 +1483,8 @@ class processProquest {
 
             // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['ETD']);
-            $this->writeLog("[ARCHIVE-PDF] Selecting file for this datastream: {$this->localFiles[$file]['ETD']}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for this datastream:", $fn, $etdname);
+            $this->writeLog("[{$dsid}]   {$this->localFiles[$file]['ETD']}", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1581,7 +1584,8 @@ class processProquest {
 
             // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
             $datastream->setContentFromFile($concattemp);
-            $this->writeLog("[{$dsid}] Selecting file for datastream: {$concattemp}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for datastream:", $fn, $etdname);
+            $this->writeLog("[{$dsid}]    {$concattemp}", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1654,7 +1658,8 @@ class processProquest {
 
             // Set FULL_TEXT datastream to be sanitized version of full-text document.
             $datastream->setContentFromString($sanitized);
-            $this->writeLog("[{$dsid}] Selecting file for datastream: {$fttemp}", $fn, $etdname);
+            $this->writeLog("[{$dsid}] Selecting file for datastream:", $fn, $etdname);
+            $this->writeLog("[{$dsid}]    {$fttemp}", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
