@@ -1349,18 +1349,6 @@ class processProquest {
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['MODS']);
             $this->writeLog("[MODS] Selecting file for this datastream: {$this->localFiles[$file]['MODS']}", $fn, $etdname);
 
-            // Ingest MODS datastream into Fedora object.
-            // try {
-            //     $fedoraObj->ingestDatastream($datastream);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting MODS datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // }
-
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
@@ -1393,12 +1381,6 @@ class processProquest {
             $datastream->checksumType = 'SHA-256';
             $datastream->state = 'I';
 
-            // Ingest ARCHIVE MODS datastream into Fedora object.
-            // TODO: wrap in try/catch block
-            //$fedoraObj->ingestDatastream($datastream);
-            //array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE_MODS");
-            //$this->writeLog("[ARCHIVE] Ingested datastream.", $fn, $etdname);
-
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
@@ -1430,20 +1412,6 @@ class processProquest {
             // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
             $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$file]['ETD']);
             $this->writeLog("[ARCHIVE-PDF] Selecting file for this datastream: {$this->localFiles[$file]['ETD']}", $fn, $etdname);
-
-            // Ingest ARCHIVE-PDF datastream into Fedora object.
-            // try {
-            //     $fedoraObj->ingestDatastream($datastream);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting ARCHIVE-PDF datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // }
-            // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "ARCHIVE-PDF");
-            // $this->writeLog("[ARCHIVE-PDF] Ingested datastream.", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1544,20 +1512,6 @@ class processProquest {
             $datastream->setContentFromFile($concattemp);
             $this->writeLog("[PDF] Selecting file for datastream: {$concattemp}", $fn, $etdname);
 
-            // Ingest PDF datastream into Fedora object.
-            // try {
-            //     $fedoraObj->ingestDatastream($datastream);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting PDF datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // }
-            // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PDF");
-            // $this->writeLog("[PDF] Ingested datastream.", $fn, $etdname);
-
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
@@ -1631,20 +1585,6 @@ class processProquest {
             $datastream->setContentFromString($sanitized);
             $this->writeLog("[FULL_TEXT] Selecting file for datastream: {$fttemp}", $fn, $etdname);
 
-            // Ingest FULL_TEXT datastream into Fedora object.
-            // try {
-            //     $fedoraObj->ingestDatastream($datastream);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting FULL_TEXT datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // } 
-            // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "FULL_TEXT");
-            // $this->writeLog("[FULL_TEXT] Ingested datastream.", $fn, $etdname);
-
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
@@ -1690,20 +1630,6 @@ class processProquest {
             // Set TN datastream to be the generated thumbnail image.
             $datastream->setContentFromFile($workingDir . "//thumbnail.jpg");
             $this->writeLog("[TN] Selecting file for datastream: thumbnail.jpg", $fn, $etdname);
-
-            // Ingest TN datastream into Fedora object.
-            // try {
-            //     $fedoraObj->ingestDatastream($datastream);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting TN datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // }
-            // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "TN");
-            // $this->writeLog("[TN] Ingested datastream.", $fn, $etdname);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
@@ -1751,20 +1677,6 @@ class processProquest {
             $datastream->setContentFromFile($workingDir . "//preview.jpg");
             $this->writeLog("[PREVIEW] Selecting TN datastream to use: preview.jpg", $fn, $etdname);
 
-            // Ingest PREVIEW datastream into Fedora object.
-            // try {
-            //     $fedoraObj->ingestDatastream($datastream);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting PREVIEW datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // }
-            // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "PREVIEW");
-            // $this->writeLog("[PREVIEW] Ingested datastream.", $fn, $etdname);
-
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
             } catch(Exception $e) {
@@ -1780,19 +1692,6 @@ class processProquest {
             // TODO: understand why this command is down here and not in an earlier POLICY datastream section.
             $dsid = "RELS-EXT";
             $this->writeLog("[RELS-EXT] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.", $fn, $etdname);
-
-            // try {
-            //     $fedoraObj->ingestDatastream($policyObj);
-            // } catch (Exception $e) {
-            //     $errorMessage = "ERROR: Ingesting RELS-EXT (XACML) datastream failed! " . $e->getMessage();
-            //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-            //     $this->writeLog($errorMessage, $fn, $etdname);
-            //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-            //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-            //     continue;
-            // }
-            // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-EXT");
-            // $this->writeLog("[RELS-EXT] Ingested datastream.", $fn, $etdname);
 
             $status = $this->prepareIngestDatastream($fedoraObj, $policyObj, $dsid, $etdname);
 
@@ -1866,20 +1765,6 @@ class processProquest {
                 // Set RELS-INT datastream to be the custom XACML policy file read in above.
                 $datastream->setContentFromString($relsint);
                 $this->writeLog("[RELS-INT] Selecting fire for datastream: {$relsFile}", $fn, $etdname);
-
-                // Ingest RELS-INT datastream into Fedora object.
-                // try {
-                //     $fedoraObj->ingestDatastream($datastream);
-                // } catch (Exception $e) {
-                //     $errorMessage = "ERROR: Ingesting RELS-INT datastream failed! " . $e->getMessage();
-                //     array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
-                //     $this->writeLog($errorMessage, $fn, $etdname);
-                //     $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
-                //     $this->ingestHandlerPostProcess(false, $etdname, $this->etd);
-                //     continue;
-                // }
-                // array_push($this->localFiles[$file]['DATASTREAMS_CREATED'], "RELS-INT");
-                // $this->writeLog("[RELS-INT] Ingested datastream.", $fn, $etdname);
 
                 try {
                     $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdname);
