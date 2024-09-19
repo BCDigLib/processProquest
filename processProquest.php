@@ -1051,6 +1051,7 @@ class processProquest {
         if (empty($url) || empty($user) || empty($pass)) {
             $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
+            array_push($this->processingErrors, $errorMessage);
             return false;
         }
 
@@ -1068,6 +1069,8 @@ class processProquest {
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn);
             return false;
         }
+
+        // TODO: make a test connection
 
         // Fedora Management API.
         $this->api_m = $this->repository->api->m;
@@ -1180,22 +1183,23 @@ class processProquest {
 
         // List all ETDS
         $this->writeLog("----------------------", $fn);
-        $message = "Status Check\nList of all fetched ETDs:";
+        $message = "Status Check\n";
 
         // First, find if there are processing errors
         $countProcessingErrors = count($this->processingErrors);
 
         // Check if there are processing errors.
         if ($countProcessingErrors >  0) {
-            $message .= "This script failed to run because of the following issue(s):\n";
+            $message .= "\nThis script failed to run because of the following issue(s):\n";
             
             foreach ($this->processingErrors as $processingError) {
-                $message .= "  {$processingError}\n";
+                $message .= "  • {$processingError}\n";
             }
 
             $message .= "\nFor more information see the log file at:\n{$this->logFile}.\n";
         } else {
             $i = 0;
+            $message .= "List of all fetched ETDs:\n";
             foreach ($this->localFiles as $local) {
                 $i++;
                 $errorsCount = count($local["INGEST_ERRORS"]);
