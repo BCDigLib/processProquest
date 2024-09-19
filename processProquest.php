@@ -1299,7 +1299,7 @@ class processProquest {
         array_push($this->allFailedETDs, $this->localFiles[$fileIndex]["ETD_SHORTNAME"]);
         array_push($this->localFiles[$fileIndex]['INGEST_ERRORS'], $errorMessage);
         $this->writeLog("[{$datastreamName}] ERROR: $errorMessage", $functionName, $etdName);
-        $this->writeLog("[{$datastreamName}] trace:\n" . $e->getTraceAsString(), $functionName, $etdName);
+        // $this->writeLog("[{$datastreamName}] trace:\n" . $e->getTraceAsString(), $functionName, $etdName);
         $this->localfiles[$fileIndex]["STATUS"] = "failed";
     }
 
