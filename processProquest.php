@@ -88,6 +88,9 @@ class processProquest {
         $this->configurationFile = $configurationArray["file"];
         $this->settings = $configurationArray["settings"];
         $this->debug = boolval($debug);
+        $this->root_url = $this->settings["islandora"]["root_url"];
+        $this->path = $this->settings["islandora"]["path"];
+        $this->record_path = "{$this->root_url}{$this->path}";
 
         $this->writeLog("STATUS: Starting processProquest script.", "");
         $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
@@ -1216,6 +1219,7 @@ class processProquest {
                     $message .= "      Embargo date:      {$local['EMBARGO_DATE']}\n";
                 }
                 $message .= "      PID:               {$local['PID']}\n";
+                $message .= "      URL:               {$local['RECORD_URL']}\n";
                 $message .= "      Author:            {$local['AUTHOR']}\n";
                 $message .= "      ETD title:         {$local['LABEL']}\n";
             }
@@ -1990,6 +1994,9 @@ class processProquest {
 
             // Make sure we give every processing loop enough time to complete.
             sleep(2);
+
+            // Assign URL to this ETD
+            $this->localFiles[$file]['RECORD_URL'] = "{$this->record_path}{$this->localFiles[$file]["PID"]}";
 
             $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdname);
         }
