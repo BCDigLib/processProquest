@@ -502,6 +502,7 @@ class processProquest {
             $this->localFiles[$etdname]['FILE_ETD'] = "";
             $this->localFiles[$etdname]['METADATA'] = "";
             $this->localFiles[$etdname]['FILE_METADATA'] = "";
+            $this->localFiles[$etdname]['ZIP_FILENAME'] = $filename;
             $this->localFiles[$etdname]['ZIP_CONTENTS'] = [];
             $this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'] = [];
 
@@ -1168,6 +1169,63 @@ class processProquest {
         return true;
     }
 
+    /**
+     * Generate a simple status update message
+     */
+    function statusCheck(){
+        $fn = "statusCheck";
+
+        // List all ETDS
+        $this->writeLog("----------------------", $fn);
+        $message = "Status Check\nList of all fetched ETDs:";
+
+        // First, find if there are processing errors
+        $countProcessingErrors = count($this->processingErrors);
+
+        if ($countProcessingErrors >  0) {
+            $message .= "This script failed to run because of the following issue(s):\n";
+            
+            foreach ($this->processingErrors as $processingError) {
+                $message .= "  {$processingError}\n";
+            }
+
+            $message .= "\nFor more information see the log file at:\n{$this->logFile}.\n";
+        } else {
+            $i = 0;
+            foreach ($this->localFiles as $local) {
+                $i++;
+                $errorsCount = count($local["INGEST_ERRORS"]);
+                $message .= "\n  [{$i}] Zip filename:      {$local['ZIP_FILENAME']}\n";
+                $message .= "      Status:            {$local['STATUS']}\n";
+                $message .= "      Has supplements:   " . ($local['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
+                
+                // If this ETD has supplements then display message and continue to next ETD
+                if ($local['HAS_SUPPLEMENTS']) {
+                    $message .= "      WARNING: This ETD contains supplemental files and was not processed.\n";
+                    continue;
+                }
+
+                // Display ingest errors and continue to next ETD
+                if ($errorsCount > 0) {
+                    continue;
+                }
+
+                $message .= "      Has OA agreement:  " . ($local['OA_AVAILABLE'] ? "true" : "false") . "\n";
+                $message .= "      Has embargo:       " . ($local['HAS_EMBARGO'] ? "true" : "false") . "\n";
+                if ($local['HAS_EMBARGO']) {
+                    $message .= "      Embargo date:      {$local['EMBARGO_DATE']}\n";
+                }
+                $message .= "      PID:               {$local['PID']}\n";
+                $message .= "      Author:            {$local['AUTHOR']}\n";
+                $message .= "      ETD title:         {$local['LABEL']}\n";
+            }
+        }
+
+        $this->writeLog("{$message}", $fn);
+        $this->writeLog("----------------------", $fn);
+
+        return;
+    }
 
     /**
      * Parse script results and compose email body.
@@ -1938,6 +1996,9 @@ class processProquest {
 
         $this->writeLog("------------------------------", $fn);
         $this->writeLog("Completed ingesting all ETD files.", $fn);
+
+        // Run a quick status check.
+        $this->statusCheck();
 
         // At this point run postProcess() to complete the workflow.
         // $this->postProcess();
