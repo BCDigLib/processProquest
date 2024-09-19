@@ -1213,7 +1213,7 @@ class processProquest {
                 if ($errorsCount > 0) {
                     $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
                     foreach ($local["INGEST_ERRORS"] as $ingestError) {
-                        $message .= "      {$ingestError}\n";
+                        $message .= "       • {$ingestError}\n";
                     }
                     $message .= "\nFor more information see the log file at:\n{$this->logFile}.\n";
                     continue;
@@ -1414,11 +1414,14 @@ class processProquest {
             // }
 
             // Instantiated a Fedora object and use the generated PID as its ID.
+            // TODO: not sure this function throws an exception
+            //       https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php
             try {
                 $fedoraObj = $this->repository->constructObject($this->localFiles[$file]['PID']);
                 $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$file]['PID']}", $fn, $etdname);
             } catch (Exception $e) {
-                $errorMessage = "ERROR: Could not instanciate Fedora object: " . $e->getMessage();
+                $errorMessage = "Could not instanciate a Fedora object with PID '" . $this->localFiles[$file]['PID'] . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
+                // $errorMessage = "Could not instanciate Fedora object: " . $e->getMessage();
                 // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 // $this->writeLog($errorMessage, $fn, $etdname);
                 // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
@@ -1451,7 +1454,7 @@ class processProquest {
                 $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
                 $collectionName = GRADUATE_THESES;
             } catch (Exception $e) { // RepositoryException
-                $errorMessage = "Could not instanciate Fedora object GRADUATE_THESES: " . $e->getMessage();
+                $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
                 // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                 // $this->writeLog($errorMessage, $fn, $etdname);
                 // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
@@ -1468,7 +1471,8 @@ class processProquest {
                     $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $this->writeLog("[{$dsid}] Adding to Graduate Theses (Restricted) collection.", $fn, $etdname);
                 } catch (Exception $e) { // RepositoryException
-                    $errorMessage = "Could not instanciate Fedora object GRADUATE_THESES_RESTRICTED: " . $e->getMessage();
+                    $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID_EMBARGO . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
+                    // $errorMessage = "Could not instanciate Fedora object 'GRADUATE_THESES_RESTRICTED': " . $e->getMessage();
                     // array_push($this->localFiles[$file]['INGEST_ERRORS'], $errorMessage);
                     // $this->writeLog($errorMessage, $fn, $etdname);
                     // $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdname);
