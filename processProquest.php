@@ -1185,6 +1185,7 @@ class processProquest {
         // First, find if there are processing errors
         $countProcessingErrors = count($this->processingErrors);
 
+        // Check if there are processing errors.
         if ($countProcessingErrors >  0) {
             $message .= "This script failed to run because of the following issue(s):\n";
             
@@ -1202,14 +1203,19 @@ class processProquest {
                 $message .= "      Status:            {$local['STATUS']}\n";
                 $message .= "      Has supplements:   " . ($local['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
                 
-                // If this ETD has supplements then display message and continue to next ETD
+                // If this ETD has supplements then display message and continue to next ETD.
                 if ($local['HAS_SUPPLEMENTS']) {
                     $message .= "      WARNING: This ETD contains supplemental files and was not processed.\n";
                     continue;
                 }
 
-                // Display ingest errors and continue to next ETD
+                // Display ingest errors and continue to next ETD.
                 if ($errorsCount > 0) {
+                    $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
+                    foreach ($local["INGEST_ERRORS"] as $ingestError) {
+                        $message .= "      {$ingestError}\n";
+                    }
+                    $message .= "\nFor more information see the log file at:\n{$this->logFile}.\n";
                     continue;
                 }
 
