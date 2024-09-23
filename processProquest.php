@@ -95,6 +95,7 @@ class processProquest {
         $this->path = $this->settings["islandora"]["path"];
         $this->record_path = "{$this->root_url}{$this->path}";
         $this->logFile = $this->settings["log"]["location"];
+        $this->ftpRoot = $this->settings["ftp"]["fetchdir"];
 
         if (!is_object($logger)) {
             // An empty logger object was passed.
@@ -319,32 +320,50 @@ class processProquest {
      * @return boolean Success value.
      */
     private function moveFTPFiles(){
-        // TODO: add logic to determine if the ingest was successful or not.
+        $fn = "moveFTPFiles";
         $processdirFTP = $this->settings['ftp']['processdir'];
-        $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
-
         $faildirFTP = $this->settings['ftp']['faildir'];
-        $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
 
-        // TODO: use relative or absolute path?
-        $this->writeLog("Currently in FTP directory: {$this->ftp->ftp_pwd()}", $fn, $etdname);
+        $this->writeLog("########################", $fn);
+        $this->writeLog("BEGIN Moving processed ETDs into respective post-processing directories.", $fn);
+        $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}", $fn);
 
-        $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullProcessdirFTP}", $fn, $etdname);
+        foreach($this->localFiles as $local) {
+            $ingested = $local["INGESTED"];
+            $fileName = $local["ZIP_FILENAME"];
+            $ftpPathForETD = $local["FTP_PATH_FOR_ETD"];
+            $etdname = $local["ETD_SHORTNAME"];
 
-        if ($this->debug === true) {
-            $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
-            return true;
+            if ($ingested) {
+                $moveFTPDir = $processdirFTP . $fileName;
+            } else {
+                $moveFTPDir = $faildirFTP . $fileName;
+            }
+
+            $this->writeLog("------------------------------", $fn);
+            $this->writeLog("Now attempting to move:", $fn, $etdname);
+            $this->writeLog("   from: {$ftpPathForETD}", $fn, $etdname);
+            $this->writeLog("   into: {$moveFTPDir}", $fn, $etdname);
+
+            if ($this->debug === true) {
+                $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
+                $this->writeLog("------------------------------", $fn);
+                continue;
+            }
+
+            $ftpRes = $this->ftp->ftp_rename($ftpPathForETD, $moveFTPDir);
+            
+            // Check if there was an error moving the ETD file on the FTP server.
+            if ($ftpRes === false) {
+                $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
+                $this->writeLog("------------------------------", $fn);
+                return false;
+            }
+            $this->writeLog("Move was successful.", $fn, $etdname);
+            $this->writeLog("------------------------------", $fn);
         }
 
-        $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
-        
-        // Check if there was an error moving the ETD file on the FTP server.
-        if ($ftpRes === false) {
-            $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
-            return false;
-        }
-
-        $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
+        $this->writeLog("END Moving processed ETDs into respective post-processing directories.", $fn);
 
         return true;
     }
@@ -368,11 +387,9 @@ class processProquest {
         $this->writeLog("Fetching ETD files from FTP server.", $fn);
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
-        $fetchdirFTP = $this->settings['ftp']['fetchdir'];
-        if (empty($fetchdirFTP)) {
-            $fetchdirFTPRelative = "/";
-        } else {
-            $fetchdirFTPRelative = $fetchdirFTP;
+        $this->fetchdirFTP = $this->settings['ftp']['fetchdir'];
+        if (empty($this->fetchdirFTP)) {
+            $this->fetchdirFTP = "~/";
         }
 
         // Define local directory for file processing. Ex: /tmp/processed/
@@ -387,11 +404,11 @@ class processProquest {
         }
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
-        if ($fetchdirFTP != "") {
-            if ( $this->ftp->ftp_chdir($fetchdirFTP) ) {
-                $this->writeLog("Changed to local FTP directory: {$fetchdirFTP}", $fn);
+        if ($this->fetchdirFTP != "") {
+            if ( $this->ftp->ftp_chdir($this->fetchdirFTP) ) {
+                $this->writeLog("Changed to local FTP directory: {$this->fetchdirFTP}", $fn);
             } else {
-                $errorMessage = "Cound not change FTP directory: {$fetchdirFTP}";
+                $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
                 $this->writeLog("ERROR: {$errorMessage}", $fn);
 
                 // TODO: call postProcess()
@@ -400,8 +417,7 @@ class processProquest {
             }
         }
 
-        // TODO: use relative or absolute path?
-        $this->writeLog("Currently in FTP directory: {$fetchdirFTPRelative}", $fn);
+        $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}", $fn);
 
         /**
          * Look for files that begin with a specific string.
@@ -471,6 +487,7 @@ class processProquest {
             $this->localFiles[$etdname]['ZIP_FILENAME'] = $filename;
             $this->localFiles[$etdname]['ZIP_CONTENTS'] = [];
             $this->localFiles[$etdname]['ZIP_CONTENTS_DIRS'] = [];
+            $this->localFiles[$etdname]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$filename}";
 
             // Set status to 'processing'.
             $this->localFiles[$etdname]['STATUS'] = "unprocessed";
@@ -1222,28 +1239,13 @@ class processProquest {
         */
         $fn = "postProcess";
 
-        $this->writeLog("Parsing script results.", $fn, $etdname);
+        // $this->writeLog("Parsing script results.", $fn);
 
-        // If there are any processingErrors then we can assume there
-        // weren't any ETDs fetches or processed.
-        if (count($this->processingErrors) > 0) {
-            // Pull out all error messages
-            $this->writeLog("The script failed to complete due to the following issues:", $fn);
-            foreach ($this->processingErrors as $message) {
-                $this->writeLog(" · {$message}", $fn);
-            }
-        }
-
-        // Loop through every ETD with supplemental files
-        if ($this->countSupplementalETDs > 0) {
-            $this->writeLog("The following ETD(s) have supplemental files and were not ingested.", $fn);
-
-            foreach ($this->allSupplementalETDs as $local) { 
-                $this->writeLog(" · {$local['ETD_SHORTNAME']}", $fn);
-            }
-        }
+        // Get overall status.
+        $message = $this->statusCheck();
 
         // Move files in FTP server
+        $ret = $this->moveFTPFiles();
 
         // Send email
 
@@ -1353,17 +1355,18 @@ class processProquest {
 
             // Reconstruct name of zip file from the local ETD work space directory name.
             // TODO: there must be a better way to do this...
-            $directoryArray = explode('/', $workingDir);
-            $fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
+            //$directoryArray = explode('/', $workingDir);
+            //$fnameFTP = array_values(array_slice($directoryArray, -1))[0] . '.zip';
 
             // Build full FTP path for ETD file incase $fetchdirFTP is not the root directory.
-            $fetchdirFTP = $this->settings['ftp']['fetchdir'];
-            $fullfnameFTP = "";
-            if ($fetchdirFTP == "") {
-                $fullfnameFTP = $fnameFTP;
-            } else {
-                $fullfnameFTP = "~/" . $fetchdirFTP . "/" . $fnameFTP;
-            }
+            // $fetchdirFTP = $this->settings['ftp']['fetchdir'];
+            // $fullfnameFTP = "";
+            // if ($this->fetchdirFTP == "") {
+            //     $fullfnameFTP = $fnameFTP;
+            // } else {
+            //     $fullfnameFTP = "~/" . $this->fetchdirFTP . "/" . $fnameFTP;
+            // }
+            $fullfnameFTP = $this->localFiles[$file]["FTP_PATH_FOR_ETD"];
             $this->writeLog("The full path of the ETD file on the FTP server is: {$fullfnameFTP}", $fn, $etdname);
 
             // collect some values for ingestHandlerPostProcess()
@@ -1985,7 +1988,7 @@ class processProquest {
         $this->writeLog("------------------------------");
 
         // At this point run postProcess() to complete the workflow.
-        // $this->postProcess();
+        $this->postProcess();
 
         return true;
     }
