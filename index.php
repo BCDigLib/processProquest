@@ -65,11 +65,6 @@ if ($debugEnvVar) {
     $debug = boolval($debugDefault);
 }
 
-// echo "debugDefault: " . ($debugDefault ? 'TRUE' : 'FALSE') . "\n";
-// echo "debugConfiguration: {$debugConfiguration}\n";
-// echo "PROCESSPROQUEST_DEBUG: {$debugEnvVar}\n";
-// echo "\nDebug: {$debug}\n";
-
 // Set up log file location and name.
 $dateFormatLogFile = date("Ymd-His", time());
 $logLocation = $configurationSettings['log']['location'];
@@ -104,11 +99,7 @@ $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
 $consoleOutput->setFormatter($formatter);
 $logger->pushHandler($consoleOutput);
 
-$logger->info("Stating script.");
-// Output:
-// [2024-09-23 15:28:19] [DEBUG] Stating script.
-
-//exit(1);
+// $logger->info("Stating script.");
 
 require_once 'processProquest.php';
 
