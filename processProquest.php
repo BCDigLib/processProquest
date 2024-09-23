@@ -327,6 +327,7 @@ class processProquest {
         $this->writeLog("########################", $fn);
         $this->writeLog("BEGIN Moving processed ETDs into respective post-processing directories.", $fn);
         $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}", $fn);
+        $this->writeLog("------------------------------", $fn);
 
         foreach($this->localFiles as $local) {
             $ingested = $local["INGESTED"];
@@ -340,7 +341,7 @@ class processProquest {
                 $moveFTPDir = $faildirFTP . $fileName;
             }
 
-            $this->writeLog("------------------------------", $fn);
+            $this->writeLog("Was ETD successfully ingested?: " . ($ingested ? "true" : "false"), $fn, $etdname);
             $this->writeLog("Now attempting to move:", $fn, $etdname);
             $this->writeLog("   from: {$ftpPathForETD}", $fn, $etdname);
             $this->writeLog("   into: {$moveFTPDir}", $fn, $etdname);
@@ -1054,105 +1055,6 @@ class processProquest {
 
         // Fedora Management API.
         $this->api_m = $this->repository->api->m;
-        return true;
-    }
-
-    /**
-     * Manages the post-process handling of an ETD ingest. 
-     * TODO: This function will be replaced by calls to postProcess().
-     *
-     * @param boolean $status The success status of the calling function.
-     * @param string $etdname The name of the ETD to print.
-     * @param object $etd An object containing the ETD submission metadata.
-     * 
-     * @return boolean Sucess value.
-     */
-    private function ingestHandlerPostProcess($status, $etdname, $etd){
-        $fn = "ingestHandlerPostProcess";
-
-        global $pidcount, $successCount, $failureCount;
-        global $successMessage, $failureMessage, $processingMessage;
-
-        $submission   = $etd["submission"];
-        $fnameFTP     = $etd["fnameFTP"];
-        $fullfnameFTP = $etd["fullfnameFTP"];
-
-        $pidcount++;
-
-        // Check if ingest was successful, and manage where to put FTP ETD file.
-        if ($status) {
-            $this->writeLog("Successfully ingested Fedora object.", $fn, $etdname);
-
-            $successCount++;
-            $successMessage .= " • " . $submission['PID'] . "\t";
-
-            // Set success status for email message.
-            if (isset($submission['EMBARGO'])) {
-                $successMessage .= "EMBARGO UNTIL: {$submission['EMBARGO']}\t";
-            } else {
-                $successMessage .= "NO EMBARGO\t";
-            }
-            $successMessage .= $submission['LABEL'] . "\n";
-
-            // Move processed PDF file to a new directory. Ex: /path/to/files/processed
-            $processdirFTP = $this->settings['ftp']['processdir'];
-            $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
-
-            // TODO: use relative or absolute path?
-            $this->writeLog("Currently in FTP directory: {$this->ftp->ftp_pwd()}", $fn, $etdname);
-
-            $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullProcessdirFTP}", $fn, $etdname);
-
-            if ($this->debug === true) {
-                $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
-                return true;
-            }
-
-            $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
-            
-            // Check if there was an error moving the ETD file on the FTP server.
-            if ($ftpRes === false) {
-                $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
-                return false;
-            }
-
-            $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
-        } else {
-            //$this->writeLog("ERROR: Ingestion of Fedora object failed.", $fn, $etdname);
-
-            $failureCount++;
-            $failureMessage .= $submission['PID'] . "\t";
-
-            // Set failure status for email message.
-            if (isset($submission['EMBARGO'])) {
-                $failureMessage .= "EMBARGO UNTIL: " . $submission['EMBARGO'] . "\t";
-            } else {
-                $failureMessage .= "NO EMBARGO" . "\t";
-            }
-            $failureMessage .= $submission['LABEL'] . "\n";
-
-            // Move processed PDF file to a new directory. Ex: /path/to/files/failed
-            $faildirFTP = $this->settings['ftp']['faildir'];
-            $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
-
-            $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullFaildirFTP}", $fn, $etdname);
-
-            if ($this->debug === true) {
-                $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
-                return true;
-            }
-
-            $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullFaildirFTP);
-
-            // Check if there was an error moving the ETD file on the FTP server.
-            if ($ftpRes === false) {
-                $this->writeLog("ERROR: Could not move ETD file to 'failed' FTP directory!", $fn, $etdname);
-                return false;
-            }
-
-            $this->writeLog("Moved ETD file to 'failed' FTP directory.", $fn, $etdname);
-        }
-
         return true;
     }
 
