@@ -121,21 +121,13 @@ class processProquest {
     private function writeLog($message, $function_name = "", $prefix = "") {
         // Prepend $prefix to $message, if set.
         if ( !empty($prefix) ) {
-            $message = "[{$prefix}] {$message}";
+            $message = "($function_name) [{$prefix}] {$message}";
+        } else {
+            $message = "($function_name) {$message}";
         }
-
-        // Format the date and time. Ex: 2024-09-12 23:08:29
-        $time = @date('[Y-m-d H:i:s]');
 
         // Write out message.
         $this->logger->info($message);
-
-        // Finally, output to stdout.
-        if ($this->debug) {
-            echo "$time [DEBUG] ($function_name) $message\n";
-        } else {
-            echo "$time ($function_name) $message\n";
-        }
     }
 
     /**

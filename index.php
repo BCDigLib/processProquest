@@ -88,13 +88,22 @@ if ($debug) {
 
 // Create a log formatter.
 $formatter = new LineFormatter($output, $dateFormatLogger);
-$steam = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
-$steam->setFormatter($formatter);
-$logger->pushHandler($steam);
+
+// Log to file.
+$fileOutput = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
+$fileOutput->setFormatter($formatter);
+$logger->pushHandler($fileOutput);
+
+// Log to console.
+$consoleOutput = new StreamHandler('php://stdout', Level::Debug);
+$consoleOutput->setFormatter($formatter);
+$logger->pushHandler($consoleOutput);
 
 $logger->info("Stating script.");
 // Output:
 // [2024-09-23 15:28:19] [DEBUG] Stating script.
+
+//exit(1);
 
 require_once 'processProquest.php';
 
