@@ -81,13 +81,18 @@ $logger = new Logger("processProquest");
 
 // Default: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
 if ($debug) {
-    $output = "%datetime% [DEBUG] %message%\n";
+    $output = "%datetime% [DEBUG] %message% %context% %extra%\n";
 } else {
-    $output = "%datetime% > %message%\n";
+    $output = "%datetime% > %message% %context% %extra%\n";
 }
 
 // Create a log formatter.
-$formatter = new LineFormatter($output, $dateFormatLogger);
+// Passing these arguments:
+//   * ouput string format
+//   * date string format
+//   * allowInlineLineBreaks = true
+//   * ignoreEmptyContextAndExtra = true
+$formatter = new LineFormatter($output, $dateFormatLogger, true, true);
 
 // Log to file.
 $fileOutput = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
