@@ -387,6 +387,42 @@ class processProquest {
     }
 
     /**
+     * Moves files on FTP server at the end of the process.
+     * 
+     * @return boolean Success value.
+     */
+    private function moveFTPFiles(){
+        // TODO: add logic to determine if the ingest was successful or not.
+        $processdirFTP = $this->settings['ftp']['processdir'];
+        $fullProcessdirFTP = "~/" . $processdirFTP . "/" . $fnameFTP;
+
+        $faildirFTP = $this->settings['ftp']['faildir'];
+        $fullFaildirFTP = "~/" . $faildirFTP . "/" . $fnameFTP;
+
+        // TODO: use relative or absolute path?
+        $this->writeLog("Currently in FTP directory: {$this->ftp->ftp_pwd()}", $fn, $etdname);
+
+        $this->writeLog("Now attempting to move {$fullfnameFTP} into {$fullProcessdirFTP}", $fn, $etdname);
+
+        if ($this->debug === true) {
+            $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdname);
+            return true;
+        }
+
+        $ftpRes = $this->ftp->ftp_rename($fullfnameFTP, $fullProcessdirFTP);
+        
+        // Check if there was an error moving the ETD file on the FTP server.
+        if ($ftpRes === false) {
+            $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdname);
+            return false;
+        }
+
+        $this->writeLog("Moved ETD file to 'processed' FTP directory.", $fn, $etdname);
+
+        return true;
+    }
+
+    /**
      * Gather ETD zip files from FTP server.
      *
      * Create a local directory for each zip file from FTP server and save into directory.
@@ -1078,7 +1114,8 @@ class processProquest {
     }
 
     /**
-     * Manages the post-process handling of an ETD ingest
+     * Manages the post-process handling of an ETD ingest. 
+     * TODO: This function will be replaced by calls to postProcess().
      *
      * @param boolean $status The success status of the calling function.
      * @param string $etdname The name of the ETD to print.
