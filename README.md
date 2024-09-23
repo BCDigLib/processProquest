@@ -78,9 +78,9 @@ server     = "ftp_server.example.edu"  // ftp server where ETDs are deposited
 user       = "ftpUser"                 // ftp user
 password   = "<password>"              // ftp user password
 localdir   = "/tmp"                    // local directory for processing files, e.g., /tmp
-fetchdir   = ""                        // directory to find ETDs on the ftp server. relative paths only
-processdir = "processed"               // directory to place ETDs on the ftp server on success. relative paths only
-faildir    = "failed"                  // directory to place ETDs on the ftp server on failure. relative paths only
+fetchdir   = "~/"                      // directory to find ETDs on the ftp server.
+processdir = "~/processed/"            // directory to place ETDs on the ftp server on success.
+faildir    = "~/failed/"               // directory to place ETDs on the ftp server on failure.
 
 [xslt]
 xslt       = "/opt/Proquest_MODS.xsl"  // location of various files or XPath expressions
@@ -98,8 +98,8 @@ password   = "fedoraPassword"          // Fedora user password
 namespace  = "bc-ir"                   // Namespace for PIDs, e.g., bc-ir:1000
 
 [islandora]
-root_url   = "https://foo.example.edu"  // Root url for Islandora instance
-path       = "/islandora/object/"       // Path for an Islandora record
+root_url   = "https://foo.example.edu" // Root url for Islandora instance
+path       = "/islandora/object/"      // Path for an Islandora record
 
 [notify]
 email      = "bar@foo.edu,baz@foo.edu" // email recipients, comma-separated
