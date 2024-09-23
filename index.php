@@ -7,11 +7,6 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 $fontpath = realpath('/usr/share/fonts/freesans-font/');
@@ -98,8 +93,6 @@ $logger->pushHandler($fileOutput);
 $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
 $consoleOutput->setFormatter($formatter);
 $logger->pushHandler($consoleOutput);
-
-// $logger->info("Stating script.");
 
 require_once 'processProquest.php';
 
