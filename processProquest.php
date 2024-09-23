@@ -181,7 +181,7 @@ class processProquest {
         $res = true;
         if ($this->debug === true) {
             $this->writeLog("DEBUG: Not sending email notification.", $fn);
-            //return true;
+            return true;
         } else {
             $res = mail($email_to, $email_subject, $email_message);
         }
