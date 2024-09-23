@@ -115,6 +115,12 @@ require_once 'processProquest.php';
 // Create the $process object.
 $process = new processProquest($configurationArray, $debug, $logger);
 
+if (!$process){
+    // Failed to instanciate processProquest object.
+    echo "Please check that the Monolog logger was configured correctly. Exiting.";
+    exit(1);
+}
+
 // Initialize FTP connection.
 // Exit when an exception is caught.
 try {

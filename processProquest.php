@@ -84,6 +84,8 @@ class processProquest {
      * @param array $configurationArray An array containing the configuration file and values.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      * @param object $logger The logger object.
+     * 
+     * @return bool Return status.
      */
     public function __construct($configurationArray, $debug = DEFAULT_DEBUG_VALUE, $logger) {
         $this->configurationFile = $configurationArray["file"];
@@ -92,9 +94,25 @@ class processProquest {
         $this->root_url = $this->settings["islandora"]["root_url"];
         $this->path = $this->settings["islandora"]["path"];
         $this->record_path = "{$this->root_url}{$this->path}";
+        $this->logFile = $this->settings["log"]["location"];
+
+        if (!is_object($logger)) {
+            // An empty logger object was passed.
+            return false;
+        }
+
         $this->logger = $logger;
 
-        // TODO: check if $logger object exists.
+        // Pull out logfile location from logger object.
+        $logHandlers = $logger->getHandlers();
+        foreach ($logHandlers as $handler) {
+            $url = $handler->getUrl();
+            if (str_contains($url, "php://")) {
+                // Ignore the stdout/console handler.
+                continue;
+            }
+            $this->logFileLocation = $url;
+        }
 
         $this->writeLog("STATUS: Starting processProquest script.", "");
         $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
@@ -110,6 +128,8 @@ class processProquest {
         require_once "{$tuqueLocation}/FedoraRelationships.php";
         require_once "{$tuqueLocation}/Cache.php";
         require_once "{$tuqueLocation}/HttpConnection.php";
+
+        return true;
     }
 
     /**
@@ -1126,25 +1146,23 @@ class processProquest {
         $fn = "statusCheck";
 
         // List all ETDS
-        // $this->writeLog("----------------------", $fn);
-        // $message = "Status Check\n";
-        $message = "";
+        $message = "\n";
 
         // First, find if there are processing errors
         $countProcessingErrors = count($this->processingErrors);
 
         // Check if there are processing errors.
         if ($countProcessingErrors >  0) {
-            $message .= "\nThis script failed to run because of the following issue(s):\n";
+            $message .= "This script failed to run because of the following issue(s):\n";
             
             foreach ($this->processingErrors as $processingError) {
                 $message .= "  • {$processingError}\n";
             }
-
-            $message .= "\nFor more information see the log file at:\n{$this->logFile}.\n";
         } else {
             $i = 0;
-            $message .= "List of all fetched ETDs:\n";
+
+            $countETDs = count($this->localFiles);
+            $message .= "There were {$countETDs} ETD(s) processed.\n"; 
             foreach ($this->localFiles as $local) {
                 $i++;
                 $errorsCount = count($local["INGEST_ERRORS"]);
@@ -1164,7 +1182,6 @@ class processProquest {
                     foreach ($local["INGEST_ERRORS"] as $ingestError) {
                         $message .= "       • {$ingestError}\n";
                     }
-                    $message .= "\nFor more information see the log file at:\n{$this->logFile}.\n";
                     continue;
                 }
 
@@ -1180,8 +1197,7 @@ class processProquest {
             }
         }
 
-        // $this->writeLog("{$message}", $fn);
-        // $this->writeLog("----------------------", $fn);
+        $message .= "\nThe full log file can be found at:\n{$this->logFileLocation}.\n";
 
         return $message;
     }
