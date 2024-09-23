@@ -94,7 +94,7 @@ class processProquest {
         $this->record_path = "{$this->root_url}{$this->path}";
         $this->logger = $logger;
 
-        // TODO: check if $logger exists.
+        // TODO: check if $logger object exists.
 
         $this->writeLog("STATUS: Starting processProquest script.", "");
         $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
@@ -116,18 +116,23 @@ class processProquest {
      * Output messages to log file and to console.
      *
      * @param string $message The message to log.
-     * @param string $prefix The prefix to include before the message. Is wrapped in [].
+     * @param string $functionName Optional. The name of the function calling this function. Is wrapped in ().
+     * @param string $prefix Optional. The prefix to include before the message. Is wrapped in [].
      */
-    private function writeLog($message, $function_name = "", $prefix = "") {
-        // Prepend $prefix to $message, if set.
-        if ( !empty($prefix) ) {
-            $message = "($function_name) [{$prefix}] {$message}";
-        } else {
-            $message = "($function_name) {$message}";
+    private function writeLog($message, $functionName = "", $prefix = "") {
+        $completeMessage = "";
+        if ( !empty($functionName) ) {
+            $completeMessage .= "({$functionName}) ";
         }
 
+        if ( !empty($prefix) ) {
+            $completeMessage .= "[{$prefix}] ";
+        } 
+
+        $completeMessage .= "{$message}";
+
         // Write out message.
-        $this->logger->info($message);
+        $this->logger->info($completeMessage);
     }
 
     /**
@@ -1121,8 +1126,9 @@ class processProquest {
         $fn = "statusCheck";
 
         // List all ETDS
-        $this->writeLog("----------------------", $fn);
-        $message = "Status Check\n";
+        // $this->writeLog("----------------------", $fn);
+        // $message = "Status Check\n";
+        $message = "";
 
         // First, find if there are processing errors
         $countProcessingErrors = count($this->processingErrors);
@@ -1174,10 +1180,10 @@ class processProquest {
             }
         }
 
-        $this->writeLog("{$message}", $fn);
-        $this->writeLog("----------------------", $fn);
+        // $this->writeLog("{$message}", $fn);
+        // $this->writeLog("----------------------", $fn);
 
-        return;
+        return $message;
     }
 
     /**
@@ -1209,7 +1215,6 @@ class processProquest {
             $this->writeLog("The script failed to complete due to the following issues:", $fn);
             foreach ($this->processingErrors as $message) {
                 $this->writeLog(" · {$message}", $fn);
-                continue;
             }
         }
 
@@ -1958,7 +1963,10 @@ class processProquest {
         $this->writeLog("Completed ingesting all ETD files.", $fn);
 
         // Run a quick status check.
-        $this->statusCheck();
+        $this->writeLog("------------------------------");
+        $this->writeLog("Status Check:");
+        $this->writeLog($this->statusCheck());
+        $this->writeLog("------------------------------");
 
         // At this point run postProcess() to complete the workflow.
         // $this->postProcess();

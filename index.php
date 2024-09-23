@@ -136,7 +136,7 @@ try {
 // Connect to Fedora through API.
 if (!$process->initFedoraConnection()) {
     echo "Could not make a connection to the Fedora repository. Exiting.";
-    $process->statusCheck();
+    $logger->info($process->statusCheck());
     exit(1);
 }
 
