@@ -1,5 +1,12 @@
 <?php
 
+require __DIR__."/vendor/autoload.php"; // This tells PHP where to find the autoload file so that PHP can load the installed packages
+
+use Monolog\Level;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+use Monolog\Formatter\LineFormatter;
+
 /*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
@@ -63,10 +70,36 @@ if ($debugEnvVar) {
 // echo "PROCESSPROQUEST_DEBUG: {$debugEnvVar}\n";
 // echo "\nDebug: {$debug}\n";
 
+// Set up log file location and name.
+$dateFormatLogFile = date("Ymd-His", time());
+$logLocation = $configurationSettings['log']['location'];
+$logFileName = "ingest-" . $dateFormatLogFile . ".txt";
+$dateFormatLogger = date('[Y-m-d H:i:s]');
+
+// New Logger instance. Create a new channel called "processProquest".
+$logger = new Logger("processProquest");
+
+// Default: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
+if ($debug) {
+    $output = "%datetime% [DEBUG] %message%\n";
+} else {
+    $output = "%datetime% > %message%\n";
+}
+
+// Create a log formatter.
+$formatter = new LineFormatter($output, $dateFormatLogger);
+$steam = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
+$steam->setFormatter($formatter);
+$logger->pushHandler($steam);
+
+$logger->info("Stating script.");
+// Output:
+// [2024-09-23 15:28:19] [DEBUG] Stating script.
+
 require_once 'processProquest.php';
 
 // Create the $process object.
-$process = new processProquest($configurationArray, $debug);
+$process = new processProquest($configurationArray, $debug, $logger);
 
 // Initialize FTP connection.
 // Exit when an exception is caught.
@@ -89,6 +122,7 @@ try {
 // Connect to Fedora through API.
 if (!$process->initFedoraConnection()) {
     echo "Could not make a connection to the Fedora repository. Exiting.";
+    $process->statusCheck();
     exit(1);
 }
 

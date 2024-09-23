@@ -83,14 +83,18 @@ class processProquest {
      *
      * @param array $configurationArray An array containing the configuration file and values.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
+     * @param object $logger The logger object.
      */
-    public function __construct($configurationArray, $debug = DEFAULT_DEBUG_VALUE) {
+    public function __construct($configurationArray, $debug = DEFAULT_DEBUG_VALUE, $logger) {
         $this->configurationFile = $configurationArray["file"];
         $this->settings = $configurationArray["settings"];
         $this->debug = boolval($debug);
         $this->root_url = $this->settings["islandora"]["root_url"];
         $this->path = $this->settings["islandora"]["path"];
         $this->record_path = "{$this->root_url}{$this->path}";
+        $this->logger = $logger;
+
+        // TODO: check if $logger exists.
 
         $this->writeLog("STATUS: Starting processProquest script.", "");
         $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'), "");
@@ -109,80 +113,12 @@ class processProquest {
     }
 
     /**
-     * Initialize logging file.
-     *
-     * @param string $file_name The name to give the log file.
-     * @return boolean Log init status.
-     * 
-     * @throws Exception if the log file isn't writable.
-     */
-    private function initLog($file_name = null) {
-        // Set log file name.
-        if ( is_null($file_name) ) {
-            $file_name = "ingest";
-        }
-
-        $date = date("Ymd-His", time());
-
-        // Set log location in case DEFAULT_LOG_FILE_LOCATION or $this->settings['log']["location"] isn't set.
-        $log_location = "/tmp/processProquest-test/";
-        if ( isset($this->settings['log']["location"]) ) {
-            $log_location = $this->settings['log']["location"];
-        } else if (defined(DEFAULT_LOG_FILE_LOCATION) == TRUE) {
-            $log_location = DEFAULT_LOG_FILE_LOCATION;
-        } else {
-            // DEFAULT_LOG_FILE_LOCATION really should be set in this class.
-            //return false;
-        }
-
-        // Build final log path and name. Ex: /var/log/processProquest/log-20200216-123456.txt
-        $this->logFile = $log_location . $file_name . "-" . $date . ".txt";
-
-        // Create file if it doesn't exist.
-        if( !is_file($this->logFile) ) {
-            $res = file_put_contents($this->logFile, "");
-
-            // In case of complete file creation error.
-            if ($res === false) {
-                $errorMessage = "Can't write to log file: " . $res;
-                echo "ERROR: {$errorMessage}";
-                $this->logError = true;
-
-                // TODO: call postProcess()?
-                array_push($this->processingErrors, $errorMessage);
-                throw new Exception($errorMessage);
-            }
-        }
-
-        echo "Writing to log file: " . $this->logFile . "\n";
-
-        return true;
-    }
-
-    /**
-     * Simple logging.
+     * Output messages to log file and to console.
      *
      * @param string $message The message to log.
      * @param string $prefix The prefix to include before the message. Is wrapped in [].
-     * @return boolean Write status.
      */
     private function writeLog($message, $function_name = "", $prefix = "") {
-        // Check if there is a known issue with log writing.
-        if ($this->logError === true){
-            // Nothing we can do at this point.
-            return false;
-        }
-
-        // Check if $this->$logFile is set, and run initLog if not.
-        if ( empty($this->logFile) ) {
-            try {
-                $res = $this->initLog();
-            } catch(Exception $e) {
-                // If initLog fails then we can't write to logs.
-                return false;
-            }
-        }
-
         // Prepend $prefix to $message, if set.
         if ( !empty($prefix) ) {
             $message = "[{$prefix}] {$message}";
@@ -191,41 +127,15 @@ class processProquest {
         // Format the date and time. Ex: 2024-09-12 23:08:29
         $time = @date('[Y-m-d H:i:s]');
 
-        // Append message to the log file.
-        if ($fd = @fopen($this->logFile, "a")) {
-            //$result = fputcsv($fd, array($time, $message));
-            $res = fwrite($fd, "{$time} ({$function_name}) {$message}" . PHP_EOL);
+        // Write out message.
+        $this->logger->info($message);
 
-            // Check if fwrite failed.
-            if ($res === false) {
-                // Only print this error message once.
-                if ($this->logError === false) {
-                    echo "ERROR: Can't write to log file! " . $res;
-                    $this->logError = true;
-                }
-
-                return false;
-            }
-
-            fclose($fd);
-        } else {
-            // Only print this error message once.
-            if ($this->logError === false) {
-                echo "ERROR: Can't open log file! " . $res;
-                $this->logError = true;
-            }
-
-            return false;
-        }
-
-        // Finally, output to stdout
+        // Finally, output to stdout.
         if ($this->debug) {
             echo "$time [DEBUG] ($function_name) $message\n";
         } else {
             echo "$time ($function_name) $message\n";
         }
-
-        return true;
     }
 
     /**
