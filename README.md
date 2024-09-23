@@ -9,6 +9,7 @@ The following packages are required to run this script:
  * php-dom
  * php-zip
  * php-curl
+ * [composer](https://getcomposer.org/)
  * imagemagick
  * xpdf (only used for local PHP debugging)
  * poppler-utils
@@ -23,6 +24,11 @@ Clone this repository within your `drupal/sites/all/libraries/` directory.
 ```
 cd /var/www/html/drupal/sites/all/libraries
 git clone https://github.com/BCDigLib/processProquest
+```
+
+Next, install packages with composer.
+```
+php composer.phar install
 ```
 
 # Usage
