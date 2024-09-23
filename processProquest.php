@@ -165,11 +165,11 @@ class processProquest {
     private function sendEmail($message) {
         $fn = "sendEmail";
 
-        $log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location:\n • " . $this->logFile;
+        //$log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location:\n • " . $this->logFile;
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
-        $email_message = $message . $log_location_message;
+        $email_message = $message;
 
         // Check for empty email values.
         if ( empty($email_to) ) {
@@ -187,13 +187,14 @@ class processProquest {
             return false;
         }
 
+        $this->writeLog("########################", $fn);
         $this->writeLog("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]", $fn);
 
         // DEBUG: don't send email.
         $res = true;
         if ($this->debug === true) {
             $this->writeLog("DEBUG: Not sending email notification.", $fn);
-            return true;
+            //return true;
         } else {
             $res = mail($email_to, $email_subject, $email_message);
         }
@@ -1150,6 +1151,7 @@ class processProquest {
         $ret = $this->moveFTPFiles();
 
         // Send email
+        $ret = $this->sendEmail($message);
 
         return true;
     }
@@ -1884,10 +1886,10 @@ class processProquest {
         $this->writeLog("Completed ingesting all ETD files.", $fn);
 
         // Run a quick status check.
-        $this->writeLog("------------------------------");
-        $this->writeLog("Status Check:");
-        $this->writeLog($this->statusCheck());
-        $this->writeLog("------------------------------");
+        // $this->writeLog("------------------------------");
+        // $this->writeLog("Status Check:");
+        // $this->writeLog($this->statusCheck());
+        // $this->writeLog("------------------------------");
 
         // At this point run postProcess() to complete the workflow.
         $this->postProcess();
