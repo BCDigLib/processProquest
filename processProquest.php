@@ -414,7 +414,15 @@ class processProquest {
          * Save results into $etdFiles array.
          */
         $file_regex = $this->settings['ftp']['file_regex'];
-        $etdFiles = $this->ftp->ftp_nlist($file_regex);
+        $allFiles = $this->ftp->ftp_nlist($file_regex);
+
+        // Only collect zip files.
+        $etdFiles = [];
+        foreach($allFiles as $file) {
+            if (str_contains($file, ".zip")) {
+                array_push($etdFiles, $file);
+            }
+        }
 
         $this->allFoundETDs = $etdFiles;
         $this->countTotalETDs = count($etdFiles);
