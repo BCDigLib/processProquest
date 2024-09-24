@@ -844,7 +844,7 @@ class processProquest {
              */
             // DEBUG: generate random PID.
             if ($this->debug === true) {
-                $pid = "bc-ir:" . rand(50000,100000);
+                $pid = "bc-ir:" . rand(50000,100000) + 9000000;
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}", $fn, $etdname);
             } else {
                 $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
