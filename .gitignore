@@ -2,3 +2,4 @@ processProquest.ini
 vendor/
 logs
 logs/
+.vscode/
