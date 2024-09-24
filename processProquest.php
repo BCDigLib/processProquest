@@ -1084,7 +1084,7 @@ class processProquest {
                 $message .= "      PID:               {$local['PID']}\n";
                 $message .= "      URL:               {$local['RECORD_URL']}\n";
                 $message .= "      Author:            {$local['AUTHOR']}\n";
-                $message .= "      ETD title:         {$local['LABEL']}\n";
+                $message .= "      Title:             {$local['LABEL']}\n";
             }
         }
 
