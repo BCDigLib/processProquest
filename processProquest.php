@@ -673,7 +673,7 @@ class processProquest {
                 continue;
             }
 
-            $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]", $fn);
+            $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]", $fn, $etdname);
             $this->localFiles[$etdname]['STATUS'] = "success";
         }
 
