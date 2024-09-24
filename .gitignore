@@ -1,3 +1,4 @@
 processProquest.ini
-vendor/*
-logs/*
+vendor/
+logs
+logs/
