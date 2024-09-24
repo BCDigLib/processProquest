@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/New_York');
 
 require __DIR__."/vendor/autoload.php"; // This tells PHP where to find the autoload file so that PHP can load the installed packages
 
@@ -25,8 +26,6 @@ if (count($argv) > 2) {
 $configurationArray = getConfigurationSettings($argv);
 $configurationFile = $configurationArray['file'];
 $configurationSettings = $configurationArray['settings'];
-
-echo "configurationFile: {$configurationFile}\n";
 
 // Exit if configuration file is invalid.
 if(is_null($configurationSettings)){
@@ -64,16 +63,18 @@ if ($debugEnvVar) {
 $dateFormatLogFile = date("Ymd-His", time());
 $logLocation = $configurationSettings['log']['location'];
 $logFileName = "ingest-" . $dateFormatLogFile . ".txt";
-$dateFormatLogger = date('[Y-m-d H:i:s]');
 
 // New Logger instance. Create a new channel called "processProquest".
 $logger = new Logger("processProquest");
 
+// Default date format is "Y-m-d\TH:i:sP"
+$dateFormatLogger = "Y-m-d H:i:s";
+
 // Default: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
 if ($debug) {
-    $output = "%datetime% [DEBUG] %message% %context% %extra%\n";
+    $output = "[%datetime%] [DEBUG] %message% %context% %extra%\n";
 } else {
-    $output = "%datetime% > %message% %context% %extra%\n";
+    $output = "[%datetime%] > %message% %context% %extra%\n";
 }
 
 // Create a log formatter.
