@@ -357,6 +357,50 @@ class processProquest {
         return true;
     }
 
+
+    /**
+     * Recursively delete a directory.
+     * From: https://stackoverflow.com/a/18838141
+     * 
+     * @param string $dir The name of the directory to delete.
+     * 
+     * @return bool The status of the rmdir() function.
+     */
+    function recurseRmdir($dir) {
+        $files = array_diff(scandir($dir), array('.','..'));
+        foreach ($files as $file) {
+          (is_dir("$dir/$file") && !is_link("$dir/$file")) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
+        }
+        return rmdir($dir);
+    }
+
+
+    /**
+     * Recursively scan a directory.
+     * From: https://stackoverflow.com/a/46697247
+     * 
+     * @param string $dir The name of the directory to scan.
+     * 
+     * @return array An array listing all the files found.
+     */
+    function scanAllDir($dir) {
+        $result = [];
+        // TODO: scandir will return E_WARNING on failure.
+        foreach(scandir($dir) as $filename) {
+          if ($filename[0] === '.') continue;
+          $filePath = $dir . '/' . $filename;
+          if (is_dir($filePath)) {
+            $result[] = $filename;
+            foreach ($this->scanAllDir($filePath) as $childFilename) {
+              $result[] = $filename . '/' . $childFilename;
+            }
+          } else {
+            $result[] = $filename;
+          }
+        }
+        return $result;
+    }
+
     /**
      * Gather ETD zip files from FTP server.
      *
@@ -483,24 +527,37 @@ class processProquest {
             $this->localFiles[$etdShortName]['FILE_METADATA'] = "";
             $this->localFiles[$etdShortName]['ZIP_FILENAME'] = $etdZipFile;
             $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
-            $this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'] = [];
+            // $this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'] = [];
             $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$etdZipFile}";
 
             // Set status to 'processing'.
             $this->localFiles[$etdShortName]['STATUS'] = "unprocessed";
 
+            $this->writeLog("Local working directory status:", $fn, $etdShortName);
+            $this->writeLog("   • Directory to create: {$etdWorkingDir}", $fn, $etdShortName);
+
             // Create the local directory if it doesn't already exists.
             if ( file_exists($etdWorkingDir) ) {
-                $this->writeLog("Using the existing local working directory:", $fn, $etdShortName);
-                $this->writeLog("   {$etdWorkingDir}", $fn, $etdShortName);
+                $this->writeLog("   • Directory already exists.", $fn, $etdShortName);
+
+                if (!$this->recurseRmdir($etdWorkingDir)) {
+                    // We couldn't clear out the directory.
+                    $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}. Moving to the next ETD.";
+                    $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                    array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                    continue;
+                } else {
+                    $this->writeLog("   • Existing directory was removed.", $fn, $etdShortName);
+                }
             }
-            else if ( !mkdir($etdWorkingDir, 0755, true) ) {
+            
+            if ( !mkdir($etdWorkingDir, 0755, true) ) {
                 $errorMessage = "Failed to create local working directory: {$etdWorkingDir}. Moving to the next ETD.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
                 continue;
             } else {
-                $this->writeLog("Created local working directory: {$etdWorkingDir}", $fn, $etdShortName);
+                $this->writeLog("   • Directory was created.", $fn, $etdShortName);
             }
             $etdZipFileFullPath = $etdWorkingDir . "/" . $etdZipFile;
 
@@ -526,30 +583,42 @@ class processProquest {
                 $this->localFiles[$etdShortName];
             }
 
-            // Unzip ETD zip file.
-            $zipResource = zip_open($etdZipFileFullPath);
+            $zip = new ZipArchive;
 
-            // zip_open returns a resource handle on success and an integer on error.
-            if (!is_resource($zipResource)) {
-                $errorMessage = "Failed to open zip file. Moving to the next ETD.";
+            // Open and extract zip file to local directory.
+            $res = $zip->open($etdZipFileFullPath);
+            if ($res === TRUE) {
+                $zip->extractTo($etdWorkingDir);
+                $zip->close();
+
+                $this->writeLog("Extracting ETD zip file to local working directory.", $fn, $etdShortName);
+            } else {
+                $errorMessage = "Failed to extract ETD zip file: " . $res;
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
                 continue;
             }
 
-            // Go through entire zip file and process contents.
+            // There are files we want to ignore when running scandir().
+            $filesToIgnore = [".", ".." , $this->localFiles[$etdShortName]['ZIP_FILENAME']];
+            $expandedETDFiles = array_diff($this->scanAllDir($etdWorkingDir), $filesToIgnore);
+
+            if (!$expandedETDFiles) {
+                // There are no files in this expanded zip file.
+                $errorMessage = "There are no files in this expanded zip file.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                continue;
+            }
+
+            $this->writeLog("There are " . count($expandedETDFiles) . " files found in this working directory:", $fn, $etdShortName);
+
             $z = 0;
-            $this->writeLog("Expanded the zip file and found the following files:", $fn, $etdShortName);
-            
-            // TODO: replace zip_read() with ZipArchive::statIndex
-            while ($zipEntry = zip_read($zipResource)) {
-                // Get file name.
-                $fileName = basename(zip_entry_name($zipEntry));
-
+            foreach($expandedETDFiles as $etdFileName) {
                 $z++;
-                $this->writeLog("  [{$z}] File name: {$fileName}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['ZIP_CONTENTS'], $fileName);
-
+                $this->writeLog("  [{$z}] File name: {$etdFileName}", $fn, $etdShortName);
+                array_push($this->localFiles[$etdShortName]['ZIP_CONTENTS'], $etdFileName);
+            
                 /**
                  * Match for a specific string in file.
                  *
@@ -560,22 +629,22 @@ class processProquest {
                  *
                  *  The String "0016" is specific to BC.
                  */
-                if (preg_match('/0016/', $fileName)) {
-                    $fileExtension = strtolower(substr($fileName,strlen($fileName)-3));
+                if (preg_match('/0016/', $etdFileName)) {
+                    $fileExtension = strtolower(substr($etdFileName,strlen($etdFileName)-3));
 
                     // Check if this is a PDF file.
                     if ($fileExtension === 'pdf' && empty($this->localFiles[$etdShortName]['ETD'])) {
-                        $this->localFiles[$etdShortName]['ETD'] = $fileName;
-                        $this->localFiles[$etdShortName]['FILE_ETD'] = $fileName;
-                        $this->writeLog("      File type: PDF.", $fn, $etdShortName);
+                        $this->localFiles[$etdShortName]['ETD'] = $etdFileName;
+                        $this->localFiles[$etdShortName]['FILE_ETD'] = $etdFileName;
+                        $this->writeLog("      File type: PDF", $fn, $etdShortName);
                         continue;
                     }
 
                     // Check if this is an XML file.
                     if ($fileExtension === 'xml' && empty($this->localFiles[$etdShortName]['METADATA'])) {
-                        $this->localFiles[$etdShortName]['METADATA'] = $fileName;
-                        $this->localFiles[$etdShortName]['FILE_METADATA'] = $fileName;
-                        $this->writeLog("      File type: XML.", $fn, $etdShortName);
+                        $this->localFiles[$etdShortName]['METADATA'] = $etdFileName;
+                        $this->localFiles[$etdShortName]['FILE_METADATA'] = $etdFileName;
+                        $this->writeLog("      File type: XML", $fn, $etdShortName);
                         continue;
                     }
 
@@ -584,15 +653,9 @@ class processProquest {
                      * Metadata will contain boolean key for permission in DISS_file_descr element.
                      * [0] element should always be folder.
                      */
-
-                    // Ignore directories
+                    // echo "Is this a directory? {$etdWorkingDir}/{$etdFileName}: " . is_dir($etdWorkingDir . "/" . $etdFileName);
                     try {
-                        // TODO: this check isn't catching directories.
-                        if (is_dir($etdWorkingDir . "/" . $fileName)) {
-                            $this->writeLog("      This is a directory. Next file parsed may be a supplemental file.", $fn, $etdShortName);
-                            array_push($this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'], $file);
-                            continue;
-                        }
+                        $checkIfDir = is_dir($etdWorkingDir . "/" . $etdFileName);
                     } catch (Exception $e) {
                         $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
                         $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
@@ -601,24 +664,17 @@ class processProquest {
                         continue;
                     }
 
-                    // Check if any directory name is in the file name.
-                    // TODO: refactor
-                    foreach ($this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'] as $dir) {
-                        if (str_contains($fileName, $dir)) {
-                            // This file is flagged as a supplemental file.
-                            ;
-                        } else {
-                            // Something is wrong since there are multiple files 
-                            // in the root of the zip file.
-                            $this->writeLog("      WARNING: potential supplementary file found in root of the zip file.", $fn, $etdShortName);
-                        }
+                    if ($checkIfDir) {
+                        $this->writeLog("      This is a directory. Next parsed file may be a supplemental file.", $fn, $etdShortName);
+                        // array_push($this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'], $etdFileName);
+                        continue;
+                    } else {
+                        array_push($this->localFiles[$etdShortName]['SUPPLEMENTS'], $etdFileName);
+                        $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] = true;
+                        $this->countSupplementalETDs++;
+                        array_push($this->allSupplementalETDs, $etdZipFile);
+                        $this->writeLog("      This is a supplementary file.", $fn, $etdShortName);
                     }
-
-                    array_push($this->localFiles[$etdShortName]['SUPPLEMENTS'], $file);
-                    $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] = true;
-                    $this->countSupplementalETDs++;
-                    array_push($this->allSupplementalETDs, $etdZipFile);
-                    $this->writeLog("      This is a supplementary file.", $fn, $etdShortName);
                 } else {
                     // TODO: handle case where the file doesn't contain /0016/
                     ;
@@ -641,41 +697,24 @@ class processProquest {
              *  - $this->localFiles[$etdShortName]['METADATA']
              * are defined and are nonempty strings.
              */
-            $this->writeLog("Checking that PDF and XML files were found in this zip file...", $fn, $etdShortName);
+            $this->writeLog("Checking that PDF and XML files were found in this zip file:", $fn, $etdShortName);
             if ( empty($this->localFiles[$etdShortName]['ETD']) ) {
-                $errorMessage = "The ETD PDF file was not found or set.";
+                $errorMessage = "   The ETD PDF file was not found or set.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
                 $this->localFiles[$etdShortName]['STATUS'] = "failure";
                 continue;
             }
-            $this->writeLog("✓ The ETD PDF file was found.", $fn, $etdShortName);
+            $this->writeLog("   ✓ The ETD PDF file was found.", $fn, $etdShortName);
 
             if ( empty($this->localFiles[$etdShortName]['METADATA']) ) {
-                $errorMessage = "The ETD XML file was not found or set.";
+                $errorMessage = "   The ETD XML file was not found or set.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
                 $this->localFiles[$etdShortName]['STATUS'] = "failure";
                 continue;
             }
-            $this->writeLog("✓ The ETD XML file was found.", $fn, $etdShortName);
-
-            $zip = new ZipArchive;
-
-            // Open and extract zip file to local directory.
-            $res = $zip->open($etdZipFileFullPath);
-            if ($res === TRUE) {
-                $zip->extractTo($etdWorkingDir);
-                $zip->close();
-
-                $this->writeLog("Extracting ETD zip file to local working directory.", $fn, $etdShortName);
-                // $this->writeLog("   {$etdWorkingDir}", $fn, $etdShortName);
-            } else {
-                $errorMessage = "Failed to extract ETD zip file: " . $res;
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
-                continue;
-            }
+            $this->writeLog("   ✓ The ETD XML file was found.", $fn, $etdShortName);
 
             $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]", $fn, $etdShortName);
             $this->localFiles[$etdShortName]['STATUS'] = "success";
