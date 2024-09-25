@@ -25,6 +25,8 @@ define('GRADUATE_THESES','bc-ir:GraduateThesesCollection');
 define('GRADUATE_THESES_RESTRICTED','bc-ir:GraduateThesesCollectionRestricted');
 define('DEFAULT_LOG_FILE_LOCATION', '/tmp/proquest-log/');
 define('DEFAULT_DEBUG_VALUE', false);
+define('SECTION_DIVIDER', "###################################");
+define('LOOP_DIVIDER', '-----------------------------------');
 
 date_default_timezone_set("America/New_York");
 
@@ -174,7 +176,7 @@ class processProquest {
             return false;
         }
 
-        $this->writeLog("########################", $fn);
+        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]", $fn);
 
         // DEBUG: don't send email.
@@ -312,10 +314,10 @@ class processProquest {
         $processdirFTP = $this->settings['ftp']['processdir'];
         $faildirFTP = $this->settings['ftp']['faildir'];
 
-        $this->writeLog("########################", $fn);
+        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("BEGIN Moving processed ETDs into respective post-processing directories.", $fn);
         $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}", $fn);
-        $this->writeLog("------------------------------", $fn);
+        $this->writeLog(LOOP_DIVIDER, $fn);
 
         foreach ($this->localFiles as $etdShortName => $etdArray) {
             $ingested = $this->localFiles[$etdShortName]["INGESTED"];
@@ -335,7 +337,7 @@ class processProquest {
 
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdShortName);
-                $this->writeLog("------------------------------", $fn);
+                $this->writeLog(LOOP_DIVIDER, $fn);
                 $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
                 continue;
             }
@@ -345,12 +347,12 @@ class processProquest {
             // Check if there was an error moving the ETD file on the FTP server.
             if ($ftpRes === false) {
                 $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdShortName);
-                $this->writeLog("------------------------------", $fn);
+                $this->writeLog(LOOP_DIVIDER, $fn);
                 // TODO: create some type of error here.
                 return false;
             }
             $this->writeLog("Move was successful.", $fn, $etdShortName);
-            $this->writeLog("------------------------------", $fn);
+            $this->writeLog(LOOP_DIVIDER, $fn);
             $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
         }
 
@@ -416,7 +418,7 @@ class processProquest {
     public function getFiles() {
         $fn = "getFiles";
 
-        $this->writeLog("########################", $fn);
+        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("Fetching ETD files from FTP server.", $fn);
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
@@ -506,7 +508,7 @@ class processProquest {
             // Set the path of the local working directory. Ex: /tmp/processing/file_name_1234
             $etdWorkingDir = $localdirFTP . $etdShortName;
 
-            $this->writeLog("------------------------------", $fn);
+            $this->writeLog(LOOP_DIVIDER, $fn);
             $this->writeLog("BEGIN Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
             // Check to see if etdZipFile is more than four chars. Continue if string fails.
@@ -726,7 +728,7 @@ class processProquest {
         }
 
         // Completed fetching all ETD zip files.
-        $this->writeLog("------------------------------", $fn);
+        $this->writeLog(LOOP_DIVIDER, $fn);
         $this->writeLog("Completed fetching all ETD zip files from FTP server.", $fn);
 
         return true;
@@ -758,7 +760,7 @@ class processProquest {
             throw new Exception($errorMessage);
         }
 
-        $this->writeLog("########################", $fn);
+        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("Now processing {$this->countTotalValidETDs} ETD file(s).", $fn);
 
         /**
@@ -807,7 +809,7 @@ class processProquest {
             $etdShortName = $this->localFiles[$etdShortName]['ETD_SHORTNAME'];
             $this->localFiles[$etdShortName]["FOO"] = "BAR";
 
-            $this->writeLog("------------------------------", $fn);
+            $this->writeLog(LOOP_DIVIDER, $fn);
             $this->writeLog("BEGIN Processing ETD file [{$s} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
             // No need to process ETDs that have supplemental files.
@@ -1023,7 +1025,7 @@ class processProquest {
         }
 
         // Completed processing all ETD files.
-        $this->writeLog("------------------------------", $fn);
+        $this->writeLog(LOOP_DIVIDER, $fn);
         $this->writeLog("Completed processing all ETD files.", $fn);
 
         return true;
@@ -1218,7 +1220,7 @@ class processProquest {
             throw new Exception($errorMessage);
         }
 
-        $this->writeLog("########################", $fn);
+        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("Now Ingesting {$this->countTotalETDs} ETD file(s).", $fn);
 
         $fop_config = $this->settings['packages']['fop_config'];
@@ -1239,7 +1241,7 @@ class processProquest {
             $this->localFiles[$etdShortName]['INGESTED'] = false;
             $this->localFiles[$etdShortName]['INGEST_ERRORS'] = [];
             
-            $this->writeLog("------------------------------", $fn);
+            $this->writeLog(LOOP_DIVIDER, $fn);
             $this->writeLog("BEGIN Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
             // No need to process ETDs that have supplemental files.
@@ -1796,7 +1798,7 @@ class processProquest {
             $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdShortName);
         }
 
-        $this->writeLog("------------------------------", $fn);
+        $this->writeLog(LOOP_DIVIDER, $fn);
         $this->writeLog("Completed ingesting all ETD files.", $fn);
 
         // At this point run postProcess() to complete the workflow.
