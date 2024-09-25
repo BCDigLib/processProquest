@@ -984,8 +984,9 @@ class processProquest {
             }
 
             // Update local file path for ETD PDF file.
-            $this->localFiles[$etdShortName]['ETD'] = $normalizedAuthor . ".pdf";
-            $this->writeLog("Renamed ETD PDF file from {$this->localFiles[$etdShortName]['ETD']} to {$this->localFiles[$etdShortName]['ETD']}", $fn, $etdShortName);
+            $normalizedAuthorPDFName = $normalizedAuthor . ".pdf";
+            $this->writeLog("Renamed ETD PDF file from {$this->localFiles[$etdShortName]['ETD']} to {$normalizedAuthorPDFName}", $fn, $etdShortName);
+            $this->localFiles[$etdShortName]['ETD'] = $normalizedAuthorPDFName;
 
             // Save MODS using normalized author's name.
             $res = $mods->save($this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".xml");
