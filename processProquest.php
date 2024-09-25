@@ -154,8 +154,7 @@ class processProquest {
      */
     private function sendEmail($message) {
         $fn = "sendEmail";
-
-        //$log_location_message = "\n\nA detailed log file for this ingest has been generated on the server at this location:\n • " . $this->logFile;
+        $this->writeLog("Generating an email notification.", $fn);
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
@@ -177,7 +176,6 @@ class processProquest {
             return false;
         }
 
-        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]", $fn);
 
         // DEBUG: don't send email.
@@ -311,7 +309,6 @@ class processProquest {
         $processdirFTP = $this->settings['ftp']['processdir'];
         $faildirFTP = $this->settings['ftp']['faildir'];
 
-        $this->writeLog(SECTION_DIVIDER, $fn);
         $this->writeLog("BEGIN Moving processed ETDs into respective post-processing directories.", $fn);
         $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}", $fn);
         $this->writeLog(LOOP_DIVIDER, $fn);
@@ -1029,6 +1026,9 @@ class processProquest {
         $user = $this->settings['fedora']['username'];
         $pass = $this->settings['fedora']['password'];
 
+        $this->writeLog(SECTION_DIVIDER, $fn);
+        $this->writeLog("Connecting to Fedora instance at {$url}", $fn);
+
         // Check all values exist.
         if (empty($url) || empty($user) || empty($pass)) {
             $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
@@ -1067,6 +1067,7 @@ class processProquest {
      */
     public function statusCheck(){
         $fn = "statusCheck";
+        $this->writeLog("Generating status message for email message.", $fn);
         $message = "\n";
 
         // First, find if there are processing errors
@@ -1127,21 +1128,10 @@ class processProquest {
      * Parse script results and compose email body.
      */
     public function postProcess() {
-        /*
-         * Steps: 
-         *  check $this->processingErrors[]
-         *  check $this->allFoundETDs[]
-         *  check each $this->localFiles[] as local
-         *      local["HAS_SUPPLEMENTS]
-         *      local["STATUS"]
-         *      local["PID"]
-         *      local["LABEL"]
-         *      local["AUTHOR"]
-         *      local["HAS_EMBARGO"]
-         *      local["EMBARGO_DATE"]
-         *      local["INGESTED"] ??
-        */
         $fn = "postProcess";
+
+        $this->writeLog(SECTION_DIVIDER, $fn);
+        $this->writeLog("BEGIN Running post-process steps.", $fn);
 
         // Move files in FTP server only when applicable.
         if ( $this->processingFailure === false ) {
@@ -1154,6 +1144,8 @@ class processProquest {
         // Send email.
         $ret = $this->sendEmail($message);
 
+        $this->writeLog("END Running post-process steps.", $fn);
+        $this->writeLog(SECTION_DIVIDER, $fn);
         return true;
     }
 
