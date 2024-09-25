@@ -116,20 +116,20 @@ try {
     exit(1);
 }
 
-// Get zip files from FTP server, unzip and store locally.
+// Connect to Fedora through API.
 // Exit when an exception is caught.
 try {
-    $process->getFiles();
+    $process->initFedoraConnection();
 } catch(Exception $e) {
     $process->postProcess();
     $logger->info("Exiting.");
     exit(1);
 }
 
-// Connect to Fedora through API.
+// Get zip files from FTP server, unzip and store locally.
 // Exit when an exception is caught.
 try {
-    $process->initFedoraConnection();
+    $process->getFiles();
 } catch(Exception $e) {
     $process->postProcess();
     $logger->info("Exiting.");
