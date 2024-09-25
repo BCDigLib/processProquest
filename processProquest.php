@@ -587,8 +587,9 @@ class processProquest {
 
                     // Ignore directories
                     try {
-                        if (is_dir($etdWorkingDir . "/" . $file)) {
-                            $this->writeLog("      This is a directory. Skipping.", $fn, $etdShortName);
+                        // TODO: this check isn't catching directories.
+                        if (is_dir($etdWorkingDir . "/" . $fileName)) {
+                            $this->writeLog("      This is a directory. Next file parsed may be a supplemental file.", $fn, $etdShortName);
                             array_push($this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'], $file);
                             continue;
                         }
