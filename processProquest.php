@@ -482,6 +482,10 @@ class processProquest {
         }
 
         $this->writeLog("Found {$this->countTotalETDs} ETD file(s).", $fn);
+        foreach ($etdZipFiles as $etdZipFile) {
+            $this->writeLog("   • {$etdZipFile}", $fn);
+        }
+        $this->writeLog("Now parsing each ETD file.", $fn);
 
         /**
          * Loop through each match in $etdZipFiles.
