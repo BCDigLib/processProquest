@@ -1077,14 +1077,10 @@ class processProquest {
      */
     function statusCheck(){
         $fn = "statusCheck";
-
-        // List all ETDS
         $message = "\n";
 
         // First, find if there are processing errors
         $countProcessingErrors = count($this->processingErrors);
-
-        // Check if there are processing errors.
         if ($countProcessingErrors >  0) {
             $message .= "This script failed to run because of the following issue(s):\n";
             
@@ -1096,37 +1092,39 @@ class processProquest {
 
             $countETDs = count($this->localFiles);
             $message .= "There were {$countETDs} ETD(s) processed.\n"; 
-            foreach ($this->localFiles as $local) {
+            foreach ($this->localFiles as $etdShortName => $etdArray) {
                 $i++;
-                $errorsCount = count($local["INGEST_ERRORS"]);
-                $message .= "\n  [{$i}] Zip filename:      {$local['ZIP_FILENAME']}\n";
-                $message .= "      Status:            {$local['STATUS']}\n";
-                $message .= "      Has supplements:   " . ($local['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
+                $errorsCount = count($this->localFiles[$etdShortName]["INGEST_ERRORS"]);
+                $message .= "\n  [{$i}] Zip filename:      {$this->localFiles[$etdShortName]['ZIP_FILENAME']}\n";
+                $message .= "      Status:            {$this->localFiles[$etdShortName]['STATUS']}\n";
+                $message .= "      Has supplements:   " . ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
                 
                 // If this ETD has supplements then display message and continue to next ETD.
-                if ($local['HAS_SUPPLEMENTS']) {
+                if ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS']) {
                     $message .= "      WARNING: This ETD contains supplemental files and was not processed.\n";
+                    $message .= "               Please manually process the ETD zip file, which can be found here on the FTP server:\n";
+                    $message .= "               {$this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION']}\n";
                     continue;
                 }
 
                 // Display ingest errors and continue to next ETD.
                 if ($errorsCount > 0) {
                     $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
-                    foreach ($local["INGEST_ERRORS"] as $ingestError) {
+                    foreach ($this->localFiles[$etdShortName]["INGEST_ERRORS"] as $ingestError) {
                         $message .= "       • {$ingestError}\n";
                     }
                     continue;
                 }
 
-                $message .= "      Has OA agreement:  " . ($local['OA_AVAILABLE'] ? "true" : "false") . "\n";
-                $message .= "      Has embargo:       " . ($local['HAS_EMBARGO'] ? "true" : "false") . "\n";
-                if ($local['HAS_EMBARGO']) {
-                    $message .= "      Embargo date:      {$local['EMBARGO_DATE']}\n";
+                $message .= "      Has OA agreement:  " . ($this->localFiles[$etdShortName]['OA_AVAILABLE'] ? "true" : "false") . "\n";
+                $message .= "      Has embargo:       " . ($this->localFiles[$etdShortName]['HAS_EMBARGO'] ? "true" : "false") . "\n";
+                if ($this->localFiles[$etdShortName]['HAS_EMBARGO']) {
+                    $message .= "      Embargo date:      {$this->localFiles[$etdShortName]['EMBARGO_DATE']}\n";
                 }
-                $message .= "      PID:               {$local['PID']}\n";
-                $message .= "      URL:               {$local['RECORD_URL']}\n";
-                $message .= "      Author:            {$local['AUTHOR']}\n";
-                $message .= "      Title:             {$local['LABEL']}\n";
+                $message .= "      PID:               {$this->localFiles[$etdShortName]['PID']}\n";
+                $message .= "      URL:               {$this->localFiles[$etdShortName]['RECORD_URL']}\n";
+                $message .= "      Author:            {$this->localFiles[$etdShortName]['AUTHOR']}\n";
+                $message .= "      Title:             {$this->localFiles[$etdShortName]['LABEL']}\n";
             }
         }
 
@@ -1155,13 +1153,13 @@ class processProquest {
         */
         $fn = "postProcess";
 
+        // Move files in FTP server.
+        $ret = $this->moveFTPFiles();
+
         // Get overall status.
         $message = $this->statusCheck();
 
-        // Move files in FTP server
-        $ret = $this->moveFTPFiles();
-
-        // Send email
+        // Send email.
         $ret = $this->sendEmail($message);
 
         return true;
