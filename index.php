@@ -111,7 +111,8 @@ if (!$process){
 try {
     $process->initFTP();
 } catch(Exception $e) {
-    echo "Exiting.\n";
+    $process->postProcess();
+    $logger->info("Exiting.");
     exit(1);
 }
 
@@ -120,14 +121,15 @@ try {
 try {
     $process->getFiles();
 } catch(Exception $e) {
-    echo "Exiting.\n";
+    $process->postProcess();
+    $logger->info("Exiting.");
     exit(1);
 }
 
 // Connect to Fedora through API.
 if (!$process->initFedoraConnection()) {
-    echo "Could not make a connection to the Fedora repository. Exiting.";
-    $logger->info($process->statusCheck());
+    $process->postProcess();
+    $logger->info("Exiting.");
     exit(1);
 }
 
@@ -136,7 +138,8 @@ if (!$process->initFedoraConnection()) {
 try {
     $process->processFiles();
 } catch(Exception $e) {
-    echo "Exiting.\n";
+    $process->postProcess();
+    $logger->info("Exiting.");
     exit(1);
 }
 
@@ -145,9 +148,14 @@ try {
 try {
     $process->ingest();
 } catch(Exception $e) {
-    echo "Exiting.\n";
+    $process->postProcess();
+    $logger->info("Exiting.");
     exit(1);
 }
+
+// Finally, run postProcess().
+$process->postProcess();
+$logger->info("Exiting.");
 
 /**
  * Output usage strings.
