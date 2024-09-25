@@ -1127,13 +1127,13 @@ class processProquest {
      * @param integer $fileIndex the localFiles index
      * @param string $etdShortName the name of the ETD file 
      */
-    private function datastreamIngestFailed($errorMessage, $datastreamName, $fileIndex, $etdShortName) {
+    private function datastreamIngestFailed($errorMessage, $datastreamName, $etdShortName) {
         $functionName = "ingest";
-        array_push($this->allFailedETDs, $this->localFiles[$fileIndex]["ETD_SHORTNAME"]);
-        array_push($this->localFiles[$fileIndex]['INGEST_ERRORS'], $errorMessage);
+        array_push($this->allFailedETDs, $this->localFiles[$etdShortName]["ETD_SHORTNAME"]);
+        array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
         $this->writeLog("[{$datastreamName}] ERROR: $errorMessage", $functionName, $etdShortName);
         // $this->writeLog("[{$datastreamName}] trace:\n" . $e->getTraceAsString(), $functionName, $etdShortName);
-        $this->localFiles[$fileIndex]["STATUS"] = "failed";
+        $this->localFiles[$etdShortName]["STATUS"] = "failed";
     }
 
     /**
@@ -1216,7 +1216,7 @@ class processProquest {
                 $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$etdShortName]['PID']}", $fn, $etdShortName);
             } catch (Exception $e) {
                 $errorMessage = "Could not instanciate a Fedora object with PID '" . $this->localFiles[$etdShortName]['PID'] . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1244,7 +1244,7 @@ class processProquest {
                 $collectionName = GRADUATE_THESES;
             } catch (Exception $e) { // RepositoryException
                 $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1256,7 +1256,7 @@ class processProquest {
                     $this->writeLog("[{$dsid}] Adding to Graduate Theses (Restricted) collection.", $fn, $etdShortName);
                 } catch (Exception $e) { // RepositoryException
                     $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID_EMBARGO . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
                 }
             } else {
@@ -1400,7 +1400,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] Splash page created successfully.", $fn, $etdShortName);
     		} else {
                 $errorMessage = "PDF splash page creation failed! ". $return;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
     		    continue;
     		}
 
@@ -1494,7 +1494,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] datastream generated successfully.", $fn, $etdShortName);
             } else {
                 $errorMessage = "FULL_TEXT document creation failed!" . $return;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1511,7 +1511,7 @@ class processProquest {
             // Check if file read failed.
             if ($fulltext === false) {
                 $errorMessage = "Could not read in file: ". $fttemp;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1522,7 +1522,7 @@ class processProquest {
             // In the slim chance preg_replace fails.
             if ($sanitized === null) {
                 $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string!";
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1560,7 +1560,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] Datastream generated successfully.", $fn, $etdShortName);
             } else {
                 $errorMessage = "TN document creation failed! " . $return;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1604,7 +1604,7 @@ class processProquest {
                 $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.", $fn, $etdShortName);
             } else {
                 $errorMessage = "PREVIEW document creation failed! " . $return;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
 
@@ -1664,7 +1664,7 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $errorMessage = "Could not read in file: " . $relsFile;
-                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
                 }
 
@@ -1679,7 +1679,7 @@ class processProquest {
                 // Check if file read failed.
                 if ($relsint === false) {
                     $errorMessage = "Could not read in file: " . $relsFile;
-                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
                 }
 
@@ -1733,7 +1733,7 @@ class processProquest {
                     $this->writeLog("START ingestion of Fedora object...", $fn, $etdShortName);
                 } catch (Exception $e) {
                     $errorMessage = "Could not ingest Fedora object: " . $e->getMessage();
-                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName, $etdShortName);
+                    $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
                 }
             }
