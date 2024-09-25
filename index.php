@@ -127,7 +127,10 @@ try {
 }
 
 // Connect to Fedora through API.
-if (!$process->initFedoraConnection()) {
+// Exit when an exception is caught.
+try {
+    $process->initFedoraConnection();
+} catch(Exception $e) {
     $process->postProcess();
     $logger->info("Exiting.");
     exit(1);

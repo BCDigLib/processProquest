@@ -85,6 +85,7 @@ class processProquest {
         $this->record_path = "{$this->root_url}{$this->path}";
         $this->logFile = $this->settings["log"]["location"];
         $this->ftpRoot = $this->settings["ftp"]["fetchdir"];
+        $this->processingFailure = false;
 
         if (!is_object($logger)) {
             // An empty logger object was passed.
@@ -239,6 +240,7 @@ class processProquest {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
+            $this->processingFailure = true;
             throw new Exception($errorMessage);
         }
 
@@ -257,6 +259,7 @@ class processProquest {
             $errorMessage = "FTP connection failed.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
+            $this->processingFailure = true;
             throw new Exception($errorMessage);
         }
     }
@@ -1017,6 +1020,8 @@ class processProquest {
      * Initializes a connection to a Fedora file repository server.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if Fedora connection fails.
      */
     public function initFedoraConnection() {
         $fn = "initFedoraConnection";
@@ -1029,7 +1034,8 @@ class processProquest {
             $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
-            return false;
+            $this->processingFailure = true;
+            throw new Exception($errorMessage);
         }
 
         // Make Fedora repository connection.
@@ -1044,7 +1050,9 @@ class processProquest {
             $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn);
-            return false;
+            array_push($this->processingErrors, $errorMessage);
+            $this->processingFailure = true;
+            throw new Exception($errorMessage);
         }
 
         // TODO: make a test connection
@@ -1135,8 +1143,8 @@ class processProquest {
         */
         $fn = "postProcess";
 
-        // Move files in FTP server.
-        if (is_null($this->ftp) === false) {
+        // Move files in FTP server only when applicable.
+        if ( $this->processingFailure === false ) {
             $ret = $this->moveFTPFiles();
         }
 
