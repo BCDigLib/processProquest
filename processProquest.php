@@ -359,14 +359,13 @@ class processProquest {
         return true;
     }
 
-
     /**
      * Recursively delete a directory.
      * From: https://stackoverflow.com/a/18838141
      * 
      * @param string $dir The name of the directory to delete.
      * 
-     * @return bool The status of the rmdir() function.
+     * @return boolean The status of the rmdir() function.
      */
     function recurseRmdir($dir) {
         $files = array_diff(scandir($dir), array('.','..'));
@@ -375,7 +374,6 @@ class processProquest {
         }
         return rmdir($dir);
     }
-
 
     /**
      * Recursively scan a directory.
@@ -1034,7 +1032,7 @@ class processProquest {
     /**
      * Initializes a connection to a Fedora file repository server.
      * 
-     * @return Boolean Success value.
+     * @return boolean Success value.
      */
     function initFedoraConnection() {
         $fn = "initFedoraConnection";
