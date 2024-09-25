@@ -87,7 +87,7 @@ class processProquest {
         $this->ftpRoot = $this->settings["ftp"]["fetchdir"];
         $this->processingFailure = false;
 
-        if (!is_object($logger)) {
+        if ( is_object($logger) === false ) {
             // An empty logger object was passed.
             return false;
         }
@@ -98,7 +98,7 @@ class processProquest {
         $logHandlers = $logger->getHandlers();
         foreach ($logHandlers as $handler) {
             $url = $handler->getUrl();
-            if (str_contains($url, "php://")) {
+            if ( str_contains($url, "php://") === true ) {
                 // Ignore the stdout/console handler.
                 continue;
             }
@@ -132,11 +132,11 @@ class processProquest {
      */
     private function writeLog($message, $functionName = "", $prefix = "") {
         $completeMessage = "";
-        if ( !empty($functionName) ) {
+        if ( empty($functionName) === false ) {
             $completeMessage .= "({$functionName}) ";
         }
 
-        if ( !empty($prefix) ) {
+        if ( empty($prefix) === false ) {
             $completeMessage .= "[{$prefix}] ";
         } 
 
@@ -161,18 +161,21 @@ class processProquest {
         $email_message = $message;
 
         // Check for empty email values.
-        if ( empty($email_to) ) {
-            $this->writeLog("ERROR: Email to: field is empty!", $fn);
+        if ( empty($email_to) === true ) {
+            $errorMessage = "Email to: field is empty.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
             return false;
         }
 
-        if ( empty($email_subject) ) {
-            $this->writeLog("ERROR: Email subject: field is empty!", $fn);
+        if ( empty($email_subject) === true ) {
+            $errorMessage = "Email subject: field is empty.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
             return false;
         }
 
-        if ( empty($email_message) ) {
-            $this->writeLog("ERROR: Email body: field is empty!", $fn);
+        if ( empty($email_message) === true ) {
+            $errorMessage = "Email body: field is empty.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
             return false;
         }
 
@@ -180,7 +183,7 @@ class processProquest {
 
         // DEBUG: don't send email.
         $res = true;
-        if ($this->debug === true) {
+        if ( $this->debug === true ) {
             $this->writeLog("DEBUG: Not sending email notification.", $fn);
             return true;
         } else {
@@ -188,8 +191,9 @@ class processProquest {
         }
 
         // Check mail success.
-        if ($res === false) {
-            $this->writeLog("ERROR: Email not sent!", $fn);
+        if ( $res === false ) {
+            $errorMessage = "Email not sent.";
+            $this->writeLog("ERROR: {$errorMessage}", $fn);
             return false;
         }
 
@@ -234,7 +238,7 @@ class processProquest {
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
 
-        if (empty($urlFTP) || empty($userFTP) || empty($passwordFTP)) {
+        if ( (empty($urlFTP) === true) || (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
@@ -249,6 +253,7 @@ class processProquest {
         $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         // Pass login credentials to login method.
+        // TODO: does this return a boolean?
         if ( $this->ftp->ftp_login($userFTP, $passwordFTP) ) {
             $this->writeLog("FTP connection sucecssful.", $fn);
             return true;
@@ -275,7 +280,7 @@ class processProquest {
      * @throws Exception if the datastream ingest failed.
      */
     private function prepareIngestDatastream($fedoraObj, $datastreamObj, $datastreamName, $etdShortName) {
-        if ($this->debug === true) {
+        if ( $this->debug === true ) {
             array_push($this->localFiles[$etdShortName]['DATASTREAMS_CREATED'], $datastreamName);
             $this->writeLog("[{$datastreamName}] DEBUG: Did not ingest datastream.", "ingest" , $etdShortName);
             return true;
@@ -318,7 +323,7 @@ class processProquest {
             $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
             $ftpPathForETD = $this->localFiles[$etdShortName]["FTP_PATH_FOR_ETD"];
 
-            if ($ingested) {
+            if ( $ingested === true ) {
                 $moveFTPDir = $processdirFTP . $zipFileName;
             } else {
                 $moveFTPDir = $faildirFTP . $zipFileName;
@@ -329,7 +334,7 @@ class processProquest {
             $this->writeLog("   from: {$ftpPathForETD}", $fn, $etdShortName);
             $this->writeLog("   into: {$moveFTPDir}", $fn, $etdShortName);
 
-            if ($this->debug === true) {
+            if ( $this->debug === true ) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdShortName);
                 $this->writeLog(LOOP_DIVIDER, $fn);
                 $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
@@ -339,7 +344,7 @@ class processProquest {
             $ftpRes = $this->ftp->ftp_rename($ftpPathForETD, $moveFTPDir);
             
             // Check if there was an error moving the ETD file on the FTP server.
-            if ($ftpRes === false) {
+            if ( $ftpRes === false ) {
                 $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdShortName);
                 $this->writeLog(LOOP_DIVIDER, $fn);
                 // TODO: create some type of error here.
@@ -366,7 +371,7 @@ class processProquest {
     private function recurseRmdir($dir) {
         $files = array_diff(scandir($dir), array('.','..'));
         foreach ($files as $file) {
-          (is_dir("$dir/$file") && !is_link("$dir/$file")) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
+          ( (is_dir("$dir/$file") === true) && (is_link("$dir/$file") === false) ) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
         }
         return rmdir($dir);
     }
@@ -383,9 +388,9 @@ class processProquest {
         $result = [];
         // TODO: scandir will return E_WARNING on failure.
         foreach(scandir($dir) as $filename) {
-          if ($filename[0] === '.') continue;
+          if ( $filename[0] === '.' ) continue;
           $filePath = $dir . '/' . $filename;
-          if (is_dir($filePath)) {
+          if ( is_dir($filePath) === true ) {
             $result[] = $filename;
             foreach ($this->scanAllDir($filePath) as $childFilename) {
               $result[] = $filename . '/' . $childFilename;
@@ -417,13 +422,13 @@ class processProquest {
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $this->fetchdirFTP = $this->settings['ftp']['fetchdir'];
-        if (empty($this->fetchdirFTP)) {
+        if ( empty($this->fetchdirFTP) === true ) {
             $this->fetchdirFTP = "~/";
         }
 
         // Define local directory for file processing. Ex: /tmp/processed/
         $localdirFTP = $this->settings['ftp']['localdir'];
-        if ( empty($localdirFTP) ) {
+        if ( empty($localdirFTP) === true ) {
             $errorMessage = "Local working directory not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
@@ -431,7 +436,7 @@ class processProquest {
         }
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
-        if ($this->fetchdirFTP != "") {
+        if ( $this->fetchdirFTP != "" ) {
             if ( $this->ftp->ftp_chdir($this->fetchdirFTP) ) {
                 $this->writeLog("Changed to local FTP directory: {$this->fetchdirFTP}", $fn);
             } else {
@@ -455,7 +460,7 @@ class processProquest {
         // Only collect zip files.
         $etdZipFiles = [];
         foreach($allFiles as $file) {
-            if (str_contains($file, ".zip")) {
+            if ( str_contains($file, ".zip") === true ) {
                 array_push($etdZipFiles, $file);
             }
         }
@@ -464,7 +469,7 @@ class processProquest {
         $this->countTotalETDs = count($etdZipFiles);
 
         // Throw exception if there are no ETD files to process.
-        if ( empty($etdZipFiles) ) {
+        if ( empty($etdZipFiles) === true ) {
             $errorMessage = "Did not find any ETD files on the FTP server.";
             $this->writeLog("WARNING: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
@@ -500,8 +505,8 @@ class processProquest {
             $this->writeLog("BEGIN Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
             // Check to see if etdZipFile is more than four chars. Continue if string fails.
-            if (strlen($etdZipFile) <= 4) {
-                $this->writeLog("Warning! File name only has " . strlen($etdZipFile) . " characters. Moving to the next ETD." , $fn, $etdShortName);
+            if ( strlen($etdZipFile) <= 4 ) {
+                $this->writeLog("WARNING File name only has " . strlen($etdZipFile) . " characters. Moving to the next ETD." , $fn, $etdShortName);
                 $this->countTotalInvalidETDs++;
                 array_push($this->allInvalidETDs, $etdZipFile);
                 continue;
@@ -521,7 +526,6 @@ class processProquest {
             $this->localFiles[$etdShortName]['FILE_METADATA'] = "";
             $this->localFiles[$etdShortName]['ZIP_FILENAME'] = $etdZipFile;
             $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
-            // $this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'] = [];
             $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$etdZipFile}";
             $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = "{$this->fetchdirFTP}{$etdZipFile}";
 
@@ -532,10 +536,10 @@ class processProquest {
             $this->writeLog("   • Directory to create: {$etdWorkingDir}", $fn, $etdShortName);
 
             // Create the local directory if it doesn't already exists.
-            if ( file_exists($etdWorkingDir) ) {
+            if ( file_exists($etdWorkingDir) === true ) {
                 $this->writeLog("   • Directory already exists.", $fn, $etdShortName);
 
-                if (!$this->recurseRmdir($etdWorkingDir)) {
+                if ( $this->recurseRmdir($etdWorkingDir) === false ) {
                     // We couldn't clear out the directory.
                     $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}. Moving to the next ETD.";
                     $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
@@ -546,7 +550,7 @@ class processProquest {
                 }
             }
             
-            if ( !mkdir($etdWorkingDir, 0755, true) ) {
+            if ( mkdir($etdWorkingDir, 0755, true) === false ) {
                 $errorMessage = "Failed to create local working directory: {$etdWorkingDir}. Moving to the next ETD.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -564,7 +568,7 @@ class processProquest {
              * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
              * File is saved locally as a binary file.
              */
-            if ( $this->ftp->ftp_get($etdZipFileFullPath, $etdZipFile, FTP_BINARY) ) {
+            if ( $this->ftp->ftp_get($etdZipFileFullPath, $etdZipFile, FTP_BINARY) === true ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdShortName);
             } else {
                 $errorMessage = "Failed to fetch file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
@@ -574,7 +578,7 @@ class processProquest {
             }
 
             // Store location of local directory if it hasn't been stored yet.
-            if( isset($this->localFiles[$etdShortName]) ) {
+            if( isset($this->localFiles[$etdShortName]) === true ) {
                 $this->localFiles[$etdShortName];
             }
 
@@ -598,7 +602,7 @@ class processProquest {
             $filesToIgnore = [".", ".." , $this->localFiles[$etdShortName]['ZIP_FILENAME']];
             $expandedETDFiles = array_diff($this->scanAllDir($etdWorkingDir), $filesToIgnore);
 
-            if (!$expandedETDFiles) {
+            if ( $expandedETDFiles === false) {
                 // There are no files in this expanded zip file.
                 $errorMessage = "There are no files in this expanded zip file.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
@@ -624,11 +628,11 @@ class processProquest {
                  *
                  *  The String "0016" is specific to BC.
                  */
-                if (preg_match('/0016/', $etdFileName)) {
+                if ( preg_match('/0016/', $etdFileName) ) {
                     $fileExtension = strtolower(substr($etdFileName,strlen($etdFileName)-3));
 
                     // Check if this is a PDF file.
-                    if ($fileExtension === 'pdf' && empty($this->localFiles[$etdShortName]['ETD'])) {
+                    if ( ($fileExtension === 'pdf') && (empty($this->localFiles[$etdShortName]['ETD']) === true) ) {
                         $this->localFiles[$etdShortName]['ETD'] = $etdFileName;
                         $this->localFiles[$etdShortName]['FILE_ETD'] = $etdFileName;
                         $this->writeLog("      File type: PDF", $fn, $etdShortName);
@@ -636,7 +640,7 @@ class processProquest {
                     }
 
                     // Check if this is an XML file.
-                    if ($fileExtension === 'xml' && empty($this->localFiles[$etdShortName]['METADATA'])) {
+                    if ( ($fileExtension === 'xml') && (empty($this->localFiles[$etdShortName]['METADATA']) === true) ) {
                         $this->localFiles[$etdShortName]['METADATA'] = $etdFileName;
                         $this->localFiles[$etdShortName]['FILE_METADATA'] = $etdFileName;
                         $this->writeLog("      File type: XML", $fn, $etdShortName);
@@ -659,7 +663,7 @@ class processProquest {
                         continue;
                     }
 
-                    if ($checkIfDir) {
+                    if ( $checkIfDir === true ) {
                         $this->writeLog("      This is a directory. Next parsed file may be a supplemental file.", $fn, $etdShortName);
                         // array_push($this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'], $etdFileName);
                         continue;
@@ -676,7 +680,7 @@ class processProquest {
                 }
             }
 
-            if ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS']){
+            if ( $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] === true ){
                 // At this point we can leave this function if the ETD has supplemental files.
                 $this->writeLog("This ETD has supplementary files. No further processing is required. Moving to the next ETD.", $fn, $etdShortName);
                 $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdShortName);
@@ -693,7 +697,7 @@ class processProquest {
              * are defined and are nonempty strings.
              */
             $this->writeLog("Checking that PDF and XML files were found in this zip file:", $fn, $etdShortName);
-            if ( empty($this->localFiles[$etdShortName]['ETD']) ) {
+            if ( empty($this->localFiles[$etdShortName]['ETD']) === true ) {
                 $errorMessage = "   The ETD PDF file was not found or set.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -702,7 +706,7 @@ class processProquest {
             }
             $this->writeLog("   ✓ The ETD PDF file was found.", $fn, $etdShortName);
 
-            if ( empty($this->localFiles[$etdShortName]['METADATA']) ) {
+            if ( empty($this->localFiles[$etdShortName]['METADATA']) === true ) {
                 $errorMessage = "   The ETD XML file was not found or set.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -739,7 +743,7 @@ class processProquest {
         $fn = "processFiles";
 
         // Return false if there are no ETD files to process.
-        if ( empty($this->localFiles) ) {
+        if ( empty($this->localFiles) === true ) {
             $errorMessage = "Did not find any ETD files to process.";
             $this->writeLog($errorMessage, $fn);
             array_push($this->processingErrors, $errorMessage);
@@ -756,7 +760,7 @@ class processProquest {
         $xslt = new xsltProcessor;
         $proquestxslt = new DOMDocument();
         $proquestxslt->load($this->settings['xslt']['xslt']);
-        if ( $xslt->importStyleSheet($proquestxslt) ) {
+        if ( $xslt->importStyleSheet($proquestxslt)  === true) {
             $this->writeLog("Loaded MODS XSLT stylesheet.", $fn);
         } else {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
@@ -772,7 +776,7 @@ class processProquest {
         $label = new xsltProcessor;
         $labelxslt = new DOMDocument();
         $labelxslt->load($this->settings['xslt']['label']);
-        if ( $label->importStyleSheet($labelxslt) ) {
+        if ( $label->importStyleSheet($labelxslt) === true ) {
             $this->writeLog("Loaded Fedora Label XSLT stylesheet.", $fn);
         } else {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
@@ -795,7 +799,7 @@ class processProquest {
             $this->writeLog("BEGIN Processing ETD file [{$s} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
             // No need to process ETDs that have supplemental files.
-            if ($this->localFiles[$etdShortName]["HAS_SUPPLEMENTS"]) {
+            if ( $this->localFiles[$etdShortName]["HAS_SUPPLEMENTS"] === true ) {
                 $this->writeLog("SKIP Processing ETD since it contains supplemental files.", $fn, $etdShortName);
                 $this->writeLog("END Processing ETD file [{$s} of {$this->countTotalValidETDs}]", $fn, $etdShortName);
                 continue;
@@ -816,9 +820,9 @@ class processProquest {
             $openaccess = 0;
             $openaccess_available = false;
             $oaElements = $xpath->query($this->settings['xslt']['oa']);
-            if ($oaElements->length === 0 ) {
+            if ( $oaElements->length === 0 ) {
                 $this->writeLog("No OA agreement found.", $fn, $etdShortName);
-            } elseif ($oaElements->item(0)->C14N() === '0') {
+            } elseif ( $oaElements->item(0)->C14N() === '0' ) {
                 $this->writeLog("No OA agreement found.", $fn, $etdShortName);
             } else {
                 // This value is '1' if available for Open Access.
@@ -841,7 +845,7 @@ class processProquest {
             $has_embargo = false;
             $this->localFiles[$etdShortName]['HAS_EMBARGO'] = false;
             $emElements = $xpath->query($this->settings['xslt']['embargo']);
-            if ($emElements->item(0) ) {
+            if ( $emElements->item(0) ) {
                 $has_embargo = true;
                 // Convert date string into proper PHP date object format.
                 $embargo = $emElements->item(0)->C14N();
@@ -857,7 +861,7 @@ class processProquest {
              * Check to see if there is no OA policy, and there is no embargo.
              * If so, set the embargo permission/date to "indefinite".
              */
-            if ($openaccess === $embargo) {
+            if ( $openaccess === $embargo ) {
                 $embargo = 'indefinite';
                 $has_embargo = true;
                 $this->writeLog("Changing embargo date to 'indefinite'", $fn, $etdShortName);
@@ -874,7 +878,7 @@ class processProquest {
              * Ex: "bc-ir:" for BC.
              */
             // DEBUG: generate random PID.
-            if ($this->debug === true) {
+            if ( $this->debug === true ) {
                 $pid = "bc-ir:" . rand(50000,100000) + 9000000;
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}", $fn, $etdShortName);
             } else {
@@ -891,7 +895,7 @@ class processProquest {
              * The "handle" value should be set the PID.
              */
             $res = $xslt->setParameter('mods', 'handle', $pid);
-            if ($res === false) {
+            if ( $res === false ) {
                 $errorMessage = "Could not update XSLT stylesheet with PID value.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -907,7 +911,7 @@ class processProquest {
              * Additional metadata will be generated from the MODS file.
              */
             $mods = $xslt->transformToDoc($metadata);
-            if ($mods === false) {
+            if ( $mods === false ) {
                 $errorMessage = "Could not transform ETD MODS XML file.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -923,7 +927,7 @@ class processProquest {
              * This uses mods:titleInfo.
              */
             $fedoraLabel = $label->transformToXml($mods);
-            if ($fedoraLabel === false) {
+            if ( $fedoraLabel === false ) {
                 $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -963,7 +967,7 @@ class processProquest {
 
             // Rename Proquest PDF using normalized author's name.
             $res = rename($this->localFiles[$etdShortName]['WORKING_DIR'] . "/". $this->localFiles[$etdShortName]['ETD'] , $this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".pdf");
-            if ($res === false) {
+            if ( $res === false ) {
                 $errorMessage = "Could not rename ETD PDF file.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -979,7 +983,7 @@ class processProquest {
 
             // Save MODS using normalized author's name.
             $res = $mods->save($this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".xml");
-            if ($res === false) {
+            if ( $res === false ) {
                 $errorMessage = "Could not create new ETD MODS file.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
@@ -1030,7 +1034,7 @@ class processProquest {
         $this->writeLog("Connecting to Fedora instance at {$url}", $fn);
 
         // Check all values exist.
-        if (empty($url) || empty($user) || empty($pass)) {
+        if ( (empty($url) === true) || (empty($user) === true) || (empty($pass) === true) ) {
             $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
@@ -1072,7 +1076,7 @@ class processProquest {
 
         // First, find if there are processing errors
         $countProcessingErrors = count($this->processingErrors);
-        if ($countProcessingErrors >  0) {
+        if ( $countProcessingErrors > 0 ) {
             $message .= "This script failed to run because of the following issue(s):\n";
             
             foreach ($this->processingErrors as $processingError) {
@@ -1091,7 +1095,7 @@ class processProquest {
                 $message .= "      Has supplements:   " . ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
                 
                 // If this ETD has supplements then display message and continue to next ETD.
-                if ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS']) {
+                if ( $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] === true ) {
                     $message .= "      WARNING: This ETD contains supplemental files and was not processed.\n";
                     $message .= "               Please manually process the ETD zip file, which can be found here on the FTP server:\n";
                     $message .= "               {$this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION']}\n";
@@ -1099,7 +1103,7 @@ class processProquest {
                 }
 
                 // Display ingest errors and continue to next ETD.
-                if ($errorsCount > 0) {
+                if ( $errorsCount > 0 ) {
                     $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
                     foreach ($this->localFiles[$etdShortName]["INGEST_ERRORS"] as $ingestError) {
                         $message .= "       • {$ingestError}\n";
@@ -1193,11 +1197,9 @@ class processProquest {
         $fn = "ingest";
 
         // Check to see if there are any ETD files to process.
-        if ( empty($this->localFiles) ) {
-            // Shortcut to sending email update.
-            $message = "No ETD files to ingest.";
-            $this->writeLog($message, $fn);
-            $res = $this->sendEmail($message);
+        if ( empty($this->localFiles) === true ) {
+            $errorMessage = "No ETD files to ingest.";
+            $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             throw new Exception($errorMessage);
         }
@@ -1227,7 +1229,7 @@ class processProquest {
             $this->writeLog("BEGIN Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
             // No need to process ETDs that have supplemental files.
-            if ($this->localFiles[$etdShortName]["HAS_SUPPLEMENTS"]) {
+            if ( $this->localFiles[$etdShortName]["HAS_SUPPLEMENTS"] === true ) {
                 $this->writeLog("SKIP Ingesting ETD since it contains supplemental files.", $fn, $etdShortName);
                 $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdShortName);
                 continue;
@@ -1424,11 +1426,12 @@ class processProquest {
             exec($command, $output, $return);
             $this->writeLog("[{$dsid}] Running 'fop' command to build PDF splash page.", $fn, $etdShortName);
 
-    		if (!$return) {
+    		if ( $return === false ) {
                 $this->writeLog("[{$dsid}] Splash page created successfully.", $fn, $etdShortName);
     		} else {
                 $errorMessage = "PDF splash page creation failed! ". $return;
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                // TODO: handle this error
     		    continue;
     		}
 
@@ -1470,7 +1473,7 @@ class processProquest {
             // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
             $this->writeLog("[{$dsid}] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.", $fn, $etdShortName);
 
-            if (!copy($pdf,$concattemp)) {
+            if ( copy($pdf,$concattemp) === false ) {
                 // TODO: handle this error case
                 $this->writeLog("[{$dsid}] ERROR: PDF document cloning failed!", $fn, $etdShortName);
             } else {
@@ -1518,11 +1521,12 @@ class processProquest {
             exec($command, $output, $return);
             $this->writeLog("[{$dsid}] Running 'pdftotext' command.", $fn, $etdShortName);
 
-            if (!$return) {
+            if ( $return === false ) {
                 $this->writeLog("[{$dsid}] datastream generated successfully.", $fn, $etdShortName);
             } else {
                 $errorMessage = "FULL_TEXT document creation failed!" . $return;
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                // TODO: handle this error
                 continue;
             }
 
@@ -1537,7 +1541,7 @@ class processProquest {
             $fulltext = file_get_contents($fttemp);
 
             // Check if file read failed.
-            if ($fulltext === false) {
+            if ( $fulltext === false ) {
                 $errorMessage = "Could not read in file: ". $fttemp;
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
@@ -1548,7 +1552,7 @@ class processProquest {
             $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
 
             // In the slim chance preg_replace fails.
-            if ($sanitized === null) {
+            if ( $sanitized === null ) {
                 $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string!";
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
@@ -1584,7 +1588,7 @@ class processProquest {
             exec($command, $output, $return);
             $this->writeLog("[{$dsid}] Running 'convert' command to build TN document.", $fn, $etdShortName);
 
-            if (!$return) {
+            if ( $return === false ) {
                 $this->writeLog("[{$dsid}] Datastream generated successfully.", $fn, $etdShortName);
             } else {
                 $errorMessage = "TN document creation failed! " . $return;
@@ -1628,11 +1632,12 @@ class processProquest {
             exec($command, $output, $return);
             $this->writeLog("[{$dsid}] Running 'convert' command to build PREVIEW document.", $fn, $etdShortName);
 
-            if (!$return) {
+            if ( $return === false ) {
                 $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.", $fn, $etdShortName);
             } else {
                 $errorMessage = "PREVIEW document creation failed! " . $return;
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                // TODO: handle this error.
                 continue;
             }
 
@@ -1665,7 +1670,7 @@ class processProquest {
 
             $status = $this->prepareIngestDatastream($fedoraObj, $policyObj, $dsid, $etdShortName);
 
-            if (!$status) {
+            if ( $status === false ) {
                 // Ingest failed. Continue to the next ETD.
                 continue;
             }
@@ -1684,13 +1689,13 @@ class processProquest {
             // $this->localFiles[$etdShortName]['OA'] is either '0' for no OA policy, or some non-zero value.
             $relsint = '';
             $relsFile = "";
-            if ($this->localFiles[$etdShortName]['OA'] === 0) {
+            if ( $this->localFiles[$etdShortName]['OA'] === 0 ) {
                 // No OA policy.
                 $relsFile = "xsl/permRELS-INT.xml";
                 $relsint = file_get_contents($relsFile);
 
                 // Check if file read failed.
-                if ($relsint === false) {
+                if ( $relsint === false ) {
                     $errorMessage = "Could not read in file: " . $relsFile;
                     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
@@ -1699,13 +1704,13 @@ class processProquest {
                 $relsint = str_replace('######', $this->localFiles[$etdShortName]['PID'], $relsint);
 
                 $this->writeLog("[{$dsid}] No OA policy for ETD: read in: {$relsFile}", $fn, $etdShortName);
-            } else if (isset($this->localFiles[$etdShortName]['EMBARGO'])) {
+            } else if ( isset($this->localFiles[$etdShortName]['EMBARGO']) === true ) {
                 // Has an OA policy, and an embargo date.
                 $relsFile = "xsl/embargoRELS-INT.xml";
                 $relsint = file_get_contents($relsFile);
 
                 // Check if file read failed.
-                if ($relsint === false) {
+                if ( $relsint === false ) {
                     $errorMessage = "Could not read in file: " . $relsFile;
                     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
@@ -1720,7 +1725,7 @@ class processProquest {
             // TODO: handle case where there is an OA policy and no embargo date?
 
             // Ingest datastream if we have a XACML policy set.
-            if (isset($relsint) && $relsint !== '') {
+            if ( (isset($relsint) === true) && ($relsint !== '') ) {
                 $dsid = "RELS-INT";
 
                 // Build Fedora object RELS-INT datastream.
@@ -1753,7 +1758,7 @@ class processProquest {
 
             // DEBUG: ignore Fedora ingest.
             $res = true;
-            if ($this->debug === true) {
+            if ( $this->debug === true ) {
                 $this->writeLog("DEBUG: Ignore ingesting object into Fedora.", $fn, $etdShortName);
             } else {
                 try {
