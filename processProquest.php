@@ -317,11 +317,10 @@ class processProquest {
         $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}", $fn);
         $this->writeLog("------------------------------", $fn);
 
-        foreach($this->localFiles as $local) {
-            $ingested = $local["INGESTED"];
-            $zipFileName = $local["ZIP_FILENAME"];
-            $ftpPathForETD = $local["FTP_PATH_FOR_ETD"];
-            $etdShortName = $local["ETD_SHORTNAME"];
+        foreach ($this->localFiles as $etdShortName => $etdArray) {
+            $ingested = $this->localFiles[$etdShortName]["INGESTED"];
+            $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
+            $ftpPathForETD = $this->localFiles[$etdShortName]["FTP_PATH_FOR_ETD"];
 
             if ($ingested) {
                 $moveFTPDir = $processdirFTP . $zipFileName;
@@ -337,6 +336,7 @@ class processProquest {
             if ($this->debug === true) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.", $fn, $etdShortName);
                 $this->writeLog("------------------------------", $fn);
+                $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
                 continue;
             }
 
@@ -346,10 +346,12 @@ class processProquest {
             if ($ftpRes === false) {
                 $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdShortName);
                 $this->writeLog("------------------------------", $fn);
+                // TODO: create some type of error here.
                 return false;
             }
             $this->writeLog("Move was successful.", $fn, $etdShortName);
             $this->writeLog("------------------------------", $fn);
+            $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
         }
 
         $this->writeLog("END Moving processed ETDs into respective post-processing directories.", $fn);
@@ -533,6 +535,7 @@ class processProquest {
             $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
             // $this->localFiles[$etdShortName]['ZIP_CONTENTS_DIRS'] = [];
             $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$etdZipFile}";
+            $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = "{$this->fetchdirFTP}{$etdZipFile}";
 
             // Set status to 'processing'.
             $this->localFiles[$etdShortName]['STATUS'] = "unprocessed";
