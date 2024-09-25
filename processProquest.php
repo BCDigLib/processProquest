@@ -224,7 +224,7 @@ class processProquest {
      * 
      * @throws Exception if the FTP connection failed.
      */
-    function initFTP() {
+    public function initFTP() {
         $fn = "initFTP";
 
         $this->writeLog("Initializing FTP connection.", $fn);
@@ -367,7 +367,7 @@ class processProquest {
      * 
      * @return boolean The status of the rmdir() function.
      */
-    function recurseRmdir($dir) {
+    private function recurseRmdir($dir) {
         $files = array_diff(scandir($dir), array('.','..'));
         foreach ($files as $file) {
           (is_dir("$dir/$file") && !is_link("$dir/$file")) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
@@ -383,7 +383,7 @@ class processProquest {
      * 
      * @return array An array listing all the files found.
      */
-    function scanAllDir($dir) {
+    private function scanAllDir($dir) {
         $result = [];
         // TODO: scandir will return E_WARNING on failure.
         foreach(scandir($dir) as $filename) {
@@ -413,7 +413,7 @@ class processProquest {
      * 
      * @throws Exception if the working directory isn't reachable.
      */
-    function getFiles() {
+    public function getFiles() {
         $fn = "getFiles";
 
         $this->writeLog("########################", $fn);
@@ -745,7 +745,7 @@ class processProquest {
      * 
      * @throws Exception if XSLT files can't be found.
      */
-    function processFiles() {
+    public function processFiles() {
         $fn = "processFiles";
 
         // Return false if there are no ETD files to process.
@@ -1034,7 +1034,7 @@ class processProquest {
      * 
      * @return boolean Success value.
      */
-    function initFedoraConnection() {
+    public function initFedoraConnection() {
         $fn = "initFedoraConnection";
         $url = $this->settings['fedora']['url'];
         $user = $this->settings['fedora']['username'];
@@ -1073,7 +1073,7 @@ class processProquest {
     /**
      * Generate a simple status update message
      */
-    function statusCheck(){
+    public function statusCheck(){
         $fn = "statusCheck";
         $message = "\n";
 
@@ -1203,7 +1203,7 @@ class processProquest {
      * 
      * @throws Exception if there are no ETDs to ingest
      */
-    function ingest() {
+    public function ingest() {
         $fn = "ingest";
 
         // Check to see if there are any ETD files to process.
