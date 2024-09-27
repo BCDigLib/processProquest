@@ -39,7 +39,7 @@ date_default_timezone_set("America/New_York");
  *  - Initialize connection to Fedora file repository server.
  *  - Ingests ETD files and metadata into Fedora, and generates various datastreams.
  */
-class processProquest {
+class Processproquest {
 
     public $settings;                       // Object to store script settings
     public $debug;                          // Debug bool

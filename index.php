@@ -95,10 +95,10 @@ $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
 $consoleOutput->setFormatter($formatter);
 $logger->pushHandler($consoleOutput);
 
-require_once 'processProquest.php';
+require_once 'Processproquest.php';
 
 // Create the $process object.
-$process = new processProquest($configurationArray, $debug, $logger);
+$process = new Processproquest($configurationArray, $debug, $logger);
 
 if (!$process){
     // Failed to instanciate processProquest object.
