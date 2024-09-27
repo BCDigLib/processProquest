@@ -533,9 +533,7 @@ class processProquest {
             $this->localFiles[$etdShortName]['WORKING_DIR'] = $etdWorkingDir;
             $this->localFiles[$etdShortName]['SUPPLEMENTS'] = [];
             $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] = false;
-            $this->localFiles[$etdShortName]['ETD'] = "";
             $this->localFiles[$etdShortName]['FILE_ETD'] = "";
-            $this->localFiles[$etdShortName]['METADATA'] = "";
             $this->localFiles[$etdShortName]['FILE_METADATA'] = "";
             $this->localFiles[$etdShortName]['ZIP_FILENAME'] = $zipFileName;
             $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
@@ -662,16 +660,14 @@ class processProquest {
                     $fileExtension = strtolower(substr($etdFileName,strlen($etdFileName)-3));
 
                     // Check if this is a PDF file.
-                    if ( ($fileExtension === 'pdf') && (empty($this->localFiles[$etdShortName]['ETD']) === true) ) {
-                        $this->localFiles[$etdShortName]['ETD'] = $etdFileName;
+                    if ( ($fileExtension === 'pdf') && (empty($this->localFiles[$etdShortName]['FILE_ETD']) === true) ) {
                         $this->localFiles[$etdShortName]['FILE_ETD'] = $etdFileName;
                         $this->writeLog("      File type: PDF", $etdShortName);
                         continue;
                     }
 
                     // Check if this is an XML file.
-                    if ( ($fileExtension === 'xml') && (empty($this->localFiles[$etdShortName]['METADATA']) === true) ) {
-                        $this->localFiles[$etdShortName]['METADATA'] = $etdFileName;
+                    if ( ($fileExtension === 'xml') && (empty($this->localFiles[$etdShortName]['FILE_METADATA']) === true) ) {
                         $this->localFiles[$etdShortName]['FILE_METADATA'] = $etdFileName;
                         $this->writeLog("      File type: XML", $etdShortName);
                         continue;
@@ -724,12 +720,12 @@ class processProquest {
 
             /**
              * Check that both:
-             *  - $this->localFiles[$etdShortName]['ETD']
-             *  - $this->localFiles[$etdShortName]['METADATA']
+             *  - $this->localFiles[$etdShortName]['FILE_ETD']
+             *  - $this->localFiles[$etdShortName]['FILE_METADATA']
              * are defined and are nonempty strings.
              */
             $this->writeLog("Checking that PDF and XML files were found in this zip file:", $etdShortName);
-            if ( empty($this->localFiles[$etdShortName]['ETD']) === true ) {
+            if ( empty($this->localFiles[$etdShortName]['FILE_ETD']) === true ) {
                 $errorMessage = "   The ETD PDF file was not found or set.";
                 // $this->writeLog("ERROR: {$errorMessage}", $etdShortName);
                 // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
@@ -739,7 +735,7 @@ class processProquest {
             }
             $this->writeLog("   ✓ The ETD PDF file was found.", $etdShortName);
 
-            if ( empty($this->localFiles[$etdShortName]['METADATA']) === true ) {
+            if ( empty($this->localFiles[$etdShortName]['FILE_METADATA']) === true ) {
                 $errorMessage = "   The ETD XML file was not found or set.";
                 // $this->writeLog("ERROR: {$errorMessage}", $etdShortName);
                 // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
@@ -842,7 +838,7 @@ class processProquest {
 
             // Create XPath object from the ETD XML file.
             $metadata = new DOMDocument();
-            $metadata->load($this->localFiles[$etdShortName]['WORKING_DIR'] . '//' . $this->localFiles[$etdShortName]['METADATA']);
+            $metadata->load($this->localFiles[$etdShortName]['WORKING_DIR'] . '//' . $this->localFiles[$etdShortName]['FILE_METADATA']);
             $xpath = new DOMXpath($metadata);
 
             /**
@@ -1004,7 +1000,7 @@ class processProquest {
 
             // Rename Proquest PDF using normalized author's name.
             // INFO: rename() Returns true on success or false on failure.
-            $res = rename($this->localFiles[$etdShortName]['WORKING_DIR'] . "/". $this->localFiles[$etdShortName]['ETD'] , $this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".pdf");
+            $res = rename($this->localFiles[$etdShortName]['WORKING_DIR'] . "/". $this->localFiles[$etdShortName]['FILE_ETD'] , $this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".pdf");
             if ( $res === false ) {
                 $errorMessage = "Could not rename ETD PDF file.";
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
@@ -1013,8 +1009,8 @@ class processProquest {
 
             // Update local file path for ETD PDF file.
             $normalizedAuthorPDFName = $normalizedAuthor . ".pdf";
-            $this->writeLog("Renamed ETD PDF file from {$this->localFiles[$etdShortName]['ETD']} to {$normalizedAuthorPDFName}", $etdShortName);
-            $this->localFiles[$etdShortName]['ETD'] = $normalizedAuthorPDFName;
+            $this->writeLog("Renamed ETD PDF file from {$this->localFiles[$etdShortName]['FILE_ETD']} to {$normalizedAuthorPDFName}", $etdShortName);
+            $this->localFiles[$etdShortName]['FILE_ETD'] = $normalizedAuthorPDFName;
 
             // Save MODS using normalized author's name.
             // INFO: DOMDocument::save() Returns the number of bytes written or false if an error occurred.
@@ -1397,13 +1393,13 @@ class processProquest {
             $datastream = $fedoraObj->constructDatastream($dsid, 'X');
 
             // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
-            $datastream->label = substr($this->localFiles[$etdShortName]['METADATA'], 0, strlen($this->localFiles[$etdShortName]['METADATA'])-4);
+            $datastream->label = substr($this->localFiles[$etdShortName]['FILE_METADATA'], 0, strlen($this->localFiles[$etdShortName]['FILE_METADATA'])-4);
             //$this->writeLog("Using datastream label: " . $datastream->label, $etdShortName);
 
             // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
-            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$etdShortName]['METADATA']);
+            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$etdShortName]['FILE_METADATA']);
             $this->writeLog("[{$dsid}] Selecting file for this datastream:", $etdShortName);
-            $this->writeLog("[{$dsid}]    {$this->localFiles[$etdShortName]['METADATA']}", $etdShortName);
+            $this->writeLog("[{$dsid}]    {$this->localFiles[$etdShortName]['FILE_METADATA']}", $etdShortName);
 
             // Set various ARCHIVE MODS datastream values.
             $datastream->mimeType = 'application/xml';
@@ -1439,9 +1435,9 @@ class processProquest {
             $datastream->state = 'I';
 
             // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$etdShortName]['ETD']);
+            $datastream->setContentFromFile($workingDir . "//" . $this->localFiles[$etdShortName]['FILE_ETD']);
             $this->writeLog("[{$dsid}] Selecting file for this datastream:", $etdShortName);
-            $this->writeLog("[{$dsid}]   {$this->localFiles[$etdShortName]['ETD']}", $etdShortName);
+            $this->writeLog("[{$dsid}]   {$this->localFiles[$etdShortName]['FILE_ETD']}", $etdShortName);
 
             try {
                 $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
@@ -1500,7 +1496,7 @@ class processProquest {
             $concattemp = $workingDir . "/concatted.pdf";
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $pdf = $workingDir . "//" . $this->localFiles[$etdShortName]['ETD'];
+            $pdf = $workingDir . "//" . $this->localFiles[$etdShortName]['FILE_ETD'];
 
             /*
             // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
@@ -1563,7 +1559,7 @@ class processProquest {
             $this->writeLog("[{$dsid}] Generating datastream.", $etdShortName);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'];
+            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['FILE_ETD'];
 
             // Assign FULL_TEXT document to ETD file's directory.
             $fttemp = $workingDir . "/fulltext.txt";
@@ -1635,7 +1631,7 @@ class processProquest {
             $this->writeLog("[{$dsid}] Generating (thumbnail) datastream.", $etdShortName);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'];
+            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['FILE_ETD'];
 
             // Use convert (from ImageMagick tool suite) to generate TN document.
             // Execute 'convert' command and check return code.
@@ -1679,7 +1675,7 @@ class processProquest {
             $this->writeLog("[{$dsid}] Generating datastream.", $etdShortName);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'];
+            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['FILE_ETD'];
 
             // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
             // Execute 'convert' command and check return code.
