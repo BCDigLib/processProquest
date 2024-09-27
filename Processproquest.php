@@ -131,6 +131,8 @@ class Processproquest {
      * @param string $message The message to log.
      * @param string $functionName Optional. The name of the function calling this function. Is wrapped in ().
      * @param string $prefix Optional. The prefix to include before the message. Is wrapped in [].
+     * 
+     * @return string The output string.
      */
     private function writeLog($message) {
         $functionName = debug_backtrace()[1]['function'];
@@ -151,6 +153,8 @@ class Processproquest {
         // Write out message.
         // TODO: handle other logging levels
         $this->logger->info($completeMessage);
+
+        return $completeMessage;
     }
 
     /**
