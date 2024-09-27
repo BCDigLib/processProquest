@@ -559,8 +559,9 @@ class processProquest {
                 if ( $this->recurseRmdir($etdWorkingDir) === false ) {
                     // We couldn't clear out the directory.
                     $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}. Moving to the next ETD.";
-                    $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                    array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                    // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                    // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                    $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                     continue;
                 } else {
                     $this->writeLog("   • Existing directory was removed.", $fn, $etdShortName);
@@ -570,8 +571,9 @@ class processProquest {
             // INFO: mkdir() Returns true on success or false on failure.
             if ( mkdir($etdWorkingDir, 0755, true) === false ) {
                 $errorMessage = "Failed to create local working directory: {$etdWorkingDir}. Moving to the next ETD.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             } else {
                 $this->writeLog("   • Directory was created.", $fn, $etdShortName);
@@ -591,8 +593,9 @@ class processProquest {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdShortName);
             } else {
                 $errorMessage = "Failed to fetch file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
 
@@ -614,8 +617,9 @@ class processProquest {
                 $this->writeLog("Extracting ETD zip file to local working directory.", $fn, $etdShortName);
             } else {
                 $errorMessage = "Failed to extract ETD zip file: " . $res;
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
 
