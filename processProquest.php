@@ -1133,7 +1133,8 @@ class processProquest {
             $message .= "There were {$countETDs} ETD(s) processed.\n"; 
             foreach ($this->localFiles as $etdShortName => $etdArray) {
                 $i++;
-                $errorsCount = count($this->localFiles[$etdShortName]["CRITICAL_ERRORS"]);
+                $criticalErrorsCount = count($this->localFiles[$etdShortName]["CRITICAL_ERRORS"]);
+                $noncriticalErrorsCount = count($this->localFiles[$etdShortName]["NONCRITICAL_ERRORS"]);
                 $message .= "\n  [{$i}] Zip filename:      {$this->localFiles[$etdShortName]['ZIP_FILENAME']}\n";
                 $message .= "      Status:            {$this->localFiles[$etdShortName]['STATUS']}\n";
                 $message .= "      Has supplements:   " . ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
@@ -1146,11 +1147,11 @@ class processProquest {
                     continue;
                 }
 
-                // Display ingest errors and continue to next ETD.
-                if ( $errorsCount > 0 ) {
+                // Display critical errors and continue to next ETD.
+                if ( $criticalErrorsCount > 0 ) {
                     $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
-                    foreach ($this->localFiles[$etdShortName]["CRITICAL_ERRORS"] as $ingestError) {
-                        $message .= "       • {$ingestError}\n";
+                    foreach ($this->localFiles[$etdShortName]["CRITICAL_ERRORS"] as $criticalError) {
+                        $message .= "       • {$criticalError}\n";
                     }
                     continue;
                 }
@@ -1164,6 +1165,14 @@ class processProquest {
                 $message .= "      URL:               {$this->localFiles[$etdShortName]['RECORD_URL']}\n";
                 $message .= "      Author:            {$this->localFiles[$etdShortName]['AUTHOR']}\n";
                 $message .= "      Title:             {$this->localFiles[$etdShortName]['LABEL']}\n";
+
+                // Display noncritical errors.
+                if ( $noncriticalErrorsCount > 0 ) {
+                    $message .= "      WARNING: This ETD was ingested but logged the following noncritical issues:\n";
+                    foreach ($this->localFiles[$etdShortName]["NONCRITICAL_ERRORS"] as $noncriticalError) {
+                        $message .= "       • {$noncriticalError}\n";
+                    }
+                }
             }
         }
 
