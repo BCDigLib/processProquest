@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 date_default_timezone_set('America/New_York');
 
 require __DIR__."/vendor/autoload.php"; // This tells PHP where to find the autoload file so that PHP can load the installed packages

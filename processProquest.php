@@ -1,5 +1,4 @@
-<?php
-
+<?php declare(strict_types=1);
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 /**
@@ -1778,7 +1777,7 @@ class processProquest {
                 }
 
                 $relsint = str_replace('######', $this->localFiles[$etdShortName]['PID'], $relsint);
-                $relsint = str_replace('$$$$$$', $this->localFiles[$etdShortName]['EMBARGO'], $relsint);
+                $relsint = str_replace('$$$$$$', (string)$this->localFiles[$etdShortName]['EMBARGO'], $relsint);
 
                 $this->writeLog("[{$dsid}] OA policy found and Embargo date found for ETD: read in: {$relsFile}");
             }
