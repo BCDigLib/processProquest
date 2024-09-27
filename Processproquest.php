@@ -76,7 +76,7 @@ class Processproquest {
      * 
      * @return bool Return status.
      */
-    public function __construct($configurationArray, $debug = DEFAULT_DEBUG_VALUE, $logger) {
+    public function __construct($configurationArray, $logger, $debug = DEFAULT_DEBUG_VALUE) {
         $this->configurationFile = $configurationArray["file"];
         $this->settings = $configurationArray["settings"];
         $this->debug = boolval($debug);
