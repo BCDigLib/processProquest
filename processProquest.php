@@ -490,8 +490,8 @@ class processProquest {
         }
 
         $this->writeLog("Found {$this->countTotalETDs} ETD file(s).", $fn);
-        foreach ($etdZipFiles as $etdZipFile) {
-            $this->writeLog("   • {$etdZipFile}", $fn);
+        foreach ($etdZipFiles as $zipFileName) {
+            $this->writeLog("   • {$zipFileName}", $fn);
         }
         $this->writeLog("Now parsing each ETD file.", $fn);
 
@@ -500,7 +500,7 @@ class processProquest {
          * There may be multiple matched files so process each individually.
          */
         $f = 0;
-        foreach ($etdZipFiles as $etdZipFile) {
+        foreach ($etdZipFiles as $zipFileName) {
             $f++;
             /**
              * Set the directory name for each ETD file.
@@ -509,7 +509,7 @@ class processProquest {
              */
 
             // Get the regular file name without file extension.
-            $etdShortName = substr($etdZipFile,0,strlen($etdZipFile)-4);
+            $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
 
             // Set the path of the local working directory. Ex: /tmp/processing/file_name_1234
             $etdWorkingDir = $localdirFTP . $etdShortName;
@@ -517,11 +517,11 @@ class processProquest {
             $this->writeLog(LOOP_DIVIDER, $fn);
             $this->writeLog("BEGIN Gathering ETD file [{$f} of {$this->countTotalETDs}]", $fn, $etdShortName);
 
-            // Check to see if etdZipFile is more than four chars. Continue if string fails.
-            if ( strlen($etdZipFile) <= 4 ) {
-                $this->writeLog("WARNING File name only has " . strlen($etdZipFile) . " characters. Moving to the next ETD." , $fn, $etdShortName);
+            // Check to see if zipFileName is more than four chars. Continue if string fails.
+            if ( strlen($zipFileName) <= 4 ) {
+                $this->writeLog("WARNING File name only has " . strlen($zipFileName) . " characters. Moving to the next ETD." , $fn, $etdShortName);
                 $this->countTotalInvalidETDs++;
-                array_push($this->allInvalidETDs, $etdZipFile);
+                array_push($this->allInvalidETDs, $zipFileName);
                 continue;
             }
             $this->writeLog("Is file valid?... true.", $fn, $etdShortName);
@@ -537,10 +537,10 @@ class processProquest {
             $this->localFiles[$etdShortName]['FILE_ETD'] = "";
             $this->localFiles[$etdShortName]['METADATA'] = "";
             $this->localFiles[$etdShortName]['FILE_METADATA'] = "";
-            $this->localFiles[$etdShortName]['ZIP_FILENAME'] = $etdZipFile;
+            $this->localFiles[$etdShortName]['ZIP_FILENAME'] = $zipFileName;
             $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
-            $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$etdZipFile}";
-            $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = "{$this->fetchdirFTP}{$etdZipFile}";
+            $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$zipFileName}";
+            $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = "{$this->fetchdirFTP}{$zipFileName}";
             $this->localFiles[$etdShortName]['NONCRITCAL_ERRORS'] = [];
             $this->localFiles[$etdShortName]['CRITCAL_ERRORS'] = [];
 
@@ -576,7 +576,7 @@ class processProquest {
             } else {
                 $this->writeLog("   • Directory was created.", $fn, $etdShortName);
             }
-            $etdZipFileFullPath = $etdWorkingDir . "/" . $etdZipFile;
+            $etdZipFileFullPath = $etdWorkingDir . "/" . $zipFileName;
 
             // HACK: give loop some time to create directory.
             sleep(2);
@@ -587,7 +587,7 @@ class processProquest {
              * File is saved locally as a binary file.
              */
             // INFO: ftp_get() Returns true on success or false on failure.
-            if ( $this->ftp->ftp_get($etdZipFileFullPath, $etdZipFile, FTP_BINARY) === true ) {
+            if ( $this->ftp->ftp_get($etdZipFileFullPath, $zipFileName, FTP_BINARY) === true ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.", $fn, $etdShortName);
             } else {
                 $errorMessage = "Failed to fetch file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
@@ -629,8 +629,9 @@ class processProquest {
             if ( count($expandedETDFiles) === 0) {
                 // There are no files in this expanded zip file.
                 $errorMessage = "There are no files in this expanded zip file.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                //$this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                //array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
 
@@ -695,7 +696,7 @@ class processProquest {
                         array_push($this->localFiles[$etdShortName]['SUPPLEMENTS'], $etdFileName);
                         $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] = true;
                         $this->countSupplementalETDs++;
-                        array_push($this->allSupplementalETDs, $etdZipFile);
+                        array_push($this->allSupplementalETDs, $zipFileName);
                         $this->writeLog("      This is a supplementary file.", $fn, $etdShortName);
                     }
                 } else {
@@ -714,7 +715,7 @@ class processProquest {
                 $this->localFiles[$etdShortName]['STATUS'] = "skipped";
                 continue;
             } else {
-                array_push($this->allRegularETDs, $etdZipFile);
+                array_push($this->allRegularETDs, $zipFileName);
             }
 
             /**
@@ -726,18 +727,20 @@ class processProquest {
             $this->writeLog("Checking that PDF and XML files were found in this zip file:", $fn, $etdShortName);
             if ( empty($this->localFiles[$etdShortName]['ETD']) === true ) {
                 $errorMessage = "   The ETD PDF file was not found or set.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]['STATUS'] = "failure";
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]['STATUS'] = "failure";
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
             $this->writeLog("   ✓ The ETD PDF file was found.", $fn, $etdShortName);
 
             if ( empty($this->localFiles[$etdShortName]['METADATA']) === true ) {
                 $errorMessage = "   The ETD XML file was not found or set.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]['STATUS'] = "failure";
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]['STATUS'] = "failure";
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
             $this->writeLog("   ✓ The ETD XML file was found.", $fn, $etdShortName);
@@ -934,11 +937,7 @@ class processProquest {
             $res = $xslt->setParameter('mods', 'handle', $pid);
             if ( $res === false ) {
                 $errorMessage = "Could not update XSLT stylesheet with PID value.";
-                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                // array_push($this->allFailedETDs, $zipFileName);
-                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdShortName);
@@ -952,11 +951,7 @@ class processProquest {
             $mods = $xslt->transformToDoc($metadata);
             if ( $mods === false ) {
                 $errorMessage = "Could not transform ETD MODS XML file.";
-                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                // array_push($this->allFailedETDs, $zipFileName);
-                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdShortName);
@@ -970,11 +965,7 @@ class processProquest {
             $fedoraLabel = $label->transformToXml($mods);
             if ( $fedoraLabel === false ) {
                 $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
-                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                // array_push($this->allFailedETDs, $zipFileName);
-                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
             $this->localFiles[$etdShortName]['LABEL'] = $fedoraLabel;
@@ -1012,11 +1003,7 @@ class processProquest {
             $res = rename($this->localFiles[$etdShortName]['WORKING_DIR'] . "/". $this->localFiles[$etdShortName]['ETD'] , $this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".pdf");
             if ( $res === false ) {
                 $errorMessage = "Could not rename ETD PDF file.";
-                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                // array_push($this->allFailedETDs, $zipFileName);
-                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
 
@@ -1030,11 +1017,7 @@ class processProquest {
             $res = $mods->save($this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".xml");
             if ( $res === false ) {
                 $errorMessage = "Could not create new ETD MODS file.";
-                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                // array_push($this->allFailedETDs, $zipFileName);
-                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
+                $this->preprocessingTaskFailed($errorMessage, $fn, $zipFileName, $etdShortName);
                 continue;
             }
 
@@ -1223,17 +1206,18 @@ class processProquest {
     }
 
     /**
-     * Process a failed processing task.
+     * Process a failed file pre-processing task.
      * 
      * @param string $errorMessage the error message to display.
+     * @param string $functionName the name of the calling function.
      * @param string $zipFileName the name of the zip file.
      * @param string $etdShortName the name of the ETD file.
      */
-    private function processingTaskFailed($errorMessage, $zipFileName, $etdShortName) {
+    private function preprocessingTaskFailed($errorMessage, $functionName, $zipFileName, $etdShortName) {
         array_push($this->allFailedETDs, $zipFileName);
         array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-        $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-        $this->localFiles[$etdShortName]["STATUS"] = "failed";
+        $this->writeLog("ERROR: {$errorMessage}", $functionName, $etdShortName);
+        $this->localFiles[$etdShortName]['STATUS'] = "failed";
     }
 
     /**
