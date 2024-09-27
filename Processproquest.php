@@ -89,7 +89,7 @@ class Processproquest {
 
         // INFO: is_object() Returns true if value is an object, false otherwise.
         if ( is_object($logger) === false ) {
-            // An empty logger object was passed.
+            // An empty logger object was passed. 
             return false;
         }
 

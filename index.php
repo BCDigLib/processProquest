@@ -98,7 +98,7 @@ $logger->pushHandler($consoleOutput);
 require_once 'Processproquest.php';
 
 // Create the $process object.
-$process = new Processproquest($configurationArray, $logger, $debug,);
+$process = new Processproquest($configurationArray, $logger, $debug);
 
 if (!$process){
     // Failed to instanciate processProquest object.
