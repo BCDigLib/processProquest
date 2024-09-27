@@ -821,6 +821,7 @@ class processProquest {
             $s++;
             $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
             $etdShortName = $this->localFiles[$etdShortName]['ETD_SHORTNAME'];
+            $this->localFiles[$etdShortName]['PROCESSING_ERRORS'] = [];
             $this->localFiles[$etdShortName]["FOO"] = "BAR";
 
             $this->writeLog(LOOP_DIVIDER, $fn);
@@ -934,10 +935,11 @@ class processProquest {
             $res = $xslt->setParameter('mods', 'handle', $pid);
             if ( $res === false ) {
                 $errorMessage = "Could not update XSLT stylesheet with PID value.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $zipFileName);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $zipFileName);
+                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
                 continue;
             }
             $this->writeLog("Update XSLT stylesheet with PID value.", $fn, $etdShortName);
@@ -951,10 +953,11 @@ class processProquest {
             $mods = $xslt->transformToDoc($metadata);
             if ( $mods === false ) {
                 $errorMessage = "Could not transform ETD MODS XML file.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $zipFileName);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $zipFileName);
+                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
                 continue;
             }
             $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.", $fn, $etdShortName);
@@ -968,10 +971,11 @@ class processProquest {
             $fedoraLabel = $label->transformToXml($mods);
             if ( $fedoraLabel === false ) {
                 $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $zipFileName);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $zipFileName);
+                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
                 continue;
             }
             $this->localFiles[$etdShortName]['LABEL'] = $fedoraLabel;
@@ -1009,10 +1013,11 @@ class processProquest {
             $res = rename($this->localFiles[$etdShortName]['WORKING_DIR'] . "/". $this->localFiles[$etdShortName]['ETD'] , $this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".pdf");
             if ( $res === false ) {
                 $errorMessage = "Could not rename ETD PDF file.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $zipFileName);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $zipFileName);
+                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
                 continue;
             }
 
@@ -1026,10 +1031,11 @@ class processProquest {
             $res = $mods->save($this->localFiles[$etdShortName]['WORKING_DIR'] . "/" . $normalizedAuthor . ".xml");
             if ( $res === false ) {
                 $errorMessage = "Could not create new ETD MODS file.";
-                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
-                $this->localFiles[$etdShortName]["STATUS"] = "failed";
-                array_push($this->allFailedETDs, $zipFileName);
+                // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
+                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // $this->localFiles[$etdShortName]["STATUS"] = "failed";
+                // array_push($this->allFailedETDs, $zipFileName);
+                $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
                 continue;
             }
 
@@ -1196,17 +1202,29 @@ class processProquest {
     /**
      * Process a failed datastream ingest.
      * 
-     * @param string $errorMessage the error message to display
-     * @param string $datastreamName the name of the datastream
-     * @param integer $fileIndex the localFiles index
-     * @param string $etdShortName the name of the ETD file 
+     * @param string $errorMessage the error message to display.
+     * @param string $datastreamName the name of the datastream.
+     * @param string $etdShortName the name of the ETD file.
      */
     private function datastreamIngestFailed($errorMessage, $datastreamName, $etdShortName) {
         $functionName = "ingest";
         array_push($this->allFailedETDs, $this->localFiles[$etdShortName]["ETD_SHORTNAME"]);
         array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
         $this->writeLog("[{$datastreamName}] ERROR: $errorMessage", $functionName, $etdShortName);
-        // $this->writeLog("[{$datastreamName}] trace:\n" . $e->getTraceAsString(), $functionName, $etdShortName);
+        $this->localFiles[$etdShortName]["STATUS"] = "failed";
+    }
+
+    /**
+     * Process a failed processing task.
+     * 
+     * @param string $errorMessage the error message to display.
+     * @param string $zipFileName the name of the zip file.
+     * @param string $etdShortName the name of the ETD file.
+     */
+    private function processingTaskFailed($errorMessage, $zipFileName, $etdShortName) {
+        array_push($this->allFailedETDs, $zipFileName);
+        array_push($this->localFiles[$etdShortName]['PROCESSING_ERRORS'], $errorMessage);
+        $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
         $this->localFiles[$etdShortName]["STATUS"] = "failed";
     }
 
@@ -1467,7 +1485,7 @@ class processProquest {
     		if ( $return == false ) {
                 $this->writeLog("[{$dsid}] Splash page created successfully.", $fn, $etdShortName);
     		} else {
-                $errorMessage = "PDF splash page creation failed! ". $return;
+                $errorMessage = "PDF splash page creation failed. ". $return;
                 $this->writeLog("[{$dsid}] ERROR: {$$errorMessage}", $fn, $etdShortName);
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
     		    continue;
@@ -1597,7 +1615,8 @@ class processProquest {
 
             // In the slim chance preg_replace returns an empty string.
             if ( $sanitized === '' ) {
-                $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string!";
+                $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string. String has length of 0.";
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdShortName);
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                 continue;
             }
@@ -1719,7 +1738,6 @@ class processProquest {
                 continue;
             }
 
-
             /**
              * Build RELS-INT datastream.
              *
@@ -1756,6 +1774,7 @@ class processProquest {
                 // Check if file read failed.
                 if ( $relsint === false ) {
                     $errorMessage = "Could not read in file: " . $relsFile;
+                    $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdShortName);
                     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
                 }
@@ -1810,7 +1829,8 @@ class processProquest {
                     $res = $this->repository->ingestObject($fedoraObj);
                     $this->writeLog("START ingestion of Fedora object...", $fn, $etdShortName);
                 } catch (Exception $e) {
-                    $errorMessage = "Could not ingest Fedora object: " . $e->getMessage();
+                    $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
+                    $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
                     continue;
                 }
