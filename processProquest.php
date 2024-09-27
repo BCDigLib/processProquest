@@ -64,6 +64,7 @@ class processProquest {
     protected $countSupplementalETDs = 0;   // Total ETDs with supplemental files
     protected $countProcessedETDs = 0;      // Total ETDs successfully processed
     protected $countFailedETDs = 0;         // Total ETDs failed to process
+    protected $currentProcessedETD = "";    // Current ETD that is being processed
 
     /**
      * Class constructor.
@@ -136,6 +137,8 @@ class processProquest {
         $functionName = debug_backtrace()[1]['function'];
         $completeMessage = "";
         $completeMessage .= "({$functionName}) ";
+
+        // TODO: check if $this->currentProcessedETD is nonempty and use the etdShortName as the $prefix value.
 
         // INFO: empty() Returns true if var does not exist or has a value that is empty or equal to zero, 
         //       aka falsey. Otherwise returns false.
@@ -325,6 +328,7 @@ class processProquest {
         $this->writeLog(LOOP_DIVIDER);
 
         foreach ($this->localFiles as $etdShortName => $etdArray) {
+            $this->currentProcessedETD = $etdShortName;
             $ingested = $this->localFiles[$etdShortName]["INGESTED"]; // boolean
             $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
             $ftpPathForETD = $this->localFiles[$etdShortName]["FTP_PATH_FOR_ETD"];
@@ -366,6 +370,7 @@ class processProquest {
 
         $this->writeLog("END Moving processed ETDs into respective post-processing directories.");
 
+        $this->currentProcessedETD = "";
         return true;
     }
 
@@ -510,6 +515,7 @@ class processProquest {
 
             // Get the regular file name without file extension.
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+            $this->currentProcessedETD = $etdShortName;
 
             // Set the path of the local working directory. Ex: /tmp/processing/file_name_1234
             $etdWorkingDir = $localdirFTP . $etdShortName;
@@ -748,11 +754,11 @@ class processProquest {
             $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]", $etdShortName);
             $this->localFiles[$etdShortName]['STATUS'] = "success";
         }
+        $this->currentProcessedETD = "";
 
         // Completed fetching all ETD zip files.
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("Completed fetching all ETD zip files from FTP server.");
-
         return true;
     }
 
@@ -824,7 +830,8 @@ class processProquest {
             $s++;
             $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
             $etdShortName = $this->localFiles[$etdShortName]['ETD_SHORTNAME'];
-            $this->localFiles[$etdShortName]["FOO"] = "BAR";
+            // $this->localFiles[$etdShortName]["FOO"] = "BAR";
+            $this->currentProcessedETD = $etdShortName;
 
             $this->writeLog(LOOP_DIVIDER);
             $this->writeLog("BEGIN Processing ETD file [{$s} of {$this->countTotalETDs}]", $etdShortName);
@@ -1038,11 +1045,11 @@ class processProquest {
             $this->localFiles[$etdShortName]['STATUS'] = "processed";
             $this->writeLog("END Processing ETD [#{$s} of {$this->countTotalETDs}]", $etdShortName);
         }
+        $this->currentProcessedETD = "";
 
         // Completed processing all ETD files.
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("Completed processing all ETD files.");
-
         return true;
     }
 
@@ -1271,6 +1278,7 @@ class processProquest {
             $this->localFiles[$etdShortName]['INGESTED'] = false;
             
             $this->writeLog(LOOP_DIVIDER);
+            $this->currentProcessedETD = $etdShortName;
             $this->writeLog("BEGIN Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $etdShortName);
 
             // No need to process ETDs that have supplemental files.
@@ -1838,10 +1846,10 @@ class processProquest {
 
             $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $etdShortName);
         }
+        $this->currentProcessedETD = "";
 
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("Completed ingesting all ETD files.");
-
         return true;
     }
 }
