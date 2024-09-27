@@ -3,3 +3,4 @@ vendor
 logs
 staging
 .vscode
+.phpunit.result.cache
