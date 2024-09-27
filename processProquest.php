@@ -139,13 +139,14 @@ class processProquest {
 
         // INFO: empty() Returns true if var does not exist or has a value that is empty or equal to zero, 
         //       aka falsey. Otherwise returns false.
-        if ( empty($prefix ) === false ) {
+        if ( empty($prefix) === false ) {
             $completeMessage .= "[{$prefix}] ";
         } 
 
         $completeMessage .= "{$message}";
 
         // Write out message.
+        // TODO: handle other logging levels
         $this->logger->info($completeMessage);
     }
 
