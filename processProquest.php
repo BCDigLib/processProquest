@@ -258,12 +258,13 @@ class processProquest {
         $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         // Pass login credentials to login method.
-        // TODO: does this return a boolean?
+        // INFO: ftp_login() Returns true on success or false on failure. 
+        //       If login fails, PHP will also throw a warning.
         if ( $this->ftp->ftp_login($userFTP, $passwordFTP) ) {
             $this->writeLog("FTP connection sucecssful.", $fn);
             return true;
         } else {
-            // TODO: get ftp error message
+            // TODO: get ftp error message with set_error_handler().
             $errorMessage = "FTP connection failed.";
             $this->writeLog("ERROR: {$errorMessage}", $fn);
             array_push($this->processingErrors, $errorMessage);
@@ -351,9 +352,11 @@ class processProquest {
             
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
-                $this->writeLog("ERROR: Could not move ETD file to 'processed' FTP directory!", $fn, $etdShortName);
+                $errorMessage = "Could not move ETD file to '{$moveFTPDir} FTP directory.";
+                $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                 $this->writeLog(LOOP_DIVIDER, $fn);
-                // TODO: create some type of error here.
+                // Log this as a noncritical error and continue.
+                array_push($this->localFiles[$etdShortName]['NONCRITCAL_ERRORS'], $errorMessage);
                 return false;
             }
             $this->writeLog("Move was successful.", $fn, $etdShortName);
@@ -538,6 +541,7 @@ class processProquest {
             $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
             $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$etdZipFile}";
             $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = "{$this->fetchdirFTP}{$etdZipFile}";
+            $this->localFiles[$etdShortName]['NONCRITCAL_ERRORS'] = [];
 
             // Set status to 'processing'.
             $this->localFiles[$etdShortName]['STATUS'] = "unprocessed";
@@ -695,8 +699,11 @@ class processProquest {
                         $this->writeLog("      This is a supplementary file.", $fn, $etdShortName);
                     }
                 } else {
-                    // TODO: handle case where the file doesn't contain /0016/
-                    ;
+                    // If file doesn't contain /0016/ then we'll log it as a noncritical error and then ignore it. 
+                    // Later, we'll check that an expected MOD and PDF file were found in this zip file.
+                    $errorMessage = "Located a file that was not named properly and was ignored: {$etdFileName}";
+                    $this->writeLog("      WARNING: {$errorMessage}", $fn, $etdShortName);
+                    array_push($this->localFiles[$etdShortName]['NONCRITCAL_ERRORS'], $errorMessage);
                 }
             }
 
@@ -1037,8 +1044,8 @@ class processProquest {
              * Ex: /DISS_submission/DISS_content/DISS_attachment
              */
             // TODO: remove duplicative logic to find supplemental files.
-            $suppxpath = new DOMXpath($metadata);
-            $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
+            // $suppxpath = new DOMXpath($metadata);
+            // $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
 
             $this->localFiles[$etdShortName]['STATUS'] = "processed";
             $this->writeLog("END Processing ETD [#{$s} of {$this->countTotalETDs}]", $fn, $etdShortName);
@@ -1093,9 +1100,7 @@ class processProquest {
             throw new Exception($errorMessage);
         }
 
-        // TODO: make a test connection
-
-        // Fedora Management API.
+        // Create a Fedora Management API object shortcut.
         $this->api_m = $this->repository->api->m;
         return true;
     }
@@ -1247,8 +1252,6 @@ class processProquest {
         $executable_convert = $this->settings['packages']['convert'];
         $executable_pdftk = $this->settings['packages']['pdftk'];
         $executable_pdftotext = $this->settings['packages']['pdftotext'];
-
-        // TODO: list the file path for script log.
 
         // Go through each ETD local file bundle.
         $i = 0;
@@ -1465,8 +1468,8 @@ class processProquest {
                 $this->writeLog("[{$dsid}] Splash page created successfully.", $fn, $etdShortName);
     		} else {
                 $errorMessage = "PDF splash page creation failed! ". $return;
+                $this->writeLog("[{$dsid}] ERROR: {$$errorMessage}", $fn, $etdShortName);
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-                // TODO: handle this error.
     		    continue;
     		}
 
@@ -1477,7 +1480,8 @@ class processProquest {
             /**
              * Build concatted PDF document.
              *
-             * Load splash page PDF to core PDF if under embargo. -- TODO: find out when/how this happens
+             * Load splash page PDF to core PDF if under embargo.
+             * TODO: find out when/how this happens
              */
             $this->writeLog("[{$dsid}] Next, generate concatenated PDF document.", $fn, $etdShortName);
 
@@ -1510,8 +1514,10 @@ class processProquest {
 
             // INFO: copy() Returns true on success or false on failure.
             if ( copy($pdf,$concattemp) === false ) {
-                // TODO: handle this error case
-                $this->writeLog("[{$dsid}] ERROR: PDF document cloning failed!", $fn, $etdShortName);
+                $errorMessage = "Could not generate a concatenated PDF document.";
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                continue;
             } else {
                 $this->writeLog("[{$dsid}] PDF document cloned successfully.", $fn, $etdShortName);
             }
@@ -1560,9 +1566,9 @@ class processProquest {
             if ( $return == false ) {
                 $this->writeLog("[{$dsid}] datastream generated successfully.", $fn, $etdShortName);
             } else {
-                $errorMessage = "FULL_TEXT document creation failed! " . $return;
+                $errorMessage = "FULL_TEXT document creation failed. " . $return;
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdShortName);
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-                // TODO: handle this error.
                 continue;
             }
 
@@ -1617,8 +1623,7 @@ class processProquest {
             $this->writeLog("[{$dsid}] Generating (thumbnail) datastream.", $fn, $etdShortName);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            // TODO: figure out what "[0]" means in this context.
-            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'] . "[0]";
+            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'];
 
             // Use convert (from ImageMagick tool suite) to generate TN document.
             // Execute 'convert' command and check return code.
@@ -1629,9 +1634,9 @@ class processProquest {
             if ( $return == false ) {
                 $this->writeLog("[{$dsid}] Datastream generated successfully.", $fn, $etdShortName);
             } else {
-                $errorMessage = "TN document creation failed! " . $return;
+                $errorMessage = "TN document creation failed. " . $return;
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdShortName);
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-                // TODO: handle this error.
                 continue;
             }
 
@@ -1662,8 +1667,7 @@ class processProquest {
             $this->writeLog("[{$dsid}] Generating datastream.", $fn, $etdShortName);
 
             // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-            // TODO: figure out what "[0]" means in this context.
-            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'] . "[0]";
+            $source = $workingDir . "/" . $this->localFiles[$etdShortName]['ETD'];
 
             // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
             // Execute 'convert' command and check return code.
@@ -1674,9 +1678,9 @@ class processProquest {
             if ( $return == false ) {
                 $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.", $fn, $etdShortName);
             } else {
-                $errorMessage = "PREVIEW document creation failed! " . $return;
+                $errorMessage = "PREVIEW document creation failed. " . $return;
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}", $fn, $etdShortName);
                 $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-                // TODO: handle this error.
                 continue;
             }
 
