@@ -28,6 +28,7 @@ final class ProcessproquestTest extends TestCase
         $dateFormatLogFile = date("Ymd-His", time());
         $logLocation = $configurationSettings['log']['location'];
         $logFileName = "ingest-" . $dateFormatLogFile . ".txt";
+        $debug = true;
 
         // New Logger instance. Create a new channel called "processProquest".
         $logger = new Logger("processProquest");
@@ -51,9 +52,9 @@ final class ProcessproquestTest extends TestCase
         $formatter = new LineFormatter($output, $dateFormatLogger, true, true);
 
         // Log to file.
-        $fileOutput = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
-        $fileOutput->setFormatter($formatter);
-        $logger->pushHandler($fileOutput);
+        //$fileOutput = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
+        //$fileOutput->setFormatter($formatter);
+        //$logger->pushHandler($fileOutput);
 
         // Log to console.
         $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
@@ -77,6 +78,33 @@ final class ProcessproquestTest extends TestCase
         return $configurationArray;
     }
 
+    public function testNormalizeString(): void {
+        $configurationFile = "testConfig.ini";
+        $debug = true;
+
+        $configurationArray = $this->getConfigFile($configurationFile);
+
+        $logger = new Logger("Processproquest");
+
+        $testString = 'This_ is#a test"string';
+        $expectedString = 'This-isa-teststring';
+
+        $method = new ReflectionMethod(
+            'Processproquest', 'normalizeString'
+        );
+        $method->setAccessible(TRUE);
+
+        $processObj = new Processproquest($configurationArray, $logger, $debug);
+
+        $output = $method->invokeArgs($processObj, array($testString));
+
+        echo "\nSent this input:      {$testString}\n";
+        echo "Received this output: {$output}\n";
+        echo "Expected this output: {$expectedString}\n\n";
+
+        $this->assertSame($expectedString, $output);
+    }
+
     public function testWriteLog(): void {
         $configurationFile = "testConfig.ini";
         $debug = true;
@@ -85,19 +113,22 @@ final class ProcessproquestTest extends TestCase
 
         $logger = new Logger("Processproquest");
 
-        $process = new Processproquest($configurationArray, $debug, $logger);
+        $testString = 'This is a test string';
+        $expectedString = '(invokeArgs) This is a test string';
 
-        $string = 'This is a test string';
-
-        $method = new ReflectionMethod(
+        $method = new ReflectionMethod( 
             'Processproquest', 'writeLog'
         );
-   
         $method->setAccessible(TRUE);
 
-        // Error: Object of type ReflectionMethod is not callable
-        $output = $method($string);
+        $processObj = new Processproquest($configurationArray, $logger, $debug);
 
-        $this->assertSame($string, $output);
+        $output = $method->invokeArgs($processObj, array($testString));
+
+        echo "\nSent this input:      {$testString}\n";
+        echo "Received this output: {$output}\n";
+        echo "Expected this output: {$expectedString}\n\n";
+
+        $this->assertSame($output, $expectedString);
     }
 }
