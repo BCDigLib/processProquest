@@ -297,7 +297,7 @@ class processProquest {
             $fedoraObj->ingestDatastream($datastreamObj);
         } catch (Exception $e) {
             $errorMessage = "{$datastreamName} datastream ingest failed: " . $e->getMessage();
-            array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+            array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
             $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
             $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdShortName);
             array_push($this->processingErrors, $errorMessage);
@@ -542,6 +542,7 @@ class processProquest {
             $this->localFiles[$etdShortName]['FTP_PATH_FOR_ETD'] = "{$this->fetchdirFTP}{$etdZipFile}";
             $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = "{$this->fetchdirFTP}{$etdZipFile}";
             $this->localFiles[$etdShortName]['NONCRITCAL_ERRORS'] = [];
+            $this->localFiles[$etdShortName]['CRITCAL_ERRORS'] = [];
 
             // Set status to 'processing'.
             $this->localFiles[$etdShortName]['STATUS'] = "unprocessed";
@@ -559,7 +560,7 @@ class processProquest {
                     // We couldn't clear out the directory.
                     $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}. Moving to the next ETD.";
                     $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                    array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                    array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                     continue;
                 } else {
                     $this->writeLog("   • Existing directory was removed.", $fn, $etdShortName);
@@ -570,7 +571,7 @@ class processProquest {
             if ( mkdir($etdWorkingDir, 0755, true) === false ) {
                 $errorMessage = "Failed to create local working directory: {$etdWorkingDir}. Moving to the next ETD.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 continue;
             } else {
                 $this->writeLog("   • Directory was created.", $fn, $etdShortName);
@@ -591,7 +592,7 @@ class processProquest {
             } else {
                 $errorMessage = "Failed to fetch file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 continue;
             }
 
@@ -614,7 +615,7 @@ class processProquest {
             } else {
                 $errorMessage = "Failed to extract ETD zip file: " . $res;
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 continue;
             }
 
@@ -629,7 +630,7 @@ class processProquest {
                 // There are no files in this expanded zip file.
                 $errorMessage = "There are no files in this expanded zip file.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 continue;
             }
 
@@ -683,7 +684,6 @@ class processProquest {
                         $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
                         $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
                         $this->writeLog("trace:\n" . $e->getTraceAsString(), $fn, $etdShortName);
-                        // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
                         continue;
                     }
 
@@ -727,7 +727,7 @@ class processProquest {
             if ( empty($this->localFiles[$etdShortName]['ETD']) === true ) {
                 $errorMessage = "   The ETD PDF file was not found or set.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 $this->localFiles[$etdShortName]['STATUS'] = "failure";
                 continue;
             }
@@ -736,7 +736,7 @@ class processProquest {
             if ( empty($this->localFiles[$etdShortName]['METADATA']) === true ) {
                 $errorMessage = "   The ETD XML file was not found or set.";
                 $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 $this->localFiles[$etdShortName]['STATUS'] = "failure";
                 continue;
             }
@@ -821,7 +821,6 @@ class processProquest {
             $s++;
             $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
             $etdShortName = $this->localFiles[$etdShortName]['ETD_SHORTNAME'];
-            $this->localFiles[$etdShortName]['PROCESSING_ERRORS'] = [];
             $this->localFiles[$etdShortName]["FOO"] = "BAR";
 
             $this->writeLog(LOOP_DIVIDER, $fn);
@@ -936,7 +935,7 @@ class processProquest {
             if ( $res === false ) {
                 $errorMessage = "Could not update XSLT stylesheet with PID value.";
                 // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 // $this->localFiles[$etdShortName]["STATUS"] = "failed";
                 // array_push($this->allFailedETDs, $zipFileName);
                 $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
@@ -954,7 +953,7 @@ class processProquest {
             if ( $mods === false ) {
                 $errorMessage = "Could not transform ETD MODS XML file.";
                 // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 // $this->localFiles[$etdShortName]["STATUS"] = "failed";
                 // array_push($this->allFailedETDs, $zipFileName);
                 $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
@@ -972,7 +971,7 @@ class processProquest {
             if ( $fedoraLabel === false ) {
                 $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
                 // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 // $this->localFiles[$etdShortName]["STATUS"] = "failed";
                 // array_push($this->allFailedETDs, $zipFileName);
                 $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
@@ -1014,7 +1013,7 @@ class processProquest {
             if ( $res === false ) {
                 $errorMessage = "Could not rename ETD PDF file.";
                 // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 // $this->localFiles[$etdShortName]["STATUS"] = "failed";
                 // array_push($this->allFailedETDs, $zipFileName);
                 $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
@@ -1032,7 +1031,7 @@ class processProquest {
             if ( $res === false ) {
                 $errorMessage = "Could not create new ETD MODS file.";
                 // $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
-                // array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 // $this->localFiles[$etdShortName]["STATUS"] = "failed";
                 // array_push($this->allFailedETDs, $zipFileName);
                 $this->processingTaskFailed($errorMessage, $zipFileName, $etdShortName);
@@ -1134,7 +1133,7 @@ class processProquest {
             $message .= "There were {$countETDs} ETD(s) processed.\n"; 
             foreach ($this->localFiles as $etdShortName => $etdArray) {
                 $i++;
-                $errorsCount = count($this->localFiles[$etdShortName]["INGEST_ERRORS"]);
+                $errorsCount = count($this->localFiles[$etdShortName]["CRITICAL_ERRORS"]);
                 $message .= "\n  [{$i}] Zip filename:      {$this->localFiles[$etdShortName]['ZIP_FILENAME']}\n";
                 $message .= "      Status:            {$this->localFiles[$etdShortName]['STATUS']}\n";
                 $message .= "      Has supplements:   " . ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
@@ -1150,7 +1149,7 @@ class processProquest {
                 // Display ingest errors and continue to next ETD.
                 if ( $errorsCount > 0 ) {
                     $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
-                    foreach ($this->localFiles[$etdShortName]["INGEST_ERRORS"] as $ingestError) {
+                    foreach ($this->localFiles[$etdShortName]["CRITICAL_ERRORS"] as $ingestError) {
                         $message .= "       • {$ingestError}\n";
                     }
                     continue;
@@ -1209,7 +1208,7 @@ class processProquest {
     private function datastreamIngestFailed($errorMessage, $datastreamName, $etdShortName) {
         $functionName = "ingest";
         array_push($this->allFailedETDs, $this->localFiles[$etdShortName]["ETD_SHORTNAME"]);
-        array_push($this->localFiles[$etdShortName]['INGEST_ERRORS'], $errorMessage);
+        array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
         $this->writeLog("[{$datastreamName}] ERROR: $errorMessage", $functionName, $etdShortName);
         $this->localFiles[$etdShortName]["STATUS"] = "failed";
     }
@@ -1223,7 +1222,7 @@ class processProquest {
      */
     private function processingTaskFailed($errorMessage, $zipFileName, $etdShortName) {
         array_push($this->allFailedETDs, $zipFileName);
-        array_push($this->localFiles[$etdShortName]['PROCESSING_ERRORS'], $errorMessage);
+        array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
         $this->writeLog("ERROR: {$errorMessage}", $fn, $etdShortName);
         $this->localFiles[$etdShortName]["STATUS"] = "failed";
     }
@@ -1279,7 +1278,7 @@ class processProquest {
             $workingDir = $this->localFiles[$etdShortName]['WORKING_DIR'];
             $this->localFiles[$etdShortName]['DATASTREAMS_CREATED'] = [];
             $this->localFiles[$etdShortName]['INGESTED'] = false;
-            $this->localFiles[$etdShortName]['INGEST_ERRORS'] = [];
+            $this->localFiles[$etdShortName]['CRITICAL_ERRORS'] = [];
             
             $this->writeLog(LOOP_DIVIDER, $fn);
             $this->writeLog("BEGIN Ingesting ETD file [{$i} of {$this->countTotalETDs}]", $fn, $etdShortName);
