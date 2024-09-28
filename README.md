@@ -11,12 +11,17 @@ The following packages are required to run this script:
  * php-curl
  * [composer](https://getcomposer.org/)
  * imagemagick
- * xpdf (only used for local PHP debugging)
  * poppler-utils
 
 Also recommended is the [freesans-font](https://github.com/opensourcedesign/fonts) family.
 
 Access to a live Fedora DAM instance is required.
+
+## Development environment
+The following packages will be very useful for development, debugging, and testing:
+ * xpdf (only used for local PHP debugging)
+ * php-mbstring
+ * phpunit
 
 # Installation
 Clone this repository within your `drupal/sites/all/libraries/` directory.
