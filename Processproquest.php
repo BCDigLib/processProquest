@@ -598,7 +598,7 @@ class Processproquest {
             $etdZipFileFullPath = $etdWorkingDir . "/" . $zipFileName;
 
             // HACK: give loop some time to create directory.
-            sleep(2);
+            usleep(30000); // 30 milliseconds
 
             /**
              * Gets the file from the FTP server.
@@ -1852,7 +1852,7 @@ class Processproquest {
             array_push($this->allIngestedETDs, $this->localFiles[$etdShortName]["ETD_SHORTNAME"]);
 
             // Make sure we give every processing loop enough time to complete.
-            sleep(2);
+            usleep(30000); // 30 milliseconds
 
             // Assign URL to this ETD
             $this->localFiles[$etdShortName]['RECORD_URL'] = "{$this->record_path}{$this->localFiles[$etdShortName]["PID"]}";
