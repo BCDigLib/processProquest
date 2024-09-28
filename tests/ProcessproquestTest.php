@@ -23,6 +23,9 @@ final class ProcessproquestTest extends TestCase
     //     Email::fromString('invalid');
     // }
 
+    // private static $configurationArray;
+    // private static $logger;
+
     protected function createLogger($configurationSettings){
         // Set up log file location and name.
         $dateFormatLogFile = date("Ymd-His", time());
@@ -57,9 +60,16 @@ final class ProcessproquestTest extends TestCase
         //$logger->pushHandler($fileOutput);
 
         // Log to console.
-        $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
+        // $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
+        // $consoleOutput->setFormatter($formatter);
+        // $logger->pushHandler($consoleOutput);
+
+        // Log to /dev/null
+        $consoleOutput = new StreamHandler('/dev/null', Level::Debug);
         $consoleOutput->setFormatter($formatter);
         $logger->pushHandler($consoleOutput);
+
+        return $logger;
     }
 
     protected function getConfigFile($configurationFile) {
@@ -78,13 +88,28 @@ final class ProcessproquestTest extends TestCase
         return $configurationArray;
     }
 
-    public function testNormalizeString(): void {
+    protected function alterConfigArray() {
+        return;
+    }
+
+    protected function setUp(): void {
         $configurationFile = "testConfig.ini";
-        $debug = true;
 
-        $configurationArray = $this->getConfigFile($configurationFile);
+        $this->configurationArray = $this->getConfigFile($configurationFile);
+        $this->logger = $this->createLogger($configurationSettings);
+        $this->debug = true;
+    }
 
-        $logger = new Logger("Processproquest");
+    protected function tearDown(): void {
+        $this->configurationArray = null;
+        $this->logger = null;
+    }
+
+    public function testNormalizeString(): void {
+        // $configurationFile = "testConfig.ini";
+        // $debug = true;
+        // $configurationArray = $this->getConfigFile($configurationFile);
+        // $logger = new Logger("Processproquest");
 
         $testString = 'This_ is#a test"string';
         $expectedString = 'This-isa-teststring';
@@ -94,11 +119,12 @@ final class ProcessproquestTest extends TestCase
         );
         $method->setAccessible(TRUE);
 
-        $processObj = new Processproquest($configurationArray, $logger, $debug);
+        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
 
         $output = $method->invokeArgs($processObj, array($testString));
 
-        echo "\nSent this input:      {$testString}\n";
+        echo "\nThis test checks normalizeString() returns a normalized string.\n";
+        echo "Sent this input:      {$testString}\n";
         echo "Received this output: {$output}\n";
         echo "Expected this output: {$expectedString}\n\n";
 
@@ -106,12 +132,10 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testWriteLog(): void {
-        $configurationFile = "testConfig.ini";
-        $debug = true;
-
-        $configurationArray = $this->getConfigFile($configurationFile);
-
-        $logger = new Logger("Processproquest");
+        // $configurationFile = "testConfig.ini";
+        // $debug = true;
+        // $configurationArray = $this->getConfigFile($configurationFile);
+        // $logger = new Logger("Processproquest");
 
         $testString = 'This is a test string';
         $expectedString = '(invokeArgs) This is a test string';
@@ -121,14 +145,40 @@ final class ProcessproquestTest extends TestCase
         );
         $method->setAccessible(TRUE);
 
-        $processObj = new Processproquest($configurationArray, $logger, $debug);
+        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
 
         $output = $method->invokeArgs($processObj, array($testString));
 
-        echo "\nSent this input:      {$testString}\n";
+        echo "\nThis test checks writeLog() returns a formatted log entry.\n";
+        echo "Sent this input:      {$testString}\n";
         echo "Received this output: {$output}\n";
         echo "Expected this output: {$expectedString}\n\n";
 
         $this->assertSame($output, $expectedString);
+    }
+
+    public function testInitFTP(): void {
+        // $configurationFile = "testConfig.ini";
+        // $debug = true;
+        // $configurationArray = $this->getConfigFile($configurationFile);
+        // $logger = new Logger("Processproquest");
+        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $return = $processObj->initFTP();
+        echo "\nThis test checks initFTP() returns successfully.\n";
+        echo "Returned: {$return}\n";
+        $this->assertSame($return, true);
+    }
+
+    public function testInitFTPMissingURL(): void {
+        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $return = $processObj->initFTP();
+
+        // TODO: run alterConfigArray() to change [ftp] url value
+
+        echo "\nThis test checks initFTP() returns an exception.\n";
+        echo "Returned: {$return}\n";
+
+        $this->assertSame($return, true);
+        // $this->expectException(Exception::class);
     }
 }
