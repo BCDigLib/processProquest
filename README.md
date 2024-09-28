@@ -19,8 +19,13 @@ Access to a live Fedora DAM instance is required.
 
 ## Development environment
 The following packages will be very useful for development, debugging, and testing:
- * xpdf (only used for local PHP debugging)
+ * php-cli
+ * php-json
  * php-mbstring
+ * php-xml
+ * php-pcov
+ * php-xdebug
+ * xpdf
  * phpunit
 
 # Installation
