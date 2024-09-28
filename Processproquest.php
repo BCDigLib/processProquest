@@ -64,6 +64,15 @@ class Processproquest {
     protected $countProcessedETDs = 0;      // Total ETDs successfully processed
     protected $countFailedETDs = 0;         // Total ETDs failed to process
     protected $currentProcessedETD = "";    // Current ETD that is being processed
+    protected $configurationFile = [];      // The configuration file
+    protected $root_url = "";               // The Islandora root url
+    protected $path = "";                   // The Islandora record path
+    protected $record_path = "";            // Combination of the $root_url and $path
+    protected $ftpRoot = "";                // The root directory of the FTP server as defined in the settings ini flle
+    protected $processingFailure = false;   // Track if there's been a critical error
+    protected $logger;                      // A Monolog object
+    protected $logFileLocation = "";        // Location of the log file
+    protected $fetchdirFTP = "";            // The FTP directory to fetch ETD files
 
     /**
      * Class constructor.
