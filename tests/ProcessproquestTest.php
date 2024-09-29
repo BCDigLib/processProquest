@@ -10,21 +10,11 @@ use Monolog\Formatter\LineFormatter;
 
 final class ProcessproquestTest extends TestCase
 {
-    // public function testCanBeCreatedFromValidEmail(): void
-    // {
-    //     $string = 'user@example.com';
-    //     $email = Email::fromString($string);
-    //     $this->assertSame($string, $email->asString());
-    // }
-
-    // public function testCannotBeCreatedFromInvalidEmail(): void
-    // {
-    //     $this->expectException(InvalidArgumentException::class);
-    //     Email::fromString('invalid');
-    // }
-
-    // private static $configurationArray;
-    // private static $logger;
+    protected $configurationArray = [];
+    protected $configurationFile = null;
+    protected $settings = [];
+    protected $logger = null;
+    protected $debug = null;
 
     protected function createLogger($configurationSettings){
         // Set up log file location and name.
@@ -88,15 +78,34 @@ final class ProcessproquestTest extends TestCase
         return $configurationArray;
     }
 
-    protected function alterConfigArray() {
-        return;
+    protected function alterConfigArray($updatedSettings) {
+        // $updatedSettings is a nested array in the form 
+        // [
+        //    "ftp" => ["server" -> "foo", "user" => "bar"],
+        //    "fedora" => ["url" => "foo", "username" => "bar"]
+        // ]
+        $foo = $this->settings;
+
+        echo "\n--------\nUpdating configuration settings\n";
+        foreach ($updatedSettings as $keyParent => $valueArray) {
+            foreach ($valueArray as $keyChild => $value) {
+                print "[{$keyParent}]\n{$keyChild} = {$value}\n";
+                $this->settings[$keyParent][$keyChild] = $value;
+            }
+        }
+        echo "--------\n\n";
+
+        return $this->settings;
     }
 
     protected function setUp(): void {
+        error_reporting(E_ALL & ~E_DEPRECATED);
         $configurationFile = "testConfig.ini";
 
         $this->configurationArray = $this->getConfigFile($configurationFile);
-        $this->logger = $this->createLogger($configurationSettings);
+        $this->configurationFile = $this->configurationArray["file"];
+        $this->settings = $this->configurationArray["settings"];
+        $this->logger = $this->createLogger($this->settings);
         $this->debug = true;
     }
 
@@ -106,6 +115,8 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testNormalizeString(): void {
+        echo "\nThis test checks normalizeString() returns a normalized string.\n";
+
         // $configurationFile = "testConfig.ini";
         // $debug = true;
         // $configurationArray = $this->getConfigFile($configurationFile);
@@ -119,11 +130,13 @@ final class ProcessproquestTest extends TestCase
         );
         $method->setAccessible(TRUE);
 
-        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $processObj = new Processproquest(
+            $this->configurationArray, 
+            $this->logger, $this->debug
+        );
 
         $output = $method->invokeArgs($processObj, array($testString));
 
-        echo "\nThis test checks normalizeString() returns a normalized string.\n";
         echo "Sent this input:      {$testString}\n";
         echo "Received this output: {$output}\n";
         echo "Expected this output: {$expectedString}\n\n";
@@ -132,10 +145,7 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testWriteLog(): void {
-        // $configurationFile = "testConfig.ini";
-        // $debug = true;
-        // $configurationArray = $this->getConfigFile($configurationFile);
-        // $logger = new Logger("Processproquest");
+        echo "\nThis test checks writeLog() returns a formatted log entry.\n";
 
         $testString = 'This is a test string';
         $expectedString = '(invokeArgs) This is a test string';
@@ -149,7 +159,6 @@ final class ProcessproquestTest extends TestCase
 
         $output = $method->invokeArgs($processObj, array($testString));
 
-        echo "\nThis test checks writeLog() returns a formatted log entry.\n";
         echo "Sent this input:      {$testString}\n";
         echo "Received this output: {$output}\n";
         echo "Expected this output: {$expectedString}\n\n";
@@ -158,27 +167,53 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testInitFTP(): void {
-        // $configurationFile = "testConfig.ini";
-        // $debug = true;
-        // $configurationArray = $this->getConfigFile($configurationFile);
-        // $logger = new Logger("Processproquest");
+        echo "\nThis test checks initFTP() returns successfully.\n";
         $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
         $return = $processObj->initFTP();
-        echo "\nThis test checks initFTP() returns successfully.\n";
-        echo "Returned: {$return}\n";
+        echo "Expected: true\n";
+        echo "Returned: " . ($return ? "true" : "false") . "\n";
         $this->assertSame($return, true);
     }
 
-    public function testInitFTPMissingURL(): void {
-        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
-        $return = $processObj->initFTP();
-
-        // TODO: run alterConfigArray() to change [ftp] url value
-
+    public function testInitFTPConfigEmptyServerValue(): void {
         echo "\nThis test checks initFTP() returns an exception.\n";
-        echo "Returned: {$return}\n";
 
-        $this->assertSame($return, true);
-        // $this->expectException(Exception::class);
+        // Replace [ftp] "server" key with an empty string
+        $updatedSettings = array(
+            "ftp" => array("server" => ""),
+        );
+
+        $newSettings = $this->alterConfigArray($updatedSettings);
+
+        $this->configurationArray["settings"] = $newSettings;
+
+        // print_r($this->configurationArray);
+
+        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $this->expectException(Exception::class);
+
+        // This should return an exception.
+        $return = $processObj->initFTP();
+    }
+
+    public function testGetFilesConfigEmptyLocaldirValue(): void {
+        echo "\nThis test checks getFiles() returns an exception.\n";
+
+        // Replace [ftp] "server" key with an empty string
+        $updatedSettings = array(
+            "ftp" => array("localdir" => ""),
+        );
+
+        $newSettings = $this->alterConfigArray($updatedSettings);
+
+        $this->configurationArray["settings"] = $newSettings;
+
+        // print_r($this->configurationArray);
+
+        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $this->expectException(Exception::class);
+
+        // This should return an exception.
+        $return = $processObj->getFiles();
     }
 }
