@@ -3,9 +3,20 @@
 //error_reporting(E_ALL);
 
 /**
+ * FTP connection template.
+ */
+interface FTPTemplate {
+    public function login(string $userName, string $userPassword);
+    public function moveFile(string $fileName, string $fromDir, string $toDir);
+    public function getFileList(string $dir);
+    public function getFile(string $filePath, string $fileName);
+    public function changeDir(string $dir);
+}
+
+/**
  * Opens an FTP connection.
  */
-class proquestFTP {
+class ProquestFTP implements FTPTemplate {
     public $conn = null;
     static $FTP_PORT = 21;
     static $FTP_TIMEOUT_SEC = 150;
