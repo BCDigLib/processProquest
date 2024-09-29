@@ -12,7 +12,7 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 /**
  * Custom FTP connection handler.
  */
-require_once 'proquestFTP.php';
+require_once 'ProquestFTP.php';
 
 /*
  * BC Islandora definitions.
@@ -244,7 +244,7 @@ class Processproquest {
     /**
      * Initializes an FTP connection.
      *
-     * Calls on proquestFTP.php
+     * Calls on ProquestFTP.php
      *
      * @return boolean Success value.
      * 
@@ -268,15 +268,15 @@ class Processproquest {
         }
 
         // Create ftp object used for connection.
-        $this->ftp = new proquestFTP($urlFTP);
+        $this->ftp = new ProquestFTP($urlFTP);
 
         // Set session time out. Default is 90.
-        $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
+        // $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
 
         // Pass login credentials to login method.
-        // INFO: ftp_login() Returns true on success or false on failure. 
+        // INFO: login() Returns true on success or false on failure. 
         //       If login fails, PHP will also throw a warning.
-        if ( $this->ftp->ftp_login($userFTP, $passwordFTP) ) {
+        if ( $this->ftp->login($userFTP, $passwordFTP) ) {
             $this->writeLog("FTP connection sucecssful.");
             return true;
         } else {
@@ -364,8 +364,8 @@ class Processproquest {
                 continue;
             }
 
-            // INFO: ftp_rename() returns true on success or false on failure.
-            $ftpRes = $this->ftp->ftp_rename($ftpPathForETD, $moveFTPDir);
+            // INFO: moveFile() returns true on success or false on failure.
+            $ftpRes = $this->ftp->moveFile($ftpPathForETD, $moveFTPDir);
             
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
@@ -468,7 +468,9 @@ class Processproquest {
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
         if ( $this->fetchdirFTP != "" ) {
-            if ( $this->ftp->ftp_chdir($this->fetchdirFTP) ) {
+            // INFO: changeDir() Returns true on success or false on failure. 
+            //       If changing directory fails, PHP will also throw a warning.
+            if ( $this->ftp->changeDir($this->fetchdirFTP) ) {
                 $this->writeLog("Changed to local FTP directory: {$this->fetchdirFTP}");
             } else {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
@@ -486,7 +488,8 @@ class Processproquest {
          * Save results into $etdZipFiles array.
          */
         $file_regex = $this->settings['ftp']['file_regex'];
-        $allFiles = $this->ftp->ftp_nlist($file_regex);
+         // INFO: getFileList() Returns an array of filenames from the specified directory on success or false on error.
+        $allFiles = $this->ftp->getFileList($file_regex);
 
         // Only collect zip files.
         $etdZipFiles = [];
@@ -605,8 +608,8 @@ class Processproquest {
              * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
              * File is saved locally as a binary file.
              */
-            // INFO: ftp_get() Returns true on success or false on failure.
-            if ( $this->ftp->ftp_get($etdZipFileFullPath, $zipFileName, FTP_BINARY) === true ) {
+            // INFO: getFile() Returns true on success or false on failure.
+            if ( $this->ftp->getFile($etdZipFileFullPath, $zipFileName, FTP_BINARY) === true ) {
                 $this->writeLog("Fetched ETD zip file from FTP server.");
             } else {
                 $errorMessage = "Failed to fetch file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
