@@ -82,8 +82,6 @@ class Processproquest {
      * @param array $configurationArray An array containing the configuration file and values.
      * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
      * @param object $logger The logger object.
-     * 
-     * @return bool Return status.
      */
     public function __construct($configurationArray, $logger, $debug = DEFAULT_DEBUG_VALUE) {
         $this->configurationFile = $configurationArray["file"];
@@ -98,8 +96,8 @@ class Processproquest {
 
         // INFO: is_object() Returns true if value is an object, false otherwise.
         if ( is_object($logger) === false ) {
-            // An empty logger object was passed. 
-            return false;
+            // An empty logger object was passed.
+            return null;
         }
 
         $this->logger = $logger;
@@ -130,8 +128,6 @@ class Processproquest {
         require_once "{$tuqueLocation}/FedoraRelationships.php";
         require_once "{$tuqueLocation}/Cache.php";
         require_once "{$tuqueLocation}/HttpConnection.php";
-
-        return true;
     }
 
     /**

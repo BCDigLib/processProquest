@@ -33,11 +33,15 @@ if(is_null($configurationSettings)){
     exit(1);
 }
 
+/**
+ * Determine debugging status.
+ */
+
 // Debug is off by default.
 $debugDefault = false;
 
 // Check debug value from $configurationSettings
-$debugConfiguration = NULL;
+$debugConfiguration = null;
 if (isset($configurationSettings['script']['debug'])) {
     $debugConfiguration = $configurationSettings['script']['debug'];
 }
@@ -58,6 +62,10 @@ if ($debugEnvVar) {
 } else {
     $debug = boolval($debugDefault);
 }
+
+/**
+ * Set up the logging object.
+ */
 
 // Set up log file location and name.
 $dateFormatLogFile = date("Ymd-His", time());
@@ -95,16 +103,37 @@ $consoleOutput = new StreamHandler('php://stdout', Level::Debug);
 $consoleOutput->setFormatter($formatter);
 $logger->pushHandler($consoleOutput);
 
-require_once 'Processproquest.php';
+/**
+ * Create ProcessFTP object.
+ */
 
-// Create the $process object.
+require_once 'ProquestFTP.php';
+$urlFTP = $configurationSettings['ftp']['server'];
+$ftpConnection = new ProquestFTP($urlFTP);
+
+if (is_null($ftpConnection)){
+    // Failed to instanciate processProquest object.
+    echo "Please check that the FTP URL configuration value exists. Exiting.";
+    exit(1);
+}
+
+/**
+ * Create Processproquest object.
+ * Requires an array with configuration settings, a logger object and an optional debug value.
+ */
+
+require_once 'Processproquest.php';
 $process = new Processproquest($configurationArray, $logger, $debug);
 
-if (!$process){
+if (is_null($process)){
     // Failed to instanciate processProquest object.
     echo "Please check that the Monolog logger was configured correctly. Exiting.";
     exit(1);
 }
+
+/**
+ * Process ETD ingest workflow.
+ */
 
 // Initialize FTP connection.
 // Exit when an exception is caught.
