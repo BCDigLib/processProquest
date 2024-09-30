@@ -138,10 +138,11 @@ if (is_null($process)){
  * Process ETD ingest workflow.
  */
 
-// Initialize FTP connection.
+// Log into the FTP server.
+// This requires that the $this->ftp object was set earlier.
 // Exit when an exception is caught.
 try {
-    $process->ConnectToFTP();
+    $process->LogIntoFTPServer();
 } catch(Exception $e) {
     $process->postProcess();
     $logger->info("Exiting.");

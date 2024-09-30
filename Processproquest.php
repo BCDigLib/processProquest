@@ -290,8 +290,8 @@ class Processproquest {
      * 
      * @throws Exception if the FTP connection failed.
      */
-    public function ConnectToFTP() {
-        $fn = "ConnectToFTP";
+    public function LogIntoFTPServer() {
+        $fn = "LogIntoFTPServer";
 
         $this->writeLog("Logging into FTP server.");
 
