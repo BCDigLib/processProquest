@@ -5,7 +5,7 @@
 /**
  * FTP connection template.
  */
-interface FTPTemplate {
+interface FileStorageTemplate {
     public function login(string $userName, string $userPassword);
     public function moveFile(string $fileName, string $fromDir, string $toDir);
     public function getFileList(string $dir);
@@ -16,7 +16,7 @@ interface FTPTemplate {
 /**
  * Opens an FTP connection.
  */
-class ProquestFTP implements FTPTemplate {
+class ProquestFTP implements FileStorageTemplate {
     public $conn = null;
     static $FTP_PORT = 21;
     static $FTP_TIMEOUT_SEC = 150;
@@ -35,24 +35,6 @@ class ProquestFTP implements FTPTemplate {
         // INFO: ftp_connect() Returns an FTP\Connection instance on success, or false on failure.
         $this->conn = ftp_connect($url, self::$FTP_PORT, self::$FTP_TIMEOUT_SEC);
     }
-    
-    /**
-     * Overload PHP magic method for this class.
-     * 
-     * @param string $func the name of the function to call.
-     * @param array $a an array of arguments.
-     * 
-     * @return mixed the return value of the callback, or false on error.
-     */
-    // public function __call(string $func, array $a) { 
-    //     if(strstr($func,'ftp_') !== false && function_exists($func)){ 
-    //         array_unshift($a,$this->conn);
-    //         return call_user_func_array($func,$a);
-    //     } else {
-    //         // TODO: handle this error.
-    //         die("{$func} is not a valid FTP function.");
-    //     }
-    // }
 
     /**
      * Login to the FTP server.
