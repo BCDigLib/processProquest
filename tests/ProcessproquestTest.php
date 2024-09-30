@@ -2,6 +2,7 @@
 use PHPUnit\Framework\TestCase;
 
 require __DIR__ . "/../Processproquest.php";
+//require __DIR__ . "/../ProquestFTP.php";
 
 use Monolog\Level;
 use Monolog\Logger;
@@ -14,6 +15,7 @@ final class ProcessproquestTest extends TestCase
     protected $configurationFile = null;
     protected $settings = [];
     protected $logger = null;
+    protected $ftpConnection = null;
     protected $debug = null;
 
     protected function createLogger($configurationSettings){
@@ -98,6 +100,13 @@ final class ProcessproquestTest extends TestCase
         return $this->settings;
     }
 
+    protected function createFTPConnection($configurationSettings) {
+        $urlFTP = $configurationSettings['ftp']['server'];
+        $ftpConnection = new ProquestFTP($urlFTP);
+
+        return $ftpConnection;
+    }
+
     protected function setUp(): void {
         error_reporting(E_ALL & ~E_DEPRECATED);
         $configurationFile = "testConfig.ini";
@@ -106,6 +115,7 @@ final class ProcessproquestTest extends TestCase
         $this->configurationFile = $this->configurationArray["file"];
         $this->settings = $this->configurationArray["settings"];
         $this->logger = $this->createLogger($this->settings);
+        $this->ftpConnection = $this->createFTPConnection($this->settings);
         $this->debug = true;
     }
 
@@ -168,7 +178,8 @@ final class ProcessproquestTest extends TestCase
 
     public function testInitFTP(): void {
         echo "\nThis test checks initFTP() returns successfully.\n";
-        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $processObj = (new Processproquest($this->configurationArray, $this->logger, $this->debug))
+                            ->setFTPConnection($this->ftpConnection);
         $return = $processObj->initFTP();
         echo "Expected: true\n";
         echo "Returned: " . ($return ? "true" : "false") . "\n";
@@ -184,12 +195,9 @@ final class ProcessproquestTest extends TestCase
         );
 
         $newSettings = $this->alterConfigArray($updatedSettings);
-
         $this->configurationArray["settings"] = $newSettings;
-
-        // print_r($this->configurationArray);
-
-        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $processObj = (new Processproquest($this->configurationArray, $this->logger, $this->debug))
+                            ->setFTPConnection($this->ftpConnection);
         $this->expectException(Exception::class);
 
         // This should return an exception.
@@ -205,12 +213,9 @@ final class ProcessproquestTest extends TestCase
         );
 
         $newSettings = $this->alterConfigArray($updatedSettings);
-
         $this->configurationArray["settings"] = $newSettings;
-
-        // print_r($this->configurationArray);
-
-        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $processObj = (new Processproquest($this->configurationArray, $this->logger, $this->debug))
+                            ->setFTPConnection($this->ftpConnection);
         $this->expectException(Exception::class);
 
         // This should return an exception.

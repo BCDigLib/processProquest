@@ -119,11 +119,14 @@ if (is_null($ftpConnection)){
 
 /**
  * Create Processproquest object.
- * Requires an array with configuration settings, a logger object and an optional debug value.
+ * Requires an array with configuration settings, a logger object, and an optional debug value.
+ * Can chain together additional setter functions to assign an FTP connection object,
+ * and a FedoraConnection object.
  */
 
 require_once 'Processproquest.php';
-$process = new Processproquest($configurationArray, $logger, $debug);
+$process = (new Processproquest($configurationArray, $logger, $debug))
+                ->setFTPConnection($ftpConnection);
 
 if (is_null($process)){
     // Failed to instanciate processProquest object.

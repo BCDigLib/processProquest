@@ -80,10 +80,11 @@ class Processproquest {
      * This builds a local '$this' object that contains various script settings.
      *
      * @param array $configurationArray An array containing the configuration file and values.
-     * @param bool $debug Run script in debug mode, which doesn't ingest ETD into Fedora.
-     * @param object $logger The logger object.
+     * @param object $loggerObj The logger object.
+     * @param boolean $debug If true run script in debug mode, which doesn't ingest ETD into Fedora.
      */
-    public function __construct($configurationArray, $logger, $debug = DEFAULT_DEBUG_VALUE) {
+    // public function __construct($configurationArray, $loggerObj, $ftpConnectionObj, $debug = DEFAULT_DEBUG_VALUE) {
+    public function __construct($configurationArray, $loggerObj, $debug = DEFAULT_DEBUG_VALUE) {
         $this->configurationFile = $configurationArray["file"];
         $this->settings = $configurationArray["settings"];
         $this->debug = boolval($debug);
@@ -91,19 +92,20 @@ class Processproquest {
         $this->path = $this->settings["islandora"]["path"];
         $this->record_path = "{$this->root_url}{$this->path}";
         $this->logFile = $this->settings["log"]["location"];
+        // $this->ftp = $ftpConnectionObj;
         $this->ftpRoot = $this->settings["ftp"]["fetchdir"];
         $this->processingFailure = false;
 
         // INFO: is_object() Returns true if value is an object, false otherwise.
-        if ( is_object($logger) === false ) {
+        if ( is_object($loggerObj) === false ) {
             // An empty logger object was passed.
             return null;
         }
 
-        $this->logger = $logger;
+        $this->logger = $loggerObj;
 
         // Pull out logfile location from logger object.
-        $logHandlers = $logger->getHandlers();
+        $logHandlers = $this->logger->getHandlers();
         foreach ($logHandlers as $handler) {
             $url = $handler->getUrl();
             // INFO: str_contains() Returns true if needle is in haystack, false otherwise.
@@ -128,6 +130,48 @@ class Processproquest {
         require_once "{$tuqueLocation}/FedoraRelationships.php";
         require_once "{$tuqueLocation}/Cache.php";
         require_once "{$tuqueLocation}/HttpConnection.php";
+    }
+
+    /**
+     * Setter function to assign an FTP connection object.
+     * This uses a fluent interface API design.
+     * 
+     * @param object $ftpConnectionObj the FTP connection object.
+     * 
+     * @return object $this.
+     */
+    public function setFTPConnection($ftpConnectionObj) {
+        $this->ftp = $ftpConnectionObj;
+
+        return $this;
+    }
+
+    /**
+     * Setter function to assign the debug value.
+     * This uses a fluent interface API design.
+     * 
+     * @param boolean $debug the debug value.
+     * 
+     * @return object $this.
+     */
+    public function setDebug($debug) {
+        $this->debug = $debug;
+
+        return $this;
+    }
+
+    /**
+     * Setter function to assign an Fedora connection object.
+     * This uses a fluent interface API design.
+     * 
+     * @param object $fedoraConnectionObj the Fedora connection object.
+     * 
+     * @return object $this.
+     */
+    public function setFedoraConnection($fedoraConnectionObj) {
+        $this->connection = $fedoraConnectionObj;
+
+        return $this;
     }
 
     /**
