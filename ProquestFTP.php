@@ -33,7 +33,7 @@ class ProquestFTP implements FTPTemplate {
         }
 
         // INFO: ftp_connect() Returns an FTP\Connection instance on success, or false on failure.
-        $this->conn = ftp_connect($url, self::$FTP_PORT, SELF::$FTP_TIMEOUT_SEC);
+        $this->conn = ftp_connect($url, self::$FTP_PORT, self::$FTP_TIMEOUT_SEC);
     }
     
     /**
@@ -44,15 +44,15 @@ class ProquestFTP implements FTPTemplate {
      * 
      * @return mixed the return value of the callback, or false on error.
      */
-    public function __call(string $func, array $a) { 
-        if(strstr($func,'ftp_') !== false && function_exists($func)){ 
-            array_unshift($a,$this->conn);
-            return call_user_func_array($func,$a);
-        } else {
-            // TODO: handle this error.
-            die("{$func} is not a valid FTP function.");
-        }
-    }
+    // public function __call(string $func, array $a) { 
+    //     if(strstr($func,'ftp_') !== false && function_exists($func)){ 
+    //         array_unshift($a,$this->conn);
+    //         return call_user_func_array($func,$a);
+    //     } else {
+    //         // TODO: handle this error.
+    //         die("{$func} is not a valid FTP function.");
+    //     }
+    // }
 
     /**
      * Login to the FTP server.
