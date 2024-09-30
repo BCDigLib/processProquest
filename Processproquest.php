@@ -282,7 +282,7 @@ class Processproquest {
     }
 
     /**
-     * Initializes an FTP connection.
+     * Logs into an FTP server.
      *
      * Calls on ProquestFTP.php
      *
@@ -290,16 +290,15 @@ class Processproquest {
      * 
      * @throws Exception if the FTP connection failed.
      */
-    public function initFTP() {
-        $fn = "initFTP";
+    public function ConnectToFTP() {
+        $fn = "ConnectToFTP";
 
-        $this->writeLog("Initializing FTP connection.");
+        $this->writeLog("Logging into FTP server.");
 
-        $urlFTP = $this->settings['ftp']['server'];
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
 
-        if ( (empty($urlFTP) === true) || (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
+        if ( (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
@@ -307,21 +306,15 @@ class Processproquest {
             throw new Exception($errorMessage);
         }
 
-        // Create ftp object used for connection.
-        $this->ftp = new ProquestFTP($urlFTP);
-
-        // Set session time out. Default is 90.
-        // $this->ftp->ftp_set_option(FTP_TIMEOUT_SEC, 150);
-
         // Pass login credentials to login method.
         // INFO: login() Returns true on success or false on failure. 
         //       If login fails, PHP will also throw a warning.
         if ( $this->ftp->login($userFTP, $passwordFTP) ) {
-            $this->writeLog("FTP connection sucecssful.");
+            $this->writeLog("FTP login sucecssful.");
             return true;
         } else {
             // TODO: get ftp error message with set_error_handler().
-            $errorMessage = "FTP connection failed.";
+            $errorMessage = "FTP login failed.";
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;

@@ -141,7 +141,7 @@ if (is_null($process)){
 // Initialize FTP connection.
 // Exit when an exception is caught.
 try {
-    $process->initFTP();
+    $process->ConnectToFTP();
 } catch(Exception $e) {
     $process->postProcess();
     $logger->info("Exiting.");
