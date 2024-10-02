@@ -100,6 +100,7 @@ class Processproquest {
         $this->ftpRoot = $this->settings["ftp"]["fetchdir"];
         $this->processingFailure = false;
 
+        // TODO: move this out of the constructor and into index.php
         // INFO: is_object() Returns true if value is an object, false otherwise.
         if ( is_object($loggerObj) === false ) {
             // An empty logger object was passed.
@@ -124,17 +125,6 @@ class Processproquest {
         $this->writeLog("STATUS: Starting processProquest script.");
         $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'));
         $this->writeLog("STATUS: Using configuration file: {$this->configurationFile}");
-
-        // Load Islandora/Fedora Tuque library.
-        // $tuqueLocation = $this->settings['packages']['tuque'];
-        // require_once "{$tuqueLocation}/RepositoryConnection.php";
-        // require_once "{$tuqueLocation}/FedoraApi.php";
-        // require_once "{$tuqueLocation}/FedoraApiSerializer.php";
-        // require_once "{$tuqueLocation}/Repository.php";
-        // require_once "{$tuqueLocation}/RepositoryException.php";
-        // require_once "{$tuqueLocation}/FedoraRelationships.php";
-        // require_once "{$tuqueLocation}/Cache.php";
-        // require_once "{$tuqueLocation}/HttpConnection.php";
     }
 
     /**
@@ -1107,53 +1097,6 @@ class Processproquest {
         $this->writeLog("Completed processing all ETD files.");
         return true;
     }
-
-    /**
-     * Initializes a connection to a Fedora file repository server.
-     * 
-     * @return boolean Success value.
-     * 
-     * @throws Exception if Fedora connection fails.
-     */
-    // public function initFedoraConnection() {
-    //     $fn = "initFedoraConnection";
-    //     $url = $this->settings['fedora']['url'];
-    //     $user = $this->settings['fedora']['username'];
-    //     $pass = $this->settings['fedora']['password'];
-    //
-    //     $this->writeLog(SECTION_DIVIDER);
-    //     $this->writeLog("Connecting to Fedora instance at {$url}");
-    //
-    //     // Check all values exist.
-    //     if ( (empty($url) === true) || (empty($user) === true) || (empty($pass) === true) ) {
-    //         $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
-    //         $this->writeLog("ERROR: {$errorMessage}");
-    //         array_push($this->processingErrors, $errorMessage);
-    //         $this->processingFailure = true;
-    //         throw new Exception($errorMessage);
-    //     }
-    //
-    //     // Make Fedora repository connection.
-    //     // Tuque library exceptions defined here:
-    //     // https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
-    //     try {
-    //         $this->connection = new \RepositoryConnection($url, $user, $pass);
-    //         $this->api = new \FedoraApi($this->connection);
-    //         $this->repository = new \FedoraRepository($this->api, new \simpleCache());
-    //         $this->writeLog("Connected to the Fedora repository.");
-    //     } catch(Exception $e) { // RepositoryException
-    //         $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
-    //         $this->writeLog("ERROR: {$errorMessage}");
-    //         $this->writeLog("trace:\n" . $e->getTraceAsString());
-    //         array_push($this->processingErrors, $errorMessage);
-    //         $this->processingFailure = true;
-    //         throw new Exception($errorMessage);
-    //     }
-    //
-    //     // Create a Fedora Management API object shortcut.
-    //     $this->api_m = $this->repository->api->m;
-    //     return true;
-    // }
 
     /**
      * Generate a simple status update message

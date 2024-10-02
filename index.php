@@ -34,7 +34,9 @@ if(is_null($configurationSettings)){
 }
 
 /**
+ * 
  * Determine debugging status.
+ * 
  */
 
 // Debug is off by default.
@@ -64,7 +66,9 @@ if ($debugEnvVar) {
 }
 
 /**
+ * 
  * Set up the logging object.
+ * 
  */
 
 // Set up log file location and name.
@@ -85,12 +89,16 @@ if ($debug) {
     $output = "[%datetime%] > %message% %context% %extra%\n";
 }
 
-// Create a log formatter.
-// Passing these arguments:
-//   * ouput string format
-//   * date string format
-//   * allowInlineLineBreaks = true
-//   * ignoreEmptyContextAndExtra = true
+/**
+ * 
+ * Create a log formatter.
+ * 
+ * Passing these arguments:
+ *   ouput string format
+ *   date string format
+ *   allowInlineLineBreaks = true
+ *   ignoreEmptyContextAndExtra = true
+ */
 $formatter = new LineFormatter($output, $dateFormatLogger, true, true);
 
 // Log to file.
@@ -104,7 +112,9 @@ $consoleOutput->setFormatter($formatter);
 $logger->pushHandler($consoleOutput);
 
 /**
+ * 
  * Create FTP connection object.
+ * 
  */
 
 require_once 'ProquestFTP.php';
@@ -120,7 +130,9 @@ try {
 }
 
 /**
+ * 
  * Create Fedora repository connection object.
+ * 
  */
 
 require_once 'FedoraRepository.php';
@@ -139,7 +151,9 @@ try {
 }
 
 /**
+ * 
  * Create Processproquest object.
+ * 
  * Requires an array with configuration settings, a logger object, and an optional debug value.
  * Can chain together additional setter functions to assign an FTP connection object,
  * and a FedoraConnection object.
@@ -159,7 +173,9 @@ try {
 }
 
 /**
+ * 
  * Process ETD ingest workflow.
+ * 
  */
 
 // Log into the FTP server.
@@ -173,16 +189,6 @@ try {
     $logger->info("Exiting.");
     exit(1);
 }
-
-// Connect to Fedora through API.
-// Exit when an exception is caught.
-// try {
-//     $process->initFedoraConnection();
-// } catch(Exception $e) {
-//     $process->postProcess();
-//     $logger->info("Exiting.");
-//     exit(1);
-// }
 
 // Get zip files from FTP server, unzip and store locally.
 // Exit when an exception is caught.
@@ -220,7 +226,6 @@ $logger->info("Exiting.");
 
 /**
  * Output usage strings.
- *
  */
 function usage() {
     echo "Usage: php index.php [options]\n";
