@@ -1,8 +1,6 @@
 <?php declare(strict_types=1);
 namespace Processproquest;
 
-// error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
-
 /**
  * Description of processProquest
  *

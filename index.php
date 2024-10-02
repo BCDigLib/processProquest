@@ -1,14 +1,14 @@
 <?php declare(strict_types=1);
 date_default_timezone_set('America/New_York');
 
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+
 require __DIR__."/vendor/autoload.php"; // This tells PHP where to find the autoload file so that PHP can load the installed packages
 
 use Monolog\Level;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
-
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 $fontpath = realpath('/usr/share/fonts/freesans-font/');
 putenv('GDFONTPATH='.$fontpath);
