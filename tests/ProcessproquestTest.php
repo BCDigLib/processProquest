@@ -102,7 +102,7 @@ final class ProcessproquestTest extends TestCase
 
     protected function createFTPConnection($configurationSettings) {
         $urlFTP = $configurationSettings['ftp']['server'];
-        $ftpConnection = new ProquestFTP($urlFTP);
+        $ftpConnection = new \Processproquest\FTP\ProquestFTP($urlFTP);
 
         return $ftpConnection;
     }
@@ -136,11 +136,11 @@ final class ProcessproquestTest extends TestCase
         $expectedString = 'This-isa-teststring';
 
         $method = new ReflectionMethod(
-            'Processproquest', 'normalizeString'
+            '\Processproquest\Processproquest', 'normalizeString'
         );
         $method->setAccessible(TRUE);
 
-        $processObj = new Processproquest(
+        $processObj = new \Processproquest\Processproquest(
             $this->configurationArray, 
             $this->logger, $this->debug
         );
@@ -161,11 +161,11 @@ final class ProcessproquestTest extends TestCase
         $expectedString = '(invokeArgs) This is a test string';
 
         $method = new ReflectionMethod( 
-            'Processproquest', 'writeLog'
+            '\Processproquest\Processproquest', 'writeLog'
         );
         $method->setAccessible(TRUE);
 
-        $processObj = new Processproquest($this->configurationArray, $this->logger, $this->debug);
+        $processObj = new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug);
 
         $output = $method->invokeArgs($processObj, array($testString));
 
@@ -178,7 +178,7 @@ final class ProcessproquestTest extends TestCase
 
     public function testLogIntoFTPServer(): void {
         echo "\nThis test checks LogIntoFTPServer() returns successfully.\n";
-        $processObj = (new Processproquest($this->configurationArray, $this->logger, $this->debug))
+        $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
                             ->setFTPConnection($this->ftpConnection);
         $return = $processObj->LogIntoFTPServer();
         echo "Expected: true\n";
@@ -219,7 +219,7 @@ final class ProcessproquestTest extends TestCase
 
         $newSettings = $this->alterConfigArray($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
-        $processObj = (new Processproquest($this->configurationArray, $this->logger, $this->debug))
+        $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
                             ->setFTPConnection($this->ftpConnection);
         $this->expectException(Exception::class);
 
