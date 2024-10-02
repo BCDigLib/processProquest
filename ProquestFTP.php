@@ -1,6 +1,5 @@
-<?php
-
-//error_reporting(E_ALL);
+<?php declare(strict_types=1);
+namespace Processproquest\FTP;
 
 /**
  * FTP connection template.
@@ -25,15 +24,24 @@ class ProquestFTP implements FileStorageTemplate {
      * Class constructor.
      * 
      * @param string $url the FTP url.
+     * 
+     * @throws Exception if a connection to the FTP server can't be made.
      */
     public function __construct(string $url){
         if ( (empty($url) === true) ) {
             // Can't connect with an empty URL value.
-            return null;
+            $errorMessage = "Can't connect to FTP server: The [ftp] 'url' setting isn't set or is incorrect.";
+            throw new Exception($errorMessage);
         }
 
         // INFO: ftp_connect() Returns an FTP\Connection instance on success, or false on failure.
         $this->conn = ftp_connect($url, self::$FTP_PORT, self::$FTP_TIMEOUT_SEC);
+
+        if ($this->conn === false) {
+            // Can't connect with an empty URL value.
+            $errorMessage = "Can't connect to FTP server: Check your [ftp] settings or see if the FTP server is available.";
+            throw new Exception($errorMessage);
+        }
     }
 
     /**
