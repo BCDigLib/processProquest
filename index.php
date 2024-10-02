@@ -104,16 +104,37 @@ $consoleOutput->setFormatter($formatter);
 $logger->pushHandler($consoleOutput);
 
 /**
- * Create ProcessFTP object.
+ * Create FTP connection object.
  */
 
 require_once 'ProquestFTP.php';
+use \Processproquest\FTP as FTP;
 $urlFTP = $configurationSettings['ftp']['server'];
-$ftpConnection = new ProquestFTP($urlFTP);
+try {
+    $ftpConnection = new FTP\ProquestFTP($urlFTP);
+} catch (Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    echo "Exiting.";
+    // TODO: send email notification.
+    exit(1);
+}
 
-if (is_null($ftpConnection)){
-    // Failed to instanciate processProquest object.
-    echo "Please check that the FTP URL configuration value exists. Exiting.";
+/**
+ * Create Fedora repository connection object.
+ */
+
+require_once 'FedoraRepository.php';
+use \Processproquest\Repository as REPO;
+$fedoraUrl = $configurationSettings['fedora']['url'];
+$fedoraUsername = $configurationSettings['fedora']['username'];
+$fedoraPassword = $configurationSettings['fedora']['password'];
+$tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
+try {
+    $fedoraRepository = new REPO\FedoraRepository($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
+} catch (Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    echo "Exiting.\n";
+    // TODO: send email notification.
     exit(1);
 }
 
@@ -125,12 +146,15 @@ if (is_null($ftpConnection)){
  */
 
 require_once 'Processproquest.php';
-$process = (new Processproquest($configurationArray, $logger, $debug))
-                ->setFTPConnection($ftpConnection);
-
-if (is_null($process)){
-    // Failed to instanciate processProquest object.
-    echo "Please check that the Monolog logger was configured correctly. Exiting.";
+use \Processproquest as PP;
+try {
+    $process = (new PP\Processproquest($configurationArray, $logger, $debug))
+                ->setFTPConnection($ftpConnection)
+                ->setFedoraConnection($fedoraRepository);
+} catch (Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    echo "Exiting.\n";
+    // TODO: send email notification.
     exit(1);
 }
 
@@ -144,6 +168,7 @@ if (is_null($process)){
 try {
     $process->LogIntoFTPServer();
 } catch(Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
     $process->postProcess();
     $logger->info("Exiting.");
     exit(1);
@@ -151,13 +176,13 @@ try {
 
 // Connect to Fedora through API.
 // Exit when an exception is caught.
-try {
-    $process->initFedoraConnection();
-} catch(Exception $e) {
-    $process->postProcess();
-    $logger->info("Exiting.");
-    exit(1);
-}
+// try {
+//     $process->initFedoraConnection();
+// } catch(Exception $e) {
+//     $process->postProcess();
+//     $logger->info("Exiting.");
+//     exit(1);
+// }
 
 // Get zip files from FTP server, unzip and store locally.
 // Exit when an exception is caught.
