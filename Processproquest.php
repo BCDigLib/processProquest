@@ -1,5 +1,7 @@
 <?php declare(strict_types=1);
-error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+namespace Processproquest;
+
+// error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
 /**
  * Description of processProquest
@@ -82,6 +84,8 @@ class Processproquest {
      * @param array $configurationArray An array containing the configuration file and values.
      * @param object $loggerObj The logger object.
      * @param boolean $debug If true run script in debug mode, which doesn't ingest ETD into Fedora.
+     * 
+     * @throws Exception if an empty logger object was passed as an argument.
      */
     // public function __construct($configurationArray, $loggerObj, $ftpConnectionObj, $debug = DEFAULT_DEBUG_VALUE) {
     public function __construct($configurationArray, $loggerObj, $debug = DEFAULT_DEBUG_VALUE) {
@@ -99,7 +103,8 @@ class Processproquest {
         // INFO: is_object() Returns true if value is an object, false otherwise.
         if ( is_object($loggerObj) === false ) {
             // An empty logger object was passed.
-            return null;
+            $errorMessage = " An empty logger object was passed. Please check that the Monolog logger was configured correctly.";
+            throw new Exception($errorMessage);
         }
 
         $this->logger = $loggerObj;
@@ -121,15 +126,15 @@ class Processproquest {
         $this->writeLog("STATUS: Using configuration file: {$this->configurationFile}");
 
         // Load Islandora/Fedora Tuque library.
-        $tuqueLocation = $this->settings['packages']['tuque'];
-        require_once "{$tuqueLocation}/RepositoryConnection.php";
-        require_once "{$tuqueLocation}/FedoraApi.php";
-        require_once "{$tuqueLocation}/FedoraApiSerializer.php";
-        require_once "{$tuqueLocation}/Repository.php";
-        require_once "{$tuqueLocation}/RepositoryException.php";
-        require_once "{$tuqueLocation}/FedoraRelationships.php";
-        require_once "{$tuqueLocation}/Cache.php";
-        require_once "{$tuqueLocation}/HttpConnection.php";
+        // $tuqueLocation = $this->settings['packages']['tuque'];
+        // require_once "{$tuqueLocation}/RepositoryConnection.php";
+        // require_once "{$tuqueLocation}/FedoraApi.php";
+        // require_once "{$tuqueLocation}/FedoraApiSerializer.php";
+        // require_once "{$tuqueLocation}/Repository.php";
+        // require_once "{$tuqueLocation}/RepositoryException.php";
+        // require_once "{$tuqueLocation}/FedoraRelationships.php";
+        // require_once "{$tuqueLocation}/Cache.php";
+        // require_once "{$tuqueLocation}/HttpConnection.php";
     }
 
     /**
@@ -169,7 +174,7 @@ class Processproquest {
      * @return object $this.
      */
     public function setFedoraConnection($fedoraConnectionObj) {
-        $this->connection = $fedoraConnectionObj;
+        $this->fedoraConnection = $fedoraConnectionObj;
 
         return $this;
     }
@@ -657,7 +662,7 @@ class Processproquest {
                 $this->localFiles[$etdShortName];
             }
 
-            $zip = new ZipArchive;
+            $zip = new \ZipArchive;
 
             // Open and extract zip file to local directory.
             // INFO: zip_open() returns either false or the number of error if filename does not exist 
@@ -842,8 +847,8 @@ class Processproquest {
          * Load Proquest MODS XSLT stylesheet.
          * Ex: /path/to/proquest/crosswalk/Proquest_MODS.xsl
          */
-        $xslt = new xsltProcessor;
-        $proquestxslt = new DOMDocument();
+        $xslt = new \xsltProcessor;
+        $proquestxslt = new \DOMDocument();
         $proquestxslt->load($this->settings['xslt']['xslt']);
         // INFO: XSLTProcessor::importStylesheet() Returns true on success or false on failure.
         if ( $xslt->importStyleSheet($proquestxslt)  === true) {
@@ -859,8 +864,8 @@ class Processproquest {
          * Load Fedora Label XSLT stylesheet.
          * Ex: /path/to/proquest/xsl/getLabel.xsl
          */
-        $label = new xsltProcessor;
-        $labelxslt = new DOMDocument();
+        $label = new \xsltProcessor;
+        $labelxslt = new \DOMDocument();
         $labelxslt->load($this->settings['xslt']['label']);
         if ( $label->importStyleSheet($labelxslt) === true ) {
             $this->writeLog("Loaded Fedora Label XSLT stylesheet.");
@@ -893,9 +898,9 @@ class Processproquest {
             }
 
             // Create XPath object from the ETD XML file.
-            $metadata = new DOMDocument();
+            $metadata = new \DOMDocument();
             $metadata->load($this->localFiles[$etdShortName]['WORKING_DIR'] . '//' . $this->localFiles[$etdShortName]['FILE_METADATA']);
-            $xpath = new DOMXpath($metadata);
+            $xpath = new \DOMXpath($metadata);
 
             /**
              * Get OA permission.
@@ -977,7 +982,8 @@ class Processproquest {
                 $pid = "bc-ir:" . rand(50000,100000) + 9000000;
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}");
             } else {
-                $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
+                // $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
+                $pid = $this->fedoraConnection->getNextPid($this->settings['fedora']['namespace'], 1);
                 $this->writeLog("Fetched new PID from Fedora: {$pid}");
             }
 
@@ -1033,7 +1039,7 @@ class Processproquest {
              * This looks for the existance of an "author" node in the MODS XPath object.
              * Ex: /mods:mods/mods:name[@type='personal'][@usage='primary']/mods:displayForm/text()
              */
-            $xpathAuthor = new DOMXpath($mods);
+            $xpathAuthor = new \DOMXpath($mods);
             $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);
             $author = $authorElements->item(0)->C14N();
             $this->writeLog("Generated ETD author: [{$author}]");
@@ -1109,45 +1115,45 @@ class Processproquest {
      * 
      * @throws Exception if Fedora connection fails.
      */
-    public function initFedoraConnection() {
-        $fn = "initFedoraConnection";
-        $url = $this->settings['fedora']['url'];
-        $user = $this->settings['fedora']['username'];
-        $pass = $this->settings['fedora']['password'];
-
-        $this->writeLog(SECTION_DIVIDER);
-        $this->writeLog("Connecting to Fedora instance at {$url}");
-
-        // Check all values exist.
-        if ( (empty($url) === true) || (empty($user) === true) || (empty($pass) === true) ) {
-            $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
-            $this->writeLog("ERROR: {$errorMessage}");
-            array_push($this->processingErrors, $errorMessage);
-            $this->processingFailure = true;
-            throw new Exception($errorMessage);
-        }
-
-        // Make Fedora repository connection.
-        // Tuque library exceptions defined here:
-        // https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
-        try {
-            $this->connection = new RepositoryConnection($url, $user, $pass);
-            $this->api = new FedoraApi($this->connection);
-            $this->repository = new FedoraRepository($this->api, new simpleCache());
-            $this->writeLog("Connected to the Fedora repository.");
-        } catch(Exception $e) { // RepositoryException
-            $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
-            $this->writeLog("ERROR: {$errorMessage}");
-            $this->writeLog("trace:\n" . $e->getTraceAsString());
-            array_push($this->processingErrors, $errorMessage);
-            $this->processingFailure = true;
-            throw new Exception($errorMessage);
-        }
-
-        // Create a Fedora Management API object shortcut.
-        $this->api_m = $this->repository->api->m;
-        return true;
-    }
+    // public function initFedoraConnection() {
+    //     $fn = "initFedoraConnection";
+    //     $url = $this->settings['fedora']['url'];
+    //     $user = $this->settings['fedora']['username'];
+    //     $pass = $this->settings['fedora']['password'];
+    //
+    //     $this->writeLog(SECTION_DIVIDER);
+    //     $this->writeLog("Connecting to Fedora instance at {$url}");
+    //
+    //     // Check all values exist.
+    //     if ( (empty($url) === true) || (empty($user) === true) || (empty($pass) === true) ) {
+    //         $errorMessage = "Can't connect to Fedora instance. One or more Fedora settings are not set.";
+    //         $this->writeLog("ERROR: {$errorMessage}");
+    //         array_push($this->processingErrors, $errorMessage);
+    //         $this->processingFailure = true;
+    //         throw new Exception($errorMessage);
+    //     }
+    //
+    //     // Make Fedora repository connection.
+    //     // Tuque library exceptions defined here:
+    //     // https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
+    //     try {
+    //         $this->connection = new \RepositoryConnection($url, $user, $pass);
+    //         $this->api = new \FedoraApi($this->connection);
+    //         $this->repository = new \FedoraRepository($this->api, new \simpleCache());
+    //         $this->writeLog("Connected to the Fedora repository.");
+    //     } catch(Exception $e) { // RepositoryException
+    //         $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
+    //         $this->writeLog("ERROR: {$errorMessage}");
+    //         $this->writeLog("trace:\n" . $e->getTraceAsString());
+    //         array_push($this->processingErrors, $errorMessage);
+    //         $this->processingFailure = true;
+    //         throw new Exception($errorMessage);
+    //     }
+    //
+    //     // Create a Fedora Management API object shortcut.
+    //     $this->api_m = $this->repository->api->m;
+    //     return true;
+    // }
 
     /**
      * Generate a simple status update message
@@ -1344,7 +1350,8 @@ class Processproquest {
             // TODO: not sure this function throws an exception
             //       https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php
             try {
-                $fedoraObj = $this->repository->constructObject($this->localFiles[$etdShortName]['PID']);
+                // $fedoraObj = $this->repository->constructObject($this->localFiles[$etdShortName]['PID']);
+                $fedoraObj = $this->fedoraConnection->constructObject($this->localFiles[$etdShortName]['PID']);
                 $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$etdShortName]['PID']}");
             } catch (Exception $e) {
                 $errorMessage = "Could not instanciate a Fedora object with PID '" . $this->localFiles[$etdShortName]['PID'] . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
@@ -1372,7 +1379,8 @@ class Processproquest {
 
             // Set the default Parent and Collection policies for the Fedora object.
             try {
-                $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
+                // $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
+                $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID);
                 $collectionName = GRADUATE_THESES;
             } catch (Exception $e) { // RepositoryException
                 $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
@@ -1384,7 +1392,8 @@ class Processproquest {
             if (isset($this->localFiles[$etdShortName]['EMBARGO'])) {
                 $collectionName = GRADUATE_THESES_RESTRICTED;
                 try {
-                    $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
+                    // $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
+                    $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $this->writeLog("[{$dsid}] Adding to Graduate Theses (Restricted) collection.");
                 } catch (Exception $e) { // RepositoryException
                     $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID_EMBARGO . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
@@ -1872,7 +1881,8 @@ class Processproquest {
                 $this->writeLog("DEBUG: Ignore ingesting object into Fedora.");
             } else {
                 try {
-                    $res = $this->repository->ingestObject($fedoraObj);
+                    // $res = $this->repository->ingestObject($fedoraObj);
+                    $res = $this->fedoraConnection->ingestObject($fedoraObj);
                     $this->writeLog("START ingestion of Fedora object...");
                 } catch (Exception $e) {
                     $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
