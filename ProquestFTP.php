@@ -31,7 +31,7 @@ class ProquestFTP implements FileStorageTemplate {
         if ( (empty($url) === true) ) {
             // Can't connect with an empty URL value.
             $errorMessage = "Can't connect to FTP server: The [ftp] 'url' setting isn't set or is incorrect.";
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         // INFO: ftp_connect() Returns an FTP\Connection instance on success, or false on failure.
@@ -40,7 +40,7 @@ class ProquestFTP implements FileStorageTemplate {
         if ($this->conn === false) {
             // Can't connect with an empty URL value.
             $errorMessage = "Can't connect to FTP server: Check your [ftp] settings or see if the FTP server is available.";
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
     }
 

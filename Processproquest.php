@@ -288,7 +288,7 @@ class Processproquest {
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         // Pass login credentials to login method.
@@ -303,7 +303,7 @@ class Processproquest {
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
     }
 
@@ -336,7 +336,7 @@ class Processproquest {
             $this->writeLog("trace:\n" . $e->getTraceAsString());
             array_push($this->processingErrors, $errorMessage);
             $this->countFailedETDs++;
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         array_push($this->localFiles[$etdShortName]['DATASTREAMS_CREATED'], $datastreamName);
@@ -481,7 +481,7 @@ class Processproquest {
             $errorMessage = "Local working directory not set.";
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
@@ -494,7 +494,7 @@ class Processproquest {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
                 $this->writeLog("ERROR: {$errorMessage}");
                 array_push($this->processingErrors, $errorMessage);
-                throw new Exception($errorMessage);
+                throw new \Exception($errorMessage);
             }
         }
 
@@ -525,7 +525,7 @@ class Processproquest {
             $errorMessage = "Did not find any ETD files on the FTP server.";
             $this->writeLog("WARNING: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         $this->writeLog("Found {$this->countTotalETDs} ETD file(s).");
@@ -817,7 +817,7 @@ class Processproquest {
             $errorMessage = "Did not find any ETD files to process.";
             $this->writeLog($errorMessage);
             array_push($this->processingErrors, $errorMessage);
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         $this->writeLog(SECTION_DIVIDER);
@@ -837,7 +837,7 @@ class Processproquest {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         /**
@@ -853,7 +853,7 @@ class Processproquest {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         /**
@@ -1244,7 +1244,7 @@ class Processproquest {
             $errorMessage = "No ETD files to ingest.";
             $this->writeLog("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new Exception($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         $this->writeLog(SECTION_DIVIDER);
