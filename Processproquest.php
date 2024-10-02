@@ -96,18 +96,8 @@ class Processproquest {
         $this->path = $this->settings["islandora"]["path"];
         $this->record_path = "{$this->root_url}{$this->path}";
         $this->logFile = $this->settings["log"]["location"];
-        // $this->ftp = $ftpConnectionObj;
         $this->ftpRoot = $this->settings["ftp"]["fetchdir"];
         $this->processingFailure = false;
-
-        // TODO: move this out of the constructor and into index.php
-        // INFO: is_object() Returns true if value is an object, false otherwise.
-        if ( is_object($loggerObj) === false ) {
-            // An empty logger object was passed.
-            $errorMessage = " An empty logger object was passed. Please check that the Monolog logger was configured correctly.";
-            throw new Exception($errorMessage);
-        }
-
         $this->logger = $loggerObj;
 
         // Pull out logfile location from logger object.

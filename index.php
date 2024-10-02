@@ -79,6 +79,14 @@ $logFileName = "ingest-" . $dateFormatLogFile . ".txt";
 // New Logger instance. Create a new channel called "processProquest".
 $logger = new Logger("processProquest");
 
+// Check if the logger object was created properly.
+if ( is_object($logger) === false ) {
+    $errorMessage = "An empty logger object was passed. Please check that the Monolog logger was configured correctly.";
+    echo "ERROR: {$errorMessage}\n";
+    echo "Exiting.";
+    exit(1);
+}
+
 // Default date format is "Y-m-d\TH:i:sP"
 $dateFormatLogger = "Y-m-d H:i:s";
 
