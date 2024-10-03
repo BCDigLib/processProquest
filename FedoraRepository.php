@@ -82,7 +82,7 @@ class FedoraRepository implements RecordRepositoryTemplate {
     public function getNextPid(string $nameSpace) {
         // See: https://github.com/Islandora/tuque/blob/1.x/FedoraApi.php#L952-L963
         $numberOfPIDsToRequest = 1;
-        $ret = $this->api_m->getNextPid($namespace, $numberOfPIDsToRequest);
+        $ret = $this->api_m->getNextPid($nameSpace, $numberOfPIDsToRequest);
 
         return $ret;
     }
