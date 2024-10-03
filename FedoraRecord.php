@@ -27,6 +27,13 @@ class FedoraRecord implements RecordTemplate {
     public $CRITICAL_ERRORS = [];
     public $ZIP_FILE_FULLPATH = "";
     public $debug = "true";
+    public $fedoraObj = null;
+
+    public $fop_config = "";
+    public $executable_fop = "";
+    public $executable_convert = "";
+    public $executable_pdftk = "";
+    public $executable_pdftotext = "";
 
     /**
      * @param string $id a unique ID for this record.
@@ -51,6 +58,12 @@ class FedoraRecord implements RecordTemplate {
         $this->root_url = $this->settings["islandora"]["root_url"];
         $this->path = $this->settings["islandora"]["path"];
         $this->record_path = "{$this->root_url}{$this->path}";
+
+        $this->fop_config = $this->settings['packages']['fop_config'];
+        $this->executable_fop = $this->settings['packages']['fop'];
+        $this->executable_convert = $this->settings['packages']['convert'];
+        $this->executable_pdftk = $this->settings['packages']['pdftk'];
+        $this->executable_pdftotext = $this->settings['packages']['pdftotext'];
 
         $message = "DEBUG = " .  ($this->debug ? "TRUE" : "FALSE");
         $this->writeLog($message);
@@ -545,11 +558,6 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("Now Ingesting ETD file.");
 
         $etdShortName = $this->ETD_SHORTNAME;
-        $fop_config = $this->settings['packages']['fop_config'];
-        $executable_fop = $this->settings['packages']['fop'];
-        $executable_convert = $this->settings['packages']['convert'];
-        $executable_pdftk = $this->settings['packages']['pdftk'];
-        $executable_pdftotext = $this->settings['packages']['pdftotext'];
 
         // Go through each ETD local file bundle.
         $workingDir = $this->WORKING_DIR;
@@ -576,7 +584,7 @@ class FedoraRecord implements RecordTemplate {
         // TODO: not sure this function throws an exception
         //       https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php
         try {
-            $fedoraObj = $this->fedoraConnection->constructObject($this->PID);
+            $this->fedoraObj = $this->fedoraConnection->constructObject($this->PID);
             $this->writeLog("Instantiated a Fedora object with PID: {$this->PID}");
         } catch (Exception $e) {
             $errorMessage = "Could not instanciate a Fedora object with PID '" . $this->PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
@@ -584,11 +592,11 @@ class FedoraRecord implements RecordTemplate {
         }
 
         // Assign the Fedora object label the ETD name/label
-        $fedoraObj->label = $this->LABEL;
+        $this->fedoraObj->label = $this->LABEL;
         $this->writeLog("Assigned a title to Fedora object: {$this->LABEL}");
 
         // All Fedora objects are owned by the same generic account
-        $fedoraObj->owner = 'fedoraAdmin';
+        $this->fedoraObj->owner = 'fedoraAdmin';
 
         $this->writeLog("Now generating Fedora datastreams.");
 
@@ -625,12 +633,12 @@ class FedoraRecord implements RecordTemplate {
         }
 
         // Update the Fedora object's relationship policies
-        $fedoraObj->models = array('bc-ir:graduateETDCModel');
-        $fedoraObj->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', $collectionName);
+        $this->fedoraObj->models = array('bc-ir:graduateETDCModel');
+        $this->fedoraObj->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', $collectionName);
 
         // Set various other Fedora object settings.
-        $fedoraObj->checksumType = 'SHA-256';
-        $fedoraObj->state = 'I';
+        $this->fedoraObj->checksumType = 'SHA-256';
+        $this->fedoraObj->state = 'I';
 
         // Get Parent XACML policy.
         $policyObj = $parentObject->getDatastream(ISLANDORA_BC_XACML_POLICY);
@@ -638,35 +646,38 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}] Deferring RELS-EXT (XACML) datastream ingestion until other datastreams are generated.");
 
 
+        
         /**
          * Build MODS Datastream.
          *
          *
          */
-        $dsid = 'MODS';
-        $this->writeLog("[{$dsid}] Generating datastream.");
+        $status = $this->datastreamMODS();
 
-        // Build Fedora object MODS datastream.
-        $datastream = $fedoraObj->constructDatastream($dsid, 'X');
+        // $dsid = 'MODS';
+        // $this->writeLog("[{$dsid}] Generating datastream.");
 
-        // Set various MODS datastream values.
-        $datastream->label = 'MODS Record';
-        // OLD: $datastream->label = $this->LABEL;
-        $datastream->mimeType = 'application/xml';
+        // // Build Fedora object MODS datastream.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid, 'X');
 
-        // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
-        $datastream->setContentFromFile($workingDir . "//" . $this->MODS);
-        $this->writeLog("[{$dsid}] Selecting file for this datastream:");
-        $this->writeLog("[{$dsid}]   {$this->MODS}");
+        // // Set various MODS datastream values.
+        // $datastream->label = 'MODS Record';
+        // // OLD: $datastream->label = $this->LABEL;
+        // $datastream->mimeType = 'application/xml';
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
+        // $datastream->setContentFromFile($workingDir . "//" . $this->MODS);
+        // $this->writeLog("[{$dsid}] Selecting file for this datastream:");
+        // $this->writeLog("[{$dsid}]   {$this->MODS}");
+
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Build ARCHIVE MODS datastream.
@@ -674,34 +685,36 @@ class FedoraRecord implements RecordTemplate {
          * Original Proquest Metadata will be saved as ARCHIVE.
          * Original filename is used as label for identification.
          */
-        $dsid = 'ARCHIVE';
-        $this->writeLog("[{$dsid}] Generating datastream.");
+        $status = $this->datastreamMODS();
+        
+        // $dsid = 'ARCHIVE';
+        // $this->writeLog("[{$dsid}] Generating datastream.");
 
-        // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
-        $datastream = $fedoraObj->constructDatastream($dsid, 'X');
+        // // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid, 'X');
 
-        // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
-        $datastream->label = substr($this->FILE_METADATA, 0, strlen($this->FILE_METADATA)-4);
-        //$this->writeLog("Using datastream label: " . $datastream->label);
+        // // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
+        // $datastream->label = substr($this->FILE_METADATA, 0, strlen($this->FILE_METADATA)-4);
+        // //$this->writeLog("Using datastream label: " . $datastream->label);
 
-        // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
-        $datastream->setContentFromFile($workingDir . "//" . $this->FILE_METADATA);
-        $this->writeLog("[{$dsid}] Selecting file for this datastream:");
-        $this->writeLog("[{$dsid}]    {$this->FILE_METADATA}");
+        // // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
+        // $datastream->setContentFromFile($workingDir . "//" . $this->FILE_METADATA);
+        // $this->writeLog("[{$dsid}] Selecting file for this datastream:");
+        // $this->writeLog("[{$dsid}]    {$this->FILE_METADATA}");
 
-        // Set various ARCHIVE MODS datastream values.
-        $datastream->mimeType = 'application/xml';
-        $datastream->checksumType = 'SHA-256';
-        $datastream->state = 'I';
+        // // Set various ARCHIVE MODS datastream values.
+        // $datastream->mimeType = 'application/xml';
+        // $datastream->checksumType = 'SHA-256';
+        // $datastream->state = 'I';
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Build ARCHIVE-PDF datastream.
@@ -709,34 +722,36 @@ class FedoraRecord implements RecordTemplate {
          * PDF will always be loaded as ARCHIVE-PDF DSID regardless of embargo.
          * Splash paged PDF will be PDF dsid.
          */
-        $dsid = 'ARCHIVE-PDF';
-        $this->writeLog("[{$dsid}] Generating datastream.");
+        $status = $this->datastreamARCHIVEPDF();
 
-        // Default Control Group is M.
-        // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
-        $datastream = $fedoraObj->constructDatastream($dsid);
+        // $dsid = 'ARCHIVE-PDF';
+        // $this->writeLog("[{$dsid}] Generating datastream.");
 
-        // OLD: $datastream->label = $this->LABEL;
-        $datastream->label = 'ARCHIVE-PDF Datastream';
+        // // Default Control Group is M.
+        // // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid);
 
-        // Set various ARCHIVE-PDF datastream values.
-        $datastream->mimeType = 'application/pdf';
-        $datastream->checksumType = 'SHA-256';
-        $datastream->state = 'I';
+        // // OLD: $datastream->label = $this->LABEL;
+        // $datastream->label = 'ARCHIVE-PDF Datastream';
 
-        // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-        $datastream->setContentFromFile($workingDir . "//" . $this->FILE_ETD);
-        $this->writeLog("[{$dsid}] Selecting file for this datastream:");
-        $this->writeLog("[{$dsid}]   {$this->FILE_ETD}");
+        // // Set various ARCHIVE-PDF datastream values.
+        // $datastream->mimeType = 'application/pdf';
+        // $datastream->checksumType = 'SHA-256';
+        // $datastream->state = 'I';
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        // $datastream->setContentFromFile($workingDir . "//" . $this->FILE_ETD);
+        // $this->writeLog("[{$dsid}] Selecting file for this datastream:");
+        // $this->writeLog("[{$dsid}]   {$this->FILE_ETD}");
+
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Build PDF datastream.
@@ -744,264 +759,272 @@ class FedoraRecord implements RecordTemplate {
          * First, build splash page PDF.
          * Then, concatenate splash page onto ETD PDF for final PDF.
          */
-        $dsid = "PDF";
-        $this->writeLog("[{$dsid}] Generating datastream.");
-        $this->writeLog("[{$dsid}] First, generate PDF splash page.");
+        $status = $this->datastreamPDF();
 
-        // Source file is the original Proquest XML file.
-        $source = $workingDir . "/" . $this->MODS;
+        // $dsid = "PDF";
+        // $this->writeLog("[{$dsid}] Generating datastream.");
+        // $this->writeLog("[{$dsid}] First, generate PDF splash page.");
 
-        // Assign PDF splash document to ETD file's directory.
-        $splashtemp = $workingDir . "/splash.pdf";
+        // // Source file is the original Proquest XML file.
+        // $source = $workingDir . "/" . $this->MODS;
 
-        // Use the custom XSLT splash stylesheet to build the PDF splash document.
-        $splashxslt = $this->settings['xslt']['splash'];
+        // // Assign PDF splash document to ETD file's directory.
+        // $splashtemp = $workingDir . "/splash.pdf";
 
-        // Use FOP (Formatting Objects Processor) to build PDF splash page.
-        // Execute 'fop' command and check return code.
-        $command = "$executable_fop -c $fop_config -xml $source -xsl $splashxslt -pdf $splashtemp";
-        exec($command, $output, $return);
-        $this->writeLog("[{$dsid}] Running 'fop' command to build PDF splash page.");
-        // FOP returns 0 on success.
-        if ( $return == false ) {
-            $this->writeLog("[{$dsid}] Splash page created successfully.");
-        } else {
-            $errorMessage = "PDF splash page creation failed. ". $return;
-            $this->writeLog("[{$dsid}] ERROR: {$$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        }
+        // // Use the custom XSLT splash stylesheet to build the PDF splash document.
+        // $splashxslt = $this->settings['xslt']['splash'];
 
-        // Update ETD file's object to store splash page's file location and name.
-        $this->SPLASH = 'splash.pdf';
-        array_push($this->DATASTREAMS_CREATED, "SPLASH");
+        // // Use FOP (Formatting Objects Processor) to build PDF splash page.
+        // // Execute 'fop' command and check return code.
+        // $command = "$executable_fop -c $fop_config -xml $source -xsl $splashxslt -pdf $splashtemp";
+        // exec($command, $output, $return);
+        // $this->writeLog("[{$dsid}] Running 'fop' command to build PDF splash page.");
+        // // FOP returns 0 on success.
+        // if ( $return == false ) {
+        //     $this->writeLog("[{$dsid}] Splash page created successfully.");
+        // } else {
+        //     $errorMessage = "PDF splash page creation failed. ". $return;
+        //     $this->writeLog("[{$dsid}] ERROR: {$$errorMessage}");
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // }
 
-        /**
-         * Build concatted PDF document.
-         *
-         * Load splash page PDF to core PDF if under embargo.
-         * TODO: find out when/how this happens
-         */
-        $this->writeLog("[{$dsid}] Next, generate concatenated PDF document.");
+        // // Update ETD file's object to store splash page's file location and name.
+        // $this->SPLASH = 'splash.pdf';
+        // array_push($this->DATASTREAMS_CREATED, "SPLASH");
 
-        // Assign concatenated PDF document to ETD file's directory.
-        $concattemp = $workingDir . "/concatted.pdf";
+        // /**
+        //  * Build concatted PDF document.
+        //  *
+        //  * Load splash page PDF to core PDF if under embargo.
+        //  * TODO: find out when/how this happens
+        //  */
+        // $this->writeLog("[{$dsid}] Next, generate concatenated PDF document.");
 
-        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-        $pdf = $workingDir . "//" . $this->FILE_ETD;
+        // // Assign concatenated PDF document to ETD file's directory.
+        // $concattemp = $workingDir . "/concatted.pdf";
 
-        /*
-        // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
+        // // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        // $pdf = $workingDir . "//" . $this->FILE_ETD;
 
-        // Use pdftk (PDF Toolkit) to edit PDF document.
-        // Execute 'pdftk' command and check return code.
-        $command = "$executable_pdftk $splashtemp $pdf cat output $concattemp";
-        exec($command, $output, $return);
-        $this->writeLog("Running 'pdftk' command to build concatenated PDF document.");
+        // /*
+        // // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
 
-        if (!$return) {
-            $this->writeLog("Concatenated PDF document created successfully.");
-        } else {
-            $this->writeLog("ERROR: Concatenated PDF document creation failed! " . $return);
-            $this->ingestHandlerPostProcess(false, $etdShortName, $this->etd);
-            continue;
-        }
-        */
+        // // Use pdftk (PDF Toolkit) to edit PDF document.
+        // // Execute 'pdftk' command and check return code.
+        // $command = "$executable_pdftk $splashtemp $pdf cat output $concattemp";
+        // exec($command, $output, $return);
+        // $this->writeLog("Running 'pdftk' command to build concatenated PDF document.");
 
-        // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
-        $this->writeLog("[{$dsid}] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.");
+        // if (!$return) {
+        //     $this->writeLog("Concatenated PDF document created successfully.");
+        // } else {
+        //     $this->writeLog("ERROR: Concatenated PDF document creation failed! " . $return);
+        //     $this->ingestHandlerPostProcess(false, $etdShortName, $this->etd);
+        //     continue;
+        // }
+        // */
 
-        // INFO: copy() Returns true on success or false on failure.
-        if ( copy($pdf,$concattemp) === false ) {
-            $errorMessage = "Could not generate a concatenated PDF document.";
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        } else {
-            $this->writeLog("[{$dsid}] PDF document cloned successfully.");
-        }
+        // // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
+        // $this->writeLog("[{$dsid}] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.");
 
-        // Default Control Group is M
-        // Build Fedora object PDF datastream.
-        $datastream = $fedoraObj->constructDatastream($dsid);
+        // // INFO: copy() Returns true on success or false on failure.
+        // if ( copy($pdf,$concattemp) === false ) {
+        //     $errorMessage = "Could not generate a concatenated PDF document.";
+        //     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // } else {
+        //     $this->writeLog("[{$dsid}] PDF document cloned successfully.");
+        // }
 
-        // Set various PDF datastream values.
-        $datastream->label = 'PDF Datastream';
-        $datastream->mimeType = 'application/pdf';
-        $datastream->checksumType = 'SHA-256';
+        // // Default Control Group is M
+        // // Build Fedora object PDF datastream.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid);
 
-        // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
-        $datastream->setContentFromFile($concattemp);
-        $this->writeLog("[{$dsid}] Selecting file for datastream:");
-        $this->writeLog("[{$dsid}]    {$concattemp}");
+        // // Set various PDF datastream values.
+        // $datastream->label = 'PDF Datastream';
+        // $datastream->mimeType = 'application/pdf';
+        // $datastream->checksumType = 'SHA-256';
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
+        // $datastream->setContentFromFile($concattemp);
+        // $this->writeLog("[{$dsid}] Selecting file for datastream:");
+        // $this->writeLog("[{$dsid}]    {$concattemp}");
+
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Build FULL_TEXT datastream.
          *
          *
          */
-        $dsid = "FULL_TEXT";
-        $this->writeLog("[{$dsid}] Generating datastream.");
+        $status = $this->datastreamFULLTEXT();
 
-        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-        $source = $workingDir . "/" . $this->FILE_ETD;
+        // $dsid = "FULL_TEXT";
+        // $this->writeLog("[{$dsid}] Generating datastream.");
 
-        // Assign FULL_TEXT document to ETD file's directory.
-        $fttemp = $workingDir . "/fulltext.txt";
+        // // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        // $source = $workingDir . "/" . $this->FILE_ETD;
 
-        // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
-        // Execute 'pdftotext' command and check return code.
-        $command = "$executable_pdftotext $source $fttemp";
-        exec($command, $output, $return);
-        $this->writeLog("[{$dsid}] Running 'pdftotext' command.");
-        // pdftotext returns 0 on success.
-        if ( $return == false ) {
-            $this->writeLog("[{$dsid}] datastream generated successfully.");
-        } else {
-            $errorMessage = "FULL_TEXT document creation failed. " . $return;
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        }
+        // // Assign FULL_TEXT document to ETD file's directory.
+        // $fttemp = $workingDir . "/fulltext.txt";
 
-        // Build Fedora object FULL_TEXT datastream.
-        $datastream = $fedoraObj->constructDatastream($dsid);
+        // // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
+        // // Execute 'pdftotext' command and check return code.
+        // $command = "$executable_pdftotext $source $fttemp";
+        // exec($command, $output, $return);
+        // $this->writeLog("[{$dsid}] Running 'pdftotext' command.");
+        // // pdftotext returns 0 on success.
+        // if ( $return == false ) {
+        //     $this->writeLog("[{$dsid}] datastream generated successfully.");
+        // } else {
+        //     $errorMessage = "FULL_TEXT document creation failed. " . $return;
+        //     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // }
 
-        // Set various FULL_TEXT datastream values.
-        $datastream->label = 'FULL_TEXT';
-        $datastream->mimeType = 'text/plain';
+        // // Build Fedora object FULL_TEXT datastream.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid);
 
-        // Read in the full-text document that was just generated.
-        // INFO: file_get_contents() The function returns the read data or false on failure.
-        $fulltext = file_get_contents($fttemp);
+        // // Set various FULL_TEXT datastream values.
+        // $datastream->label = 'FULL_TEXT';
+        // $datastream->mimeType = 'text/plain';
 
-        // Check if file read failed.
-        if ( $fulltext === false ) {
-            $errorMessage = "Could not read in file: ". $fttemp;
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        }
+        // // Read in the full-text document that was just generated.
+        // // INFO: file_get_contents() The function returns the read data or false on failure.
+        // $fulltext = file_get_contents($fttemp);
 
-        // Strip out junky characters that mess up SOLR.
-        $replacement = '';
-        // INFO: preg_replace() Returns an array if the subject parameter is an array, or a string otherwise.
-        $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
+        // // Check if file read failed.
+        // if ( $fulltext === false ) {
+        //     $errorMessage = "Could not read in file: ". $fttemp;
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // }
 
-        // In the slim chance preg_replace returns an empty string.
-        if ( $sanitized === '' ) {
-            $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string. String has length of 0.";
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        }
+        // // Strip out junky characters that mess up SOLR.
+        // $replacement = '';
+        // // INFO: preg_replace() Returns an array if the subject parameter is an array, or a string otherwise.
+        // $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
 
-        // Set FULL_TEXT datastream to be sanitized version of full-text document.
-        $datastream->setContentFromString($sanitized);
-        $this->writeLog("[{$dsid}] Selecting file for datastream:");
-        $this->writeLog("[{$dsid}]    {$fttemp}");
+        // // In the slim chance preg_replace returns an empty string.
+        // if ( $sanitized === '' ) {
+        //     $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string. String has length of 0.";
+        //     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // }
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // // Set FULL_TEXT datastream to be sanitized version of full-text document.
+        // $datastream->setContentFromString($sanitized);
+        // $this->writeLog("[{$dsid}] Selecting file for datastream:");
+        // $this->writeLog("[{$dsid}]    {$fttemp}");
+
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Build Thumbnail (TN) datastream
          *
          *
          */
-        $dsid = "TN";
-        $this->writeLog("[{$dsid}] Generating (thumbnail) datastream.");
+        $status = $this->datastreamTN();
 
-        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-        $source = $workingDir . "/" . $this->FILE_ETD;
+        // $dsid = "TN";
+        // $this->writeLog("[{$dsid}] Generating (thumbnail) datastream.");
 
-        // Use convert (from ImageMagick tool suite) to generate TN document.
-        // Execute 'convert' command and check return code.
-        $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $workingDir . "/thumbnail.jpg";
-        exec($command, $output, $return);
-        $this->writeLog("[{$dsid}] Running 'convert' command to build TN document.");
-        // convert returns 0 on success.
-        if ( $return == false ) {
-            $this->writeLog("[{$dsid}] Datastream generated successfully.");
-        } else {
-            $errorMessage = "TN document creation failed. " . $return;
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        }
+        // // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        // $source = $workingDir . "/" . $this->FILE_ETD;
 
-        // Build Fedora object TN datastream.
-        $datastream = $fedoraObj->constructDatastream($dsid);
+        // // Use convert (from ImageMagick tool suite) to generate TN document.
+        // // Execute 'convert' command and check return code.
+        // $command = "$executable_convert $source -quality 75 -resize 200x200 -colorspace RGB -flatten " . $workingDir . "/thumbnail.jpg";
+        // exec($command, $output, $return);
+        // $this->writeLog("[{$dsid}] Running 'convert' command to build TN document.");
+        // // convert returns 0 on success.
+        // if ( $return == false ) {
+        //     $this->writeLog("[{$dsid}] Datastream generated successfully.");
+        // } else {
+        //     $errorMessage = "TN document creation failed. " . $return;
+        //     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // }
 
-        // Set various TN datastream values.
-        $datastream->label = 'TN';
-        $datastream->mimeType = 'image/jpeg';
+        // // Build Fedora object TN datastream.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid);
 
-        // Set TN datastream to be the generated thumbnail image.
-        $datastream->setContentFromFile($workingDir . "//thumbnail.jpg");
-        $this->writeLog("[{$dsid}] Selecting file for datastream: thumbnail.jpg");
+        // // Set various TN datastream values.
+        // $datastream->label = 'TN';
+        // $datastream->mimeType = 'image/jpeg';
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // // Set TN datastream to be the generated thumbnail image.
+        // $datastream->setContentFromFile($workingDir . "//thumbnail.jpg");
+        // $this->writeLog("[{$dsid}] Selecting file for datastream: thumbnail.jpg");
+
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Build PREVIEW datastream.
          *
          *
          */
-        $dsid = "PREVIEW";
-        $this->writeLog("[{$dsid}] Generating datastream.");
+        $status = $this->datastreamPREVIEW();
 
-        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
-        $source = $workingDir . "/" . $this->FILE_ETD;
+        // $dsid = "PREVIEW";
+        // $this->writeLog("[{$dsid}] Generating datastream.");
 
-        // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
-        // Execute 'convert' command and check return code.
-        $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $workingDir . "/preview.jpg";
-        exec($command, $output, $return);
-        $this->writeLog("[{$dsid}] Running 'convert' command to build PREVIEW document.");
-        // convert returns 0 on success.
-        if ( $return == false ) {
-            $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.");
-        } else {
-            $errorMessage = "PREVIEW document creation failed. " . $return;
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-        }
+        // // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        // $source = $workingDir . "/" . $this->FILE_ETD;
 
-        // Build Fedora object PREVIEW datastream.
-        $datastream = $fedoraObj->constructDatastream($dsid);
+        // // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
+        // // Execute 'convert' command and check return code.
+        // $command = "$executable_convert $source -quality 75 -resize 500x700 -colorspace RGB -flatten " . $workingDir . "/preview.jpg";
+        // exec($command, $output, $return);
+        // $this->writeLog("[{$dsid}] Running 'convert' command to build PREVIEW document.");
+        // // convert returns 0 on success.
+        // if ( $return == false ) {
+        //     $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.");
+        // } else {
+        //     $errorMessage = "PREVIEW document creation failed. " . $return;
+        //     $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+        //     $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        // }
 
-        // Set various PREVIEW datastream values.
-        $datastream->label = 'PREVIEW';
-        $datastream->mimeType = 'image/jpeg';
+        // // Build Fedora object PREVIEW datastream.
+        // $datastream = $this->fedoraObj->constructDatastream($dsid);
 
-        // Set PREVIEW datastream to be the generated preview image.
-        $datastream->setContentFromFile($workingDir . "//preview.jpg");
-        $this->writeLog("[{$dsid}] Selecting TN datastream to use: preview.jpg");
+        // // Set various PREVIEW datastream values.
+        // $datastream->label = 'PREVIEW';
+        // $datastream->mimeType = 'image/jpeg';
 
-        try {
-            $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-        } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
+        // // Set PREVIEW datastream to be the generated preview image.
+        // $datastream->setContentFromFile($workingDir . "//preview.jpg");
+        // $this->writeLog("[{$dsid}] Selecting TN datastream to use: preview.jpg");
+
+        // try {
+        //     $status = $this->prepareIngestDatastream($datastream, $dsid);
+        // } catch(Exception $e) {
+        //     // Ingest failed. Continue to the next ETD.
             
-            // TODO: handle error.
-            return null;
-        }
+        //     // TODO: handle error.
+        //     return null;
+        // }
 
         /**
          * Continue RELS-EXT datastream.
@@ -1013,7 +1036,7 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.");
 
         // INFO: prepareIngestDatastream() Returns a boolean.
-        $status = $this->prepareIngestDatastream($fedoraObj, $policyObj, $dsid, $etdShortName);
+        $status = $this->prepareIngestDatastream($policyObj, $dsid);
 
         if ( $status === false ) {
             // Ingest failed. Continue to the next ETD.
@@ -1028,72 +1051,74 @@ class FedoraRecord implements RecordTemplate {
          * This checks if there is an OA policy set for this ETD.
          * If there is, then set Embargo date in the custom XACML policy file.
          */
-        $dsid = "RELS-INT";
-        $this->writeLog("[{$dsid}] Generating datastream.");
-        $this->writeLog("[{$dsid}] Reading in custom RELS XSLT file...");
+        $status = $this->datastreamRELSINT();
+        
+        // $dsid = "RELS-INT";
+        // $this->writeLog("[{$dsid}] Generating datastream.");
+        // $this->writeLog("[{$dsid}] Reading in custom RELS XSLT file...");
 
-        // $this->OA is either '0' for no OA policy, or some non-zero value.
-        $relsint = '';
-        $relsFile = "";
-        if ( $this->OA === '0' ) {
-            // No OA policy.
-            $relsFile = "xsl/permRELS-INT.xml";
-            $relsint = file_get_contents($relsFile);
+        // // $this->OA is either '0' for no OA policy, or some non-zero value.
+        // $relsint = '';
+        // $relsFile = "";
+        // if ( $this->OA === '0' ) {
+        //     // No OA policy.
+        //     $relsFile = "xsl/permRELS-INT.xml";
+        //     $relsint = file_get_contents($relsFile);
 
-            // Check if file read failed.
-            if ( $relsint === false ) {
-                $errorMessage = "Could not read in file: " . $relsFile;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-            }
+        //     // Check if file read failed.
+        //     if ( $relsint === false ) {
+        //         $errorMessage = "Could not read in file: " . $relsFile;
+        //         $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        //     }
 
-            $relsint = str_replace('######', $this->PID, $relsint);
+        //     $relsint = str_replace('######', $this->PID, $relsint);
 
-            $this->writeLog("[{$dsid}] No OA policy for ETD: read in: {$relsFile}");
-        } else if ( isset($this->EMBARGO) === true ) {
-            // Has an OA policy, and an embargo date.
-            $relsFile = "xsl/embargoRELS-INT.xml";
-            $relsint = file_get_contents($relsFile);
+        //     $this->writeLog("[{$dsid}] No OA policy for ETD: read in: {$relsFile}");
+        // } else if ( isset($this->EMBARGO) === true ) {
+        //     // Has an OA policy, and an embargo date.
+        //     $relsFile = "xsl/embargoRELS-INT.xml";
+        //     $relsint = file_get_contents($relsFile);
 
-            // Check if file read failed.
-            if ( $relsint === false ) {
-                $errorMessage = "Could not read in file: " . $relsFile;
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
-            }
+        //     // Check if file read failed.
+        //     if ( $relsint === false ) {
+        //         $errorMessage = "Could not read in file: " . $relsFile;
+        //         $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+        //         $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        //     }
 
-            $relsint = str_replace('######', $this->PID, $relsint);
-            $relsint = str_replace('$$$$$$', (string)$this->EMBARGO, $relsint);
+        //     $relsint = str_replace('######', $this->PID, $relsint);
+        //     $relsint = str_replace('$$$$$$', (string)$this->EMBARGO, $relsint);
 
-            $this->writeLog("[{$dsid}] OA policy found and Embargo date found for ETD: read in: {$relsFile}");
-        }
+        //     $this->writeLog("[{$dsid}] OA policy found and Embargo date found for ETD: read in: {$relsFile}");
+        // }
 
-        // TODO: handle case where there is an OA policy and no embargo date?
+        // // TODO: handle case where there is an OA policy and no embargo date?
 
-        // Ingest datastream if we have a XACML policy set.
-        // INFO: isset() returns true if var exists and has any value other than null. false otherwise.
-        if ( (isset($relsint) === true) && ($relsint !== '') ) {
-            $dsid = "RELS-INT";
+        // // Ingest datastream if we have a XACML policy set.
+        // // INFO: isset() returns true if var exists and has any value other than null. false otherwise.
+        // if ( (isset($relsint) === true) && ($relsint !== '') ) {
+        //     $dsid = "RELS-INT";
 
-            // Build Fedora object RELS-INT datastream.
-            $datastream = $fedoraObj->constructDatastream($dsid);
+        //     // Build Fedora object RELS-INT datastream.
+        //     $datastream = $this->fedoraObj->constructDatastream($dsid);
 
-            // Set various RELS-INT datastream values.
-            $datastream->label = 'Fedora Relationship Metadata';
-            $datastream->mimeType = 'application/rdf+xml';
+        //     // Set various RELS-INT datastream values.
+        //     $datastream->label = 'Fedora Relationship Metadata';
+        //     $datastream->mimeType = 'application/rdf+xml';
 
-            // Set RELS-INT datastream to be the custom XACML policy file read in above.
-            $datastream->setContentFromString($relsint);
-            $this->writeLog("[{$dsid}] Selecting fire for datastream: {$relsFile}");
+        //     // Set RELS-INT datastream to be the custom XACML policy file read in above.
+        //     $datastream->setContentFromString($relsint);
+        //     $this->writeLog("[{$dsid}] Selecting fire for datastream: {$relsFile}");
 
-            try {
-                $status = $this->prepareIngestDatastream($fedoraObj, $datastream, $dsid, $etdShortName);
-            } catch(Exception $e) {
-                // Ingest failed. Continue to the next ETD.
+        //     try {
+        //         $status = $this->prepareIngestDatastream($datastream, $dsid);
+        //     } catch(Exception $e) {
+        //         // Ingest failed. Continue to the next ETD.
                 
-                // TODO: handle error.
-                return null;
-            }
-        }
+        //         // TODO: handle error.
+        //         return null;
+        //     }
+        // }
 
         // Completed datastream completion
         $this->writeLog("Created all datastreams.");
@@ -1111,7 +1136,7 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("DEBUG: Ignore ingesting object into Fedora.");
         } else {
             try {
-                $res = $this->fedoraConnection->ingestObject($fedoraObj);
+                $res = $this->fedoraConnection->ingestObject($this->fedoraObj);
                 $this->writeLog("START ingestion of Fedora object...");
             } catch (Exception $e) {
                 $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
@@ -1140,16 +1165,14 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Prepares Fedora datastreams for ingestion.
      *
-     * @param $fedoraObj A Fedora connection object.
      * @param $datastreamObj A datastream object, usually a file.
      * @param $datastreamName The name of the datastream.
-     * @param $etdShortName The name of the ETD file being processed.
      * 
      * @return boolean Success value.
      * 
      * @throws Exception if the datastream ingest failed.
      */
-    private function prepareIngestDatastream($fedoraObj, $datastreamObj, $datastreamName, $etdShortName) {
+    private function prepareIngestDatastream($datastreamObj, $datastreamName) {
         if ( $this->debug === true ) {
             array_push($this->DATASTREAMS_CREATED, $datastreamName);
             $this->writeLog("[{$datastreamName}] DEBUG: Did not ingest datastream.");
@@ -1249,6 +1272,474 @@ class FedoraRecord implements RecordTemplate {
         $str = preg_replace("/[^a-z0-9-]+/i", "", $str);
 
         return $str;
+    }
+
+    /**
+     * Create the MODS datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamMODS() {
+        $dsid = 'MODS';
+        $this->writeLog("[{$dsid}] Generating datastream.");
+
+        // Build Fedora object MODS datastream.
+        $datastream = $this->fedoraObj->constructDatastream($dsid, 'X');
+
+        // Set various MODS datastream values.
+        $datastream->label = 'MODS Record';
+        // OLD: $datastream->label = $this->LABEL;
+        $datastream->mimeType = 'application/xml';
+
+        // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/author_name.XML
+        $datastream->setContentFromFile($this->WORKING_DIR . "//" . $this->MODS);
+        $this->writeLog("[{$dsid}] Selecting file for this datastream:");
+        $this->writeLog("[{$dsid}]   {$this->MODS}");
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return false;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the ARCHIVE datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamARCHIVE() {
+        $dsid = 'ARCHIVE';
+        $this->writeLog("[{$dsid}] Generating datastream.");
+
+        // Build Fedora object ARCHIVE MODS datastream from original Proquest XML.
+        $datastream = $this->fedoraObj->constructDatastream($dsid, 'X');
+
+        // Assign datastream label as original Proquest XML file name without file extension. Ex: etd_original_name
+        $datastream->label = substr($this->FILE_METADATA, 0, strlen($this->FILE_METADATA)-4);
+        //$this->writeLog("Using datastream label: " . $datastream->label);
+
+        // Set datastream content to be DOMS file. Ex: /tmp/processed/file_name_1234/etd_original_name.XML
+        $datastream->setContentFromFile($this->WORKING_DIR . "//" . $this->FILE_METADATA);
+        $this->writeLog("[{$dsid}] Selecting file for this datastream:");
+        $this->writeLog("[{$dsid}]    {$this->FILE_METADATA}");
+
+        // Set various ARCHIVE MODS datastream values.
+        $datastream->mimeType = 'application/xml';
+        $datastream->checksumType = 'SHA-256';
+        $datastream->state = 'I';
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the ARCHIVE-PDF datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamARCHIVEPDF() {
+        $dsid = 'ARCHIVE-PDF';
+        $this->writeLog("[{$dsid}] Generating datastream.");
+
+        // Default Control Group is M.
+        // Build Fedora object ARCHIVE PDF datastream from original Proquest PDF.
+        $datastream = $this->fedoraObj->constructDatastream($dsid);
+
+        // OLD: $datastream->label = $this->LABEL;
+        $datastream->label = 'ARCHIVE-PDF Datastream';
+
+        // Set various ARCHIVE-PDF datastream values.
+        $datastream->mimeType = 'application/pdf';
+        $datastream->checksumType = 'SHA-256';
+        $datastream->state = 'I';
+
+        // Set datastream content to be ARCHIVE-PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        $datastream->setContentFromFile($this->WORKING_DIR . "//" . $this->FILE_ETD);
+        $this->writeLog("[{$dsid}] Selecting file for this datastream:");
+        $this->writeLog("[{$dsid}]   {$this->FILE_ETD}");
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the PDF datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamPDF() {
+        $dsid = "PDF";
+        $this->writeLog("[{$dsid}] Generating datastream.");
+        $this->writeLog("[{$dsid}] First, generate PDF splash page.");
+
+        // Source file is the original Proquest XML file.
+        $source = $this->WORKING_DIR . "/" . $this->MODS;
+
+        // Assign PDF splash document to ETD file's directory.
+        $splashtemp = $this->WORKING_DIR . "/splash.pdf";
+
+        // Use the custom XSLT splash stylesheet to build the PDF splash document.
+        $splashxslt = $this->settings['xslt']['splash'];
+
+        // Use FOP (Formatting Objects Processor) to build PDF splash page.
+        // Execute 'fop' command and check return code.
+        $command = "{$this->executable_fop} -c {$this->fop_config} -xml {$source} -xsl {$splashxslt} -pdf {$splashtemp}";
+        exec($command, $output, $return);
+        $this->writeLog("[{$dsid}] Running 'fop' command to build PDF splash page.");
+        // FOP returns 0 on success.
+        if ( $return == false ) {
+            $this->writeLog("[{$dsid}] Splash page created successfully.");
+        } else {
+            $errorMessage = "PDF splash page creation failed. ". $return;
+            $this->writeLog("[{$dsid}] ERROR: {$$errorMessage}");
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        }
+
+        // Update ETD file's object to store splash page's file location and name.
+        $this->SPLASH = 'splash.pdf';
+        array_push($this->DATASTREAMS_CREATED, "SPLASH");
+
+        /**
+         * Build concatted PDF document.
+         *
+         * Load splash page PDF to core PDF if under embargo.
+         * TODO: find out when/how this happens
+         */
+        $this->writeLog("[{$dsid}] Next, generate concatenated PDF document.");
+
+        // Assign concatenated PDF document to ETD file's directory.
+        $concattemp = $this->WORKING_DIR . "/concatted.pdf";
+
+        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        $pdf = $this->WORKING_DIR . "//" . $this->FILE_ETD;
+
+        /*
+        // Temporarily deactivating the use of pdftk -- binary is no longer supported in RHEL 7
+
+        // Use pdftk (PDF Toolkit) to edit PDF document.
+        // Execute 'pdftk' command and check return code.
+        $command = "$executable_pdftk $splashtemp $pdf cat output $concattemp";
+        exec($command, $output, $return);
+        $this->writeLog("Running 'pdftk' command to build concatenated PDF document.");
+
+        if (!$return) {
+            $this->writeLog("Concatenated PDF document created successfully.");
+        } else {
+            $this->writeLog("ERROR: Concatenated PDF document creation failed! " . $return);
+            $this->ingestHandlerPostProcess(false, $etdShortName, $this->etd);
+            continue;
+        }
+        */
+
+        // Temporarily copying over the $pdf file as the $concattemp version since pdftk is not supported on RHEL7
+        $this->writeLog("[{$dsid}] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.");
+
+        // INFO: copy() Returns true on success or false on failure.
+        if ( copy($pdf,$concattemp) === false ) {
+            $errorMessage = "Could not generate a concatenated PDF document.";
+            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        } else {
+            $this->writeLog("[{$dsid}] PDF document cloned successfully.");
+        }
+
+        // Default Control Group is M
+        // Build Fedora object PDF datastream.
+        $datastream = $this->fedoraObj->constructDatastream($dsid);
+
+        // Set various PDF datastream values.
+        $datastream->label = 'PDF Datastream';
+        $datastream->mimeType = 'application/pdf';
+        $datastream->checksumType = 'SHA-256';
+
+        // Set datastream content to be PDF file. Ex: /tmp/processed/file_name_1234/concatted.PDF
+        $datastream->setContentFromFile($concattemp);
+        $this->writeLog("[{$dsid}] Selecting file for datastream:");
+        $this->writeLog("[{$dsid}]    {$concattemp}");
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the FULL_TEXT datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamFULLTEXT() {
+        $dsid = "FULL_TEXT";
+        $this->writeLog("[{$dsid}] Generating datastream.");
+
+        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        $source = $this->WORKING_DIR . "/" . $this->FILE_ETD;
+
+        // Assign FULL_TEXT document to ETD file's directory.
+        $fttemp = $this->WORKING_DIR . "/fulltext.txt";
+
+        // Use pdftotext (PDF to Text) to generate FULL_TEXT document.
+        // Execute 'pdftotext' command and check return code.
+        $command = "{$this->executable_pdftotext} {$source} {$fttemp}";
+        exec($command, $output, $return);
+        $this->writeLog("[{$dsid}] Running 'pdftotext' command.");
+        // pdftotext returns 0 on success.
+        if ( $return == false ) {
+            $this->writeLog("[{$dsid}] datastream generated successfully.");
+        } else {
+            $errorMessage = "FULL_TEXT document creation failed. " . $return;
+            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        }
+
+        // Build Fedora object FULL_TEXT datastream.
+        $datastream = $this->fedoraObj->constructDatastream($dsid);
+
+        // Set various FULL_TEXT datastream values.
+        $datastream->label = 'FULL_TEXT';
+        $datastream->mimeType = 'text/plain';
+
+        // Read in the full-text document that was just generated.
+        // INFO: file_get_contents() The function returns the read data or false on failure.
+        $fulltext = file_get_contents($fttemp);
+
+        // Check if file read failed.
+        if ( $fulltext === false ) {
+            $errorMessage = "Could not read in file: ". $fttemp;
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        }
+
+        // Strip out junky characters that mess up SOLR.
+        $replacement = '';
+        // INFO: preg_replace() Returns an array if the subject parameter is an array, or a string otherwise.
+        $sanitized = preg_replace('/[\x00-\x1f]/', $replacement, $fulltext);
+
+        // In the slim chance preg_replace returns an empty string.
+        if ( $sanitized === '' ) {
+            $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string. String has length of 0.";
+            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        }
+
+        // Set FULL_TEXT datastream to be sanitized version of full-text document.
+        $datastream->setContentFromString($sanitized);
+        $this->writeLog("[{$dsid}] Selecting file for datastream:");
+        $this->writeLog("[{$dsid}]    {$fttemp}");
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the TN datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamTN() {
+        $dsid = "TN";
+        $this->writeLog("[{$dsid}] Generating (thumbnail) datastream.");
+
+        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        $source = $this->WORKING_DIR . "/" . $this->FILE_ETD;
+
+        // Use convert (from ImageMagick tool suite) to generate TN document.
+        // Execute 'convert' command and check return code.
+        $command = "{$this->executable_convert} {$source} -quality 75 -resize 200x200 -colorspace RGB -flatten {$this->WORKING_DIR}/thumbnail.jpg";
+        exec($command, $output, $return);
+        $this->writeLog("[{$dsid}] Running 'convert' command to build TN document.");
+        // convert returns 0 on success.
+        if ( $return == false ) {
+            $this->writeLog("[{$dsid}] Datastream generated successfully.");
+        } else {
+            $errorMessage = "TN document creation failed. " . $return;
+            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        }
+
+        // Build Fedora object TN datastream.
+        $datastream = $this->fedoraObj->constructDatastream($dsid);
+
+        // Set various TN datastream values.
+        $datastream->label = 'TN';
+        $datastream->mimeType = 'image/jpeg';
+
+        // Set TN datastream to be the generated thumbnail image.
+        $datastream->setContentFromFile($this->WORKING_DIR . "//thumbnail.jpg");
+        $this->writeLog("[{$dsid}] Selecting file for datastream: thumbnail.jpg");
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the PREVIEW datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamPREVIEW() {
+        $dsid = "PREVIEW";
+        $this->writeLog("[{$dsid}] Generating datastream.");
+
+        // Get location of original PDF file. Ex: /tmp/processed/file_name_1234/author_name.PDF
+        $source = $this->WORKING_DIR . "/" . $this->FILE_ETD;
+
+        // Use convert (from ImageMagick tool suite) to generate PREVIEW document.
+        // Execute 'convert' command and check return code.
+        $command = "{$this->executable_convert} {$source} -quality 75 -resize 500x700 -colorspace RGB -flatten {$this->WORKING_DIR}/preview.jpg";
+        exec($command, $output, $return);
+        $this->writeLog("[{$dsid}] Running 'convert' command to build PREVIEW document.");
+        // convert returns 0 on success.
+        if ( $return == false ) {
+            $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.");
+        } else {
+            $errorMessage = "PREVIEW document creation failed. " . $return;
+            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+        }
+
+        // Build Fedora object PREVIEW datastream.
+        $datastream = $this->fedoraObj->constructDatastream($dsid);
+
+        // Set various PREVIEW datastream values.
+        $datastream->label = 'PREVIEW';
+        $datastream->mimeType = 'image/jpeg';
+
+        // Set PREVIEW datastream to be the generated preview image.
+        $datastream->setContentFromFile($this->WORKING_DIR . "//preview.jpg");
+        $this->writeLog("[{$dsid}] Selecting TN datastream to use: preview.jpg");
+
+        try {
+            $status = $this->prepareIngestDatastream($datastream, $dsid);
+        } catch(Exception $e) {
+            // Ingest failed. Continue to the next ETD.
+            
+            // TODO: handle error.
+            return null;
+        }
+
+        return $status;
+    }
+
+    /**
+     * Create the RELS-INT datastream.
+     * 
+     * @return boolean Success value.
+     */
+    public function datastreamRELSINT() {
+        $dsid = "RELS-INT";
+        $this->writeLog("[{$dsid}] Generating datastream.");
+        $this->writeLog("[{$dsid}] Reading in custom RELS XSLT file...");
+
+        // $this->OA is either '0' for no OA policy, or some non-zero value.
+        $relsint = '';
+        $relsFile = "";
+        if ( $this->OA === '0' ) {
+            // No OA policy.
+            $relsFile = "xsl/permRELS-INT.xml";
+            $relsint = file_get_contents($relsFile);
+
+            // Check if file read failed.
+            if ( $relsint === false ) {
+                $errorMessage = "Could not read in file: " . $relsFile;
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            }
+
+            $relsint = str_replace('######', $this->PID, $relsint);
+
+            $this->writeLog("[{$dsid}] No OA policy for ETD: read in: {$relsFile}");
+        } else if ( isset($this->EMBARGO) === true ) {
+            // Has an OA policy, and an embargo date.
+            $relsFile = "xsl/embargoRELS-INT.xml";
+            $relsint = file_get_contents($relsFile);
+
+            // Check if file read failed.
+            if ( $relsint === false ) {
+                $errorMessage = "Could not read in file: " . $relsFile;
+                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
+                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            }
+
+            $relsint = str_replace('######', $this->PID, $relsint);
+            $relsint = str_replace('$$$$$$', (string)$this->EMBARGO, $relsint);
+
+            $this->writeLog("[{$dsid}] OA policy found and Embargo date found for ETD: read in: {$relsFile}");
+        }
+
+        // TODO: handle case where there is an OA policy and no embargo date?
+
+        // Ingest datastream if we have a XACML policy set.
+        // INFO: isset() returns true if var exists and has any value other than null. false otherwise.
+        if ( (isset($relsint) === true) && ($relsint !== '') ) {
+            $dsid = "RELS-INT";
+
+            // Build Fedora object RELS-INT datastream.
+            $datastream = $this->fedoraObj->constructDatastream($dsid);
+
+            // Set various RELS-INT datastream values.
+            $datastream->label = 'Fedora Relationship Metadata';
+            $datastream->mimeType = 'application/rdf+xml';
+
+            // Set RELS-INT datastream to be the custom XACML policy file read in above.
+            $datastream->setContentFromString($relsint);
+            $this->writeLog("[{$dsid}] Selecting fire for datastream: {$relsFile}");
+
+            try {
+                $status = $this->prepareIngestDatastream($datastream, $dsid);
+            } catch(Exception $e) {
+                // Ingest failed. Continue to the next ETD.
+                
+                // TODO: handle error.
+                return null;
+            }
+
+            return $status;
+        }
+
+        return false;
     }
 }
 
