@@ -45,13 +45,10 @@ class Processproquest {
     public $debug;                          // Debug bool
     protected $ftp;                         // FTP connection object
     protected $localFiles = [];             // Object to store all ETD metadata
-    protected $connection;                  // Repository connection object
-    protected $api;                         // Fedora API connection object
-    protected $api_m;                       // Fedora API iterator object
-    protected $repository;                  // Repository connection object
     protected $logFile = "";                // Log file name
     protected $processingErrors = [];       // Keep track of processing errors
     protected $allFoundETDs = [];           // List of all found ETD zip files
+    protected $allFoundETDPaths = [];       // List of all found ETD zip files with full FTP file path
     protected $allSupplementalETDs = [];    // List of all ETDs with supplemental files
     protected $allRegularETDs = [];         // List of all ETDs without supplemental files
     protected $allIngestedETDs = [];        // List of all ETDs that were successfully ingested
@@ -450,22 +447,21 @@ class Processproquest {
     }
 
     /**
-     * Gather ETD zip files from FTP server.
+     * Fetch ETD zip files from FTP server.
      *
      * Create a local directory for each zip file from FTP server and save into directory.
      * Local directory name is based on file name.
      * Next, varify that PDF and XML files exist. Also keep track of supplementary files.
-     * Lastly, expand zip file contents into local directory.
-     *
-     * @return boolean Success value.
      * 
-     * @throws Exception if the working directory isn't reachable.
+     * @return array list of allFoundETDPaths.
+     * 
+     * @throws Exception if the working directory isn't reachable, or there are no ETDs found.
      */
-    public function getFiles() {
-        $fn = "getFiles";
+    public function scanForETDFiles() {
+        $fn = "fetchFilesFromFTP";
 
         $this->writeLog(SECTION_DIVIDER);
-        $this->writeLog("Fetching ETD files from FTP server.");
+        $this->writeLog("BEGIN Fetching ETD files from FTP server.");
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $this->fetchdirFTP = $this->settings['ftp']['fetchdir'];
@@ -496,8 +492,6 @@ class Processproquest {
             }
         }
 
-        // $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}");
-
         /**
          * Look for files that begin with a specific string.
          * In our specific case the file prefix is "etdadmin_upload_*".
@@ -509,13 +503,16 @@ class Processproquest {
 
         // Only collect zip files.
         $etdZipFiles = [];
+        $etdZipFilesOnFTP = [];
         foreach($allFiles as $file) {
             if ( str_contains($file, ".zip") === true ) {
                 array_push($etdZipFiles, $file);
+                array_push($etdZipFilesOnFTP, $this->fetchdirFTP . $file);
             }
         }
 
         $this->allFoundETDs = $etdZipFiles;
+        $this->allFoundETDPaths = $etdZipFilesOnFTP; 
         $this->countTotalETDs = count($etdZipFiles);
 
         // Throw exception if there are no ETD files to process.
@@ -530,7 +527,32 @@ class Processproquest {
         foreach ($etdZipFiles as $zipFileName) {
             $this->writeLog("   • {$zipFileName}");
         }
-        $this->writeLog("Now parsing each ETD file.");
+
+        $this->writeLog("END Fetching ETD files from FTP server.");
+        return $this->allFoundETDPaths;
+    }
+
+    /**
+     * Gets the list of all found ETDs on the FTP server.
+     * 
+     * @return array list of ETDs.
+     */
+    public function allFoundETDPaths() {
+        return $this->allFoundETDPaths;
+    }
+
+    /**
+     * Downloads ETD zip files from the FTP server and places them into the designated working directory.
+     * 
+     * On any download error the function preprocessingTaskFailed() is called to manage error handling.
+     */
+    public function downloadETDFiles() {
+        $this->writeLog(SECTION_DIVIDER);
+        $this->writeLog("BEGIN Downloading each ETD file.");
+
+        $etdZipFiles = $this->allFoundETDs;
+        $allFoundETDPaths = $this->allFoundETDPaths;
+        $localdirFTP = $this->settings['ftp']['localdir'];
 
         /**
          * Loop through each match in $etdZipFiles.
@@ -539,6 +561,7 @@ class Processproquest {
         $f = 0;
         foreach ($etdZipFiles as $zipFileName) {
             $f++;
+
             /**
              * Set the directory name for each ETD file.
              * This is based on the file name without any file extension.
@@ -595,8 +618,6 @@ class Processproquest {
                 if ( $this->recurseRmdir($etdWorkingDir) === false ) {
                     // We couldn't clear out the directory.
                     $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}. Moving to the next ETD.";
-                    // $this->writeLog("ERROR: {$errorMessage}");
-                    // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                     $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                     continue;
                 } else {
@@ -607,8 +628,6 @@ class Processproquest {
             // INFO: mkdir() Returns true on success or false on failure.
             if ( mkdir($etdWorkingDir, 0755, true) === false ) {
                 $errorMessage = "Failed to create local working directory: {$etdWorkingDir}. Moving to the next ETD.";
-                // $this->writeLog("ERROR: {$errorMessage}");
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                 continue;
             } else {
@@ -629,8 +648,6 @@ class Processproquest {
                 $this->writeLog("Fetched ETD zip file from FTP server.");
             } else {
                 $errorMessage = "Failed to fetch file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
-                // $this->writeLog("ERROR: {$errorMessage}");
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                 continue;
             }
@@ -640,21 +657,70 @@ class Processproquest {
                 $this->localFiles[$etdShortName];
             }
 
+            $this->localFiles[$etdShortName]['STATUS'] = "downloaded";
+        }
+
+        $this->writeLog("END Downloading each ETD file.");
+    }
+
+    /**
+     * Parse each ETD zip file fetched from the FTP server.
+     *
+     * Expand zip file contents into local directory.
+     * Check for supplementary files in each ETD zip file.
+     *
+     * On any download error the function preprocessingTaskFailed() is called to manage error handling.
+     */
+    public function parseETDFiles() {
+        $this->writeLog(SECTION_DIVIDER);
+        $this->writeLog("BEGIN Parsing each ETD file.");
+
+        $etdZipFiles = $this->allFoundETDs;
+        $allFoundETDPaths = $this->allFoundETDPaths;
+        $localdirFTP = $this->settings['ftp']['localdir'];
+
+        /**
+         * Loop through each match in $etdZipFiles.
+         * There may be multiple matched files so process each individually.
+         */
+        $f = 0;
+        foreach ($this->localFiles as $etdShortName => $etdObj) {
+            $f++;
+            $this->currentProcessedETD = $etdShortName;
+            $etdWorkingDir = $this->localFiles[$etdShortName]['WORKING_DIR'];
+            $zipFileName = $this->localFiles[$etdShortName]['ZIP_FILENAME'];
+            $zipFileFullPath = "{$etdWorkingDir}/{$zipFileName}"; 
+
+            $this->writeLog(LOOP_DIVIDER);
+            $this->writeLog("BEGIN Gathering ETD file [{$f} of {$this->countTotalETDs}]");
+
+            // Check to see if zipFileName is more than four chars. Continue if string fails.
+            if ( strlen($zipFileName) <= 4 ) {
+                $this->writeLog("WARNING File name only has " . strlen($zipFileName) . " characters. Moving to the next ETD." );
+                $this->countTotalInvalidETDs++;
+                array_push($this->allInvalidETDs, $zipFileName);
+                continue;
+            }
+            $this->writeLog("Is file valid?... true.");
+
+            $this->localFiles[$etdShortName]['SUPPLEMENTS'] = [];
+            $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] = false;
+            $this->localFiles[$etdShortName]['FILE_ETD'] = "";
+            $this->localFiles[$etdShortName]['FILE_METADATA'] = "";
+            $this->localFiles[$etdShortName]['ZIP_CONTENTS'] = [];
+
             $zip = new \ZipArchive;
 
             // Open and extract zip file to local directory.
             // INFO: zip_open() returns either false or the number of error if filename does not exist 
             //       or in case of other error.
-            $res = $zip->open($etdZipFileFullPath);
+            $res = $zip->open($zipFileFullPath);
             if ($res === TRUE) {
                 $zip->extractTo($etdWorkingDir);
                 $zip->close();
-
                 $this->writeLog("Extracting ETD zip file to local working directory.");
             } else {
                 $errorMessage = "Failed to extract ETD zip file: " . $res;
-                // $this->writeLog("ERROR: {$errorMessage}");
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                 continue;
             }
@@ -669,8 +735,6 @@ class Processproquest {
             if ( count($expandedETDFiles) === 0) {
                 // There are no files in this expanded zip file.
                 $errorMessage = "There are no files in this expanded zip file.";
-                //$this->writeLog("ERROR: {$errorMessage}");
-                //array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                 continue;
             }
@@ -716,7 +780,6 @@ class Processproquest {
                      * Metadata will contain boolean key for permission in DISS_file_descr element.
                      * [0] element should always be folder.
                      */
-                    // echo "Is this a directory? {$etdWorkingDir}/{$etdFileName}: " . is_dir($etdWorkingDir . "/" . $etdFileName);
                     try {
                         $checkIfDir = is_dir($etdWorkingDir . "/" . $etdFileName);
                     } catch (Exception $e) {
@@ -764,10 +827,7 @@ class Processproquest {
              */
             $this->writeLog("Checking that PDF and XML files were found in this zip file:");
             if ( empty($this->localFiles[$etdShortName]['FILE_ETD']) === true ) {
-                $errorMessage = "   The ETD PDF file was not found or set.";
-                // $this->writeLog("ERROR: {$errorMessage}");
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]['STATUS'] = "failure";
+                $errorMessage = "   The ETD PDF file was not found or set.";;
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                 continue;
             }
@@ -775,9 +835,6 @@ class Processproquest {
 
             if ( empty($this->localFiles[$etdShortName]['FILE_METADATA']) === true ) {
                 $errorMessage = "   The ETD XML file was not found or set.";
-                // $this->writeLog("ERROR: {$errorMessage}");
-                // array_push($this->localFiles[$etdShortName]['CRITICAL_ERRORS'], $errorMessage);
-                // $this->localFiles[$etdShortName]['STATUS'] = "failure";
                 $this->preprocessingTaskFailed($errorMessage, $etdShortName);
                 continue;
             }
@@ -790,8 +847,27 @@ class Processproquest {
 
         // Completed fetching all ETD zip files.
         $this->writeLog(LOOP_DIVIDER);
-        $this->writeLog("Completed fetching all ETD zip files from FTP server.");
-        return true;
+        $this->writeLog("END Parsing each ETD file.");
+    }
+
+    /**
+     * Shorthand function that combines the following tasks:
+     *   - scanForETDFiles()
+     *   - downloadETDFiles()
+     *   - parseETDFiles()
+     * 
+     * @throws Exception bubbles up any exception caught from scanForETDFiles().
+     */
+    public function getFiles() {
+        // scanForETDFiles() can throw an exception.
+        try {
+            $this->scanForETDFiles();
+        } catch (Exception $e) {
+            throw new \Exception($e);
+        }
+        
+        $this->downloadETDFiles();
+        $this->parseETDFiles();
     }
 
     /**
@@ -960,7 +1036,6 @@ class Processproquest {
                 $pid = "bc-ir:" . rand(50000,100000) + 9000000;
                 $this->writeLog("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}");
             } else {
-                // $pid = $this->api_m->getNextPid($this->settings['fedora']['namespace'], 1);
                 $pid = $this->fedoraConnection->getNextPid($this->settings['fedora']['namespace'], 1);
                 $this->writeLog("Fetched new PID from Fedora: {$pid}");
             }
@@ -1281,7 +1356,6 @@ class Processproquest {
             // TODO: not sure this function throws an exception
             //       https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php
             try {
-                // $fedoraObj = $this->repository->constructObject($this->localFiles[$etdShortName]['PID']);
                 $fedoraObj = $this->fedoraConnection->constructObject($this->localFiles[$etdShortName]['PID']);
                 $this->writeLog("Instantiated a Fedora object with PID: {$this->localFiles[$etdShortName]['PID']}");
             } catch (Exception $e) {
@@ -1310,7 +1384,6 @@ class Processproquest {
 
             // Set the default Parent and Collection policies for the Fedora object.
             try {
-                // $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID);
                 $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID);
                 $collectionName = GRADUATE_THESES;
             } catch (Exception $e) { // RepositoryException
@@ -1323,7 +1396,6 @@ class Processproquest {
             if (isset($this->localFiles[$etdShortName]['EMBARGO'])) {
                 $collectionName = GRADUATE_THESES_RESTRICTED;
                 try {
-                    // $parentObject = $this->repository->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                     $this->writeLog("[{$dsid}] Adding to Graduate Theses (Restricted) collection.");
                 } catch (Exception $e) { // RepositoryException
@@ -1812,7 +1884,6 @@ class Processproquest {
                 $this->writeLog("DEBUG: Ignore ingesting object into Fedora.");
             } else {
                 try {
-                    // $res = $this->repository->ingestObject($fedoraObj);
                     $res = $this->fedoraConnection->ingestObject($fedoraObj);
                     $this->writeLog("START ingestion of Fedora object...");
                 } catch (Exception $e) {
