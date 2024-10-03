@@ -13,6 +13,8 @@ namespace Processproquest;
  * Custom FTP connection handler.
  */
 require_once 'ProquestFTP.php';
+require_once 'FedoraRecord.php';
+use \Processproquest\Record as FR;
 
 /*
  * BC Islandora definitions.
@@ -868,6 +870,42 @@ class Processproquest {
         
         $this->downloadETDFiles();
         $this->parseETDFiles();
+    }
+
+    public function processAllFiles() {
+        // scanForETDFiles() can throw an exception.
+        try {
+            $this->scanForETDFiles();
+        } catch (Exception $e) {
+            throw new \Exception($e);
+        }
+        
+        // Download ETD zip file into the working directory.
+        $this->downloadETDFiles();
+
+        // Generate Record objects for further processing.
+        $allRecords = [];
+        foreach ($this->localFiles as $etdShortName => $etdRecord) {
+            $workingDir = $this->localFiles[$etdShortName]['WORKING_DIR'];
+            $zipFilename = $this->localFiles[$etdShortName]['ZIP_FILENAME'];
+            $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $workingDir, $zipFilename, $this->fedoraConnection, $this->logger);
+
+            array_push($allRecords, $recordObj);
+
+            // Parse through this record.
+            // TODO: catch exceptions.
+            $recordObj->parseETD();
+
+            // Process this record.
+            // TODO: catch exceptions.
+            $recordObj->processETD();
+
+            // Ingest this record.
+            // TODO: catch exceptions.
+            $recordObj->ingestETD();
+        }
+
+        return; 
     }
 
     /**

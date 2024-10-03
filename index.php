@@ -198,6 +198,20 @@ try {
     exit(1);
 }
 
+
+// TESTING STARTS HERE
+
+try {
+    $process->processAllFiles();
+} catch(Exception $e) {
+    $process->postProcess();
+    $logger->info("Exiting.");
+    exit(1);
+}
+
+// TESTING ENDS HERE.
+exit(1);
+
 // Get zip files from FTP server, unzip and store locally.
 // Exit when an exception is caught.
 try {
@@ -207,6 +221,7 @@ try {
     $logger->info("Exiting.");
     exit(1);
 }
+
 
 // Process each zip file.
 // Exit when an exception is caught.
