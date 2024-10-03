@@ -209,8 +209,6 @@ class FedoraRecord implements RecordTemplate {
                 $this->writeLog("END Gathering ETD file");
                 $this->STATUS = "skipped";
                 continue;
-            } else {
-                array_push($this->allRegularETDs, $zipFileName);
             }
 
             /**
@@ -261,6 +259,14 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog(SECTION_DIVIDER);
         $this->writeLog("Now processing this ETD file.");
 
+        // No need to process ETDs that have supplemental files.
+        if ( $this->HAS_SUPPLEMENTS === true ) {
+            $this->writeLog("SKIP Processing ETD since it contains supplemental files.");
+            $this->writeLog("END Processing ETD file.");
+
+            return false;
+        }
+
         /**
          * Load Proquest MODS XSLT stylesheet.
          * Ex: /path/to/proquest/crosswalk/Proquest_MODS.xsl
@@ -304,15 +310,6 @@ class FedoraRecord implements RecordTemplate {
 
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("BEGIN Processing this ETD file.");
-
-        // No need to process ETDs that have supplemental files.
-        if ( $this->HAS_SUPPLEMENTS === true ) {
-            $this->writeLog("SKIP Processing ETD since it contains supplemental files.");
-            $this->writeLog("END Processing ETD file.");
-
-            // TODO: manage this error.
-            return null;
-        }
 
         // Create XPath object from the ETD XML file.
         $metadata = new \DOMDocument();
@@ -571,9 +568,8 @@ class FedoraRecord implements RecordTemplate {
         if ( $this->HAS_SUPPLEMENTS === true ) {
             $this->writeLog("SKIP Ingesting ETD since it contains supplemental files.");
             $this->writeLog("END Ingesting ETD file.");
-            
-            // TODO: handle error.
-            return null;
+
+            return false;
         }
 
         // TODO: generate this value. See localFiles object.
@@ -900,6 +896,7 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}]   {$this->MODS}");
 
         try {
+            // TODO: this returns an exception on failure. bubble up the exception.
             $status = $this->prepareIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
             // Ingest failed. Continue to the next ETD.
