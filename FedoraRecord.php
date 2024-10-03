@@ -75,20 +75,19 @@ class FedoraRecord implements RecordTemplate {
      * Check for supplementary files in each ETD zip file.
      *
      * On any download error the function preprocessingTaskFailed() is called to manage error handling.
+     * 
+     * @return boolean Success value.
      */
     public function parseETD() {
         $this->writeLog(SECTION_DIVIDER);
         $this->writeLog("BEGIN Parsing this ETD file.");
         
         $this->writeLog(LOOP_DIVIDER);
-        //$this->writeLog("BEGIN Gathering ETD file [{$f} of {$this->countTotalETDs}]");
         $this->writeLog("BEGIN Gathering ETD file");
 
         // Check to see if zipFileName is more than four chars. Continue if string fails.
         if ( strlen($this->ZIP_FILENAME) <= 4 ) {
             $this->writeLog("WARNING File name only has " . strlen($this->ZIP_FILENAME) . " characters. Moving to the next ETD." );
-            //$this->countTotalInvalidETDs++;
-            //array_push($this->allInvalidETDs, $this->ZIP_FILENAME);
 
             // TODO: manage this error case.
             return null;
@@ -181,8 +180,6 @@ class FedoraRecord implements RecordTemplate {
                 } else {
                     array_push($this->SUPPLEMENTS, $etdFileName);
                     $this->HAS_SUPPLEMENTS = true;
-                    //$this->countSupplementalETDs++;
-                    //array_push($this->allSupplementalETDs, $zipFileName);
                     $this->writeLog("      This is a supplementary file.");
                 }
             } else {
@@ -196,7 +193,6 @@ class FedoraRecord implements RecordTemplate {
             if ( $this->HAS_SUPPLEMENTS === true ){
                 // At this point we can leave this function if the ETD has supplemental files.
                 $this->writeLog("This ETD has supplementary files. No further processing is required. Moving to the next ETD.");
-                //$this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalETDs}]");
                 $this->writeLog("END Gathering ETD file");
                 $this->STATUS = "skipped";
                 continue;
@@ -224,15 +220,15 @@ class FedoraRecord implements RecordTemplate {
                 continue;
             }
             $this->writeLog("   ✓ The ETD XML file was found.");
-
             $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]");
             $this->STATUS = "success";
         }
-        //$this->currentProcessedETD = "";
 
         // Completed fetching all ETD zip files.
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("END Parsing this ETD file.");
+
+        return true;
     }
 
     /**
@@ -243,24 +239,13 @@ class FedoraRecord implements RecordTemplate {
      *  - Embargo settings.
      *  - MODS metadata.
      *  - PID, title, author values.
-     *
+     * 
      * @return boolean Success value.
      * 
      * @throws Exception if XSLT files can't be found.
      */
     public function processETD() {
-        //$fn = "processFiles";
-
-        // Return false if there are no ETD files to process.
-        // if ( empty($this->localFiles) === true ) {
-        //     $errorMessage = "Did not find any ETD files to process.";
-        //     $this->writeLog($errorMessage);
-        //     array_push($this->CRITICAL_ERRORS, $errorMessage);
-        //     throw new \Exception($errorMessage);
-        // }
-
         $this->writeLog(SECTION_DIVIDER);
-        //$this->writeLog("Now processing {$this->countTotalValidETDs} ETD file(s).");
         $this->writeLog("Now processing this ETD file.");
 
         /**
@@ -303,16 +288,13 @@ class FedoraRecord implements RecordTemplate {
 
         $zipFileName = $this->ZIP_FILENAME;
         $etdShortName = $this->ETD_SHORTNAME;
-        // $this->currentProcessedETD = $etdShortName;
 
         $this->writeLog(LOOP_DIVIDER);
-        // $this->writeLog("BEGIN Processing ETD file [{$s} of {$this->countTotalETDs}]");
         $this->writeLog("BEGIN Processing this ETD file.");
 
         // No need to process ETDs that have supplemental files.
         if ( $this->HAS_SUPPLEMENTS === true ) {
             $this->writeLog("SKIP Processing ETD since it contains supplemental files.");
-            //$this->writeLog("END Processing ETD file [{$s} of {$this->countTotalValidETDs}]");
             $this->writeLog("END Processing ETD file.");
 
             // TODO: manage this error.
@@ -475,7 +457,6 @@ class FedoraRecord implements RecordTemplate {
          * Normalize the ETD author string. This forms the internal file name convention.
          * Ex: Jane Anne O'Foo => Jane-Anne-OFoo
          */
-        #$normalizedAuthor = str_replace(array(" ",",","'",".","&apos;",'"',"&quot;"), array("-","","","","","",""), $author);
         $normalizedAuthor = $this->normalizeString($author);
         $this->AUTHOR = $author;
         $this->AUTHOR_NORMALIZED = $normalizedAuthor;
@@ -485,7 +466,6 @@ class FedoraRecord implements RecordTemplate {
 
         // Create placeholder full-text text file using normalized author's name.
         $this->FULLTEXT = $normalizedAuthor . ".txt";
-        //$this->writeLog("Generated placeholder full text file name: " . $this->FULLTEXT);
 
         // Rename Proquest PDF using normalized author's name.
         // INFO: rename() Returns true on success or false on failure.
@@ -532,11 +512,10 @@ class FedoraRecord implements RecordTemplate {
         //$this->writeLog("END Processing ETD [#{$s} of {$this->countTotalETDs}]");
         $this->writeLog("END Processing ETD");
 
-        //$this->currentProcessedETD = "";
-
         // Completed processing all ETD files.
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("Completed processing this ETD file.");
+
         return true;
     }
 
@@ -555,21 +534,17 @@ class FedoraRecord implements RecordTemplate {
      * - XACML          (access control policy)
      * - RELS-INT       (internal relationship)
      *
-     * Next, it ingests the completed object into Fedora.
-     * Then, tidies up ETD files on FTP server.
-     * Lastly, send out notification email.
+     * Then, it ingests the completed object into Fedora.
      * 
-     * @return boolean Success value
+     * @return boolean Success value.
      * 
      * @throws Exception if there are no ETDs to ingest
      */
     public function ingestETD() {
         $this->writeLog(SECTION_DIVIDER);
-        //$this->writeLog("Now Ingesting {$this->countTotalETDs} ETD file(s).");
         $this->writeLog("Now Ingesting ETD file.");
 
         $etdShortName = $this->ETD_SHORTNAME;
-
         $fop_config = $this->settings['packages']['fop_config'];
         $executable_fop = $this->settings['packages']['fop'];
         $executable_convert = $this->settings['packages']['convert'];
@@ -582,14 +557,11 @@ class FedoraRecord implements RecordTemplate {
         $this->INGESTED = false;
         
         $this->writeLog(LOOP_DIVIDER);
-        $this->currentProcessedETD = $etdShortName;
-        // $this->writeLog("BEGIN Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
         $this->writeLog("BEGIN Ingesting ETD file.");
 
         // No need to process ETDs that have supplemental files.
         if ( $this->HAS_SUPPLEMENTS === true ) {
             $this->writeLog("SKIP Ingesting ETD since it contains supplemental files.");
-            // $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
             $this->writeLog("END Ingesting ETD file.");
             
             // TODO: handle error.
@@ -1126,6 +1098,7 @@ class FedoraRecord implements RecordTemplate {
         // Completed datastream completion
         $this->writeLog("Created all datastreams.");
 
+
         /**
          * Ingest full object into Fedora.
          *
@@ -1149,9 +1122,6 @@ class FedoraRecord implements RecordTemplate {
 
         $this->STATUS = "ingested";
         $this->INGESTED = true;
-        
-        //$this->countProcessedETDs++;
-        //array_push($this->allIngestedETDs, $this->ETD_SHORTNAME);
 
         // Make sure we give every processing loop enough time to complete.
         usleep(30000); // 30 milliseconds
@@ -1161,12 +1131,10 @@ class FedoraRecord implements RecordTemplate {
 
         // $this->writeLog("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
         $this->writeLog("END Ingesting ETD file.");
-
-
-        //$this->currentProcessedETD = "";
-
         $this->writeLog(LOOP_DIVIDER);
         $this->writeLog("Completed ingesting this ETD file.");
+
+        return true;
     }
 
     /**
@@ -1215,7 +1183,6 @@ class FedoraRecord implements RecordTemplate {
      * @throws Exception
      */
     private function preprocessingTaskFailed($errorMessage) {
-        //array_push($this->allFailedETDs, $this->ETD_SHORTNAME);
         array_push($this->CRITICAL_ERRORS, $errorMessage);
         $this->writeLog("ERROR: {$errorMessage}");
         $this->STATUS = "failed";
@@ -1232,7 +1199,6 @@ class FedoraRecord implements RecordTemplate {
      * @throws Exception
      */
     private function datastreamIngestFailed($errorMessage, $datastreamName, $etdShortName) {
-        //array_push($this->allFailedETDs, $etdShortName);
         array_push($this->CRITICAL_ERRORS, $errorMessage);
         $this->writeLog("[{$datastreamName}] ERROR: $errorMessage");
         $this->STATUS = "failed";
@@ -1284,7 +1250,6 @@ class FedoraRecord implements RecordTemplate {
 
         return $str;
     }
-
 }
 
 ?>
