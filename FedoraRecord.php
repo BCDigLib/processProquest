@@ -87,9 +87,11 @@ class FedoraRecord implements RecordTemplate {
      * Expand zip file contents into local directory.
      * Check for supplementary files in each ETD zip file.
      *
-     * On any download error the function preprocessingTaskFailed() is called to manage error handling.
+     * On any download error the function recordParseFailed() is called to manage error handling.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception on parsing and ingest errors.
      */
     public function parseETD() {
         $this->writeLog(SECTION_DIVIDER);
@@ -119,7 +121,8 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("Extracting ETD zip file to local working directory.");
         } else {
             $errorMessage = "Failed to extract ETD zip file: " . $res;
-            $this->preprocessingTaskFailed($errorMessage);
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         // There are files we want to ignore when running scandir().
@@ -132,7 +135,8 @@ class FedoraRecord implements RecordTemplate {
         if ( count($expandedETDFiles) === 0) {
             // There are no files in this expanded zip file.
             $errorMessage = "There are no files in this expanded zip file.";
-            $this->preprocessingTaskFailed($errorMessage);
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         $this->writeLog("There are " . count($expandedETDFiles) . " files found in this working directory:");
@@ -219,16 +223,16 @@ class FedoraRecord implements RecordTemplate {
              */
             //$this->writeLog("Checking that PDF and XML files were found in this zip file:");
             if ( empty($this->FILE_ETD) === true ) {
-                $errorMessage = "   The ETD PDF file was not found or set.";
-                $this->preprocessingTaskFailed($errorMessage);
-                continue;
+                $errorMessage = "   ❌ The ETD PDF file was not found or set.";
+                $this->recordParseFailed($errorMessage);
+                throw new \Exception($errorMessage);
             }
             $this->writeLog("   ✓ The ETD PDF file was found.");
 
             if ( empty($this->FILE_METADATA) === true ) {
-                $errorMessage = "   The ETD XML file was not found or set.";
-                $this->preprocessingTaskFailed($errorMessage);
-                continue;
+                $errorMessage = "   ❌ The ETD XML file was not found or set.";
+                $this->recordParseFailed($errorMessage);
+                throw new \Exception($errorMessage);
             }
             $this->writeLog("   ✓ The ETD XML file was found.");
             $this->writeLog("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]");
@@ -412,10 +416,8 @@ class FedoraRecord implements RecordTemplate {
         $res = $xslt->setParameter('mods', 'handle', $pid);
         if ( $res === false ) {
             $errorMessage = "Could not update XSLT stylesheet with PID value.";
-            $this->preprocessingTaskFailed($errorMessage, $etdShortName);
-            
-            // TODO: manage this error.
-            return null;
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
         $this->writeLog("Update XSLT stylesheet with PID value.");
 
@@ -428,10 +430,8 @@ class FedoraRecord implements RecordTemplate {
         $mods = $xslt->transformToDoc($metadata);
         if ( $mods === false ) {
             $errorMessage = "Could not transform ETD MODS XML file.";
-            $this->preprocessingTaskFailed($errorMessage, $etdShortName);
-            
-            // TODO: manage this error.
-            return null;
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
         $this->writeLog("Transformed ETD MODS XML file with XSLT stylesheet.");
 
@@ -444,10 +444,8 @@ class FedoraRecord implements RecordTemplate {
         $fedoraLabel = $label->transformToXml($mods);
         if ( $fedoraLabel === false ) {
             $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
-            $this->preprocessingTaskFailed($errorMessage, $etdShortName);
-            
-            // TODO: manage this error.
-            return null;
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
         $this->LABEL = $fedoraLabel;
 
@@ -482,10 +480,8 @@ class FedoraRecord implements RecordTemplate {
         $res = rename($this->WORKING_DIR . "/". $this->FILE_ETD , $this->WORKING_DIR . "/" . $normalizedAuthor . ".pdf");
         if ( $res === false ) {
             $errorMessage = "Could not rename ETD PDF file.";
-            $this->preprocessingTaskFailed($errorMessage, $etdShortName);
-            
-            // TODO: manage this error.
-            return null;
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         // Update local file path for ETD PDF file.
@@ -498,10 +494,8 @@ class FedoraRecord implements RecordTemplate {
         $res = $mods->save($this->WORKING_DIR . "/" . $normalizedAuthor . ".xml");
         if ( $res === false ) {
             $errorMessage = "Could not create new ETD MODS file.";
-            $this->preprocessingTaskFailed($errorMessage, $etdShortName);
-           
-            // TODO: manage this error.
-            return null;
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
         }
 
         // Update local file path for MODS file.
@@ -584,7 +578,8 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("Instantiated a Fedora object with PID: {$this->PID}");
         } catch (Exception $e) {
             $errorMessage = "Could not instanciate a Fedora object with PID '" . $this->PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Assign the Fedora object label the ETD name/label
@@ -611,7 +606,8 @@ class FedoraRecord implements RecordTemplate {
             $collectionName = GRADUATE_THESES;
         } catch (Exception $e) { // RepositoryException
             $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Update the Parent and Collection policies if this ETD is embargoed.
@@ -622,7 +618,8 @@ class FedoraRecord implements RecordTemplate {
                 $this->writeLog("[{$dsid}] Adding to Graduate Theses (Restricted) collection.");
             } catch (Exception $e) { // RepositoryException
                 $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID_EMBARGO . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid);
+                throw new \Exception($errorMessage);
             }
         } else {
             $this->writeLog("[{$dsid}] Adding to Graduate Theses collection.");
@@ -646,7 +643,13 @@ class FedoraRecord implements RecordTemplate {
          *
          *
          */
-        $status = $this->datastreamMODS();
+        try {
+            $status = $this->datastreamMODS();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
+        
 
         /**
          * Build ARCHIVE MODS datastream.
@@ -654,7 +657,12 @@ class FedoraRecord implements RecordTemplate {
          * Original Proquest Metadata will be saved as ARCHIVE.
          * Original filename is used as label for identification.
          */
-        $status = $this->datastreamMODS();
+        try {
+            $status = $this->datastreamMODS();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         /**
          * Build ARCHIVE-PDF datastream.
@@ -662,7 +670,12 @@ class FedoraRecord implements RecordTemplate {
          * PDF will always be loaded as ARCHIVE-PDF DSID regardless of embargo.
          * Splash paged PDF will be PDF dsid.
          */
-        $status = $this->datastreamARCHIVEPDF();
+        try {
+            $status = $this->datastreamARCHIVEPDF();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         /**
          * Build PDF datastream.
@@ -670,28 +683,48 @@ class FedoraRecord implements RecordTemplate {
          * First, build splash page PDF.
          * Then, concatenate splash page onto ETD PDF for final PDF.
          */
-        $status = $this->datastreamPDF();
+        try {
+            $status = $this->datastreamPDF();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         /**
          * Build FULL_TEXT datastream.
          *
          *
          */
-        $status = $this->datastreamFULLTEXT();
+        try {
+            $status = $this->datastreamFULLTEXT();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         /**
          * Build Thumbnail (TN) datastream
          *
          *
          */
-        $status = $this->datastreamTN();
+        try {
+            $status = $this->datastreamTN();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         /**
          * Build PREVIEW datastream.
          *
          *
          */
-        $status = $this->datastreamPREVIEW();
+        try {
+            $status = $this->datastreamPREVIEW();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         /**
          * Continue RELS-EXT datastream.
@@ -701,15 +734,11 @@ class FedoraRecord implements RecordTemplate {
         // TODO: understand why this command is down here and not in an earlier POLICY datastream section.
         $dsid = "RELS-EXT";
         $this->writeLog("[{$dsid}] Resuming RELS-EXT datastream ingestion now that other datastreams are generated.");
-
-        // INFO: prepareIngestDatastream() Returns a boolean.
-        $status = $this->prepareIngestDatastream($policyObj, $dsid);
-
-        if ( $status === false ) {
-            // Ingest failed. Continue to the next ETD.
-
-            // TODO: handle error.
-            return null;
+        try {
+            $status = $this->manageIngestDatastream($policyObj, $dsid);
+        } catch(Exception $e) {
+            // Bubble up exception.
+            throw $e;
         }
 
         /**
@@ -718,7 +747,12 @@ class FedoraRecord implements RecordTemplate {
          * This checks if there is an OA policy set for this ETD.
          * If there is, then set Embargo date in the custom XACML policy file.
          */
-        $status = $this->datastreamRELSINT();
+        try {
+            $status = $this->datastreamRELSINT();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
         // Completed datastream completion
         $this->writeLog("Created all datastreams.");
@@ -739,8 +773,8 @@ class FedoraRecord implements RecordTemplate {
                 $this->writeLog("START ingestion of Fedora object...");
             } catch (Exception $e) {
                 $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
-                $this->writeLog("ERROR: {$errorMessage}");
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid);
+                throw new \Exception($errorMessage);
             }
         }
 
@@ -762,7 +796,7 @@ class FedoraRecord implements RecordTemplate {
     }
 
     /**
-     * Prepares Fedora datastreams for ingestion.
+     * Manages Fedora datastreams for ingestion.
      *
      * @param $datastreamObj A datastream object, usually a file.
      * @param $datastreamName The name of the datastream.
@@ -771,10 +805,11 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @throws Exception if the datastream ingest failed.
      */
-    private function prepareIngestDatastream($datastreamObj, $datastreamName) {
+    private function manageIngestDatastream($datastreamObj, $datastreamName) {
         if ( $this->debug === true ) {
             array_push($this->DATASTREAMS_CREATED, $datastreamName);
             $this->writeLog("[{$datastreamName}] DEBUG: Did not ingest datastream.");
+
             return true;
         }
 
@@ -786,45 +821,47 @@ class FedoraRecord implements RecordTemplate {
             array_push($this->CRITICAL_ERRORS, $errorMessage);
             $this->writeLog("ERROR: {$errorMessage}");
             $this->writeLog("trace:\n" . $e->getTraceAsString());
-            // TODO: capture separate processing errors?
-            // array_push($this->processingErrors, $errorMessage);
-            $this->countFailedETDs++;
             throw new \Exception($errorMessage);
         }
 
         array_push($this->DATASTREAMS_CREATED, $datastreamName);
         $this->writeLog("[{$datastreamName}] Ingested datastream.");
+
         return true;
     }
 
     /**
-     * Process a failed file pre-processing task.
+     * Process a failed file parsing task.
+     * This is a wrapper for the processRecordError() function.
      * 
      * @param string $errorMessage the error message to display.
-     * 
-     * @throws Exception
      */
-    private function preprocessingTaskFailed($errorMessage) {
-        array_push($this->CRITICAL_ERRORS, $errorMessage);
-        $this->writeLog("ERROR: {$errorMessage}");
-        $this->STATUS = "failed";
-        throw new \Exception($errorMessage);
+    private function recordParseFailed(string $errorMessage) {
+        $completeErrorMessage = "ERROR: {$errorMessage}";
+        $this->processRecordError($completeErrorMessage);
     }
 
     /**
-     * Process a failed datastream ingest.
+     * Process a failed datastream ingest task.
+     * This is a wrapper for the processRecordError() function.
      * 
      * @param string $errorMessage the error message to display.
      * @param string $datastreamName the name of the datastream.
-     * @param string $etdShortName the name of the ETD file.
-     * 
-     * @throws Exception
      */
-    private function datastreamIngestFailed($errorMessage, $datastreamName, $etdShortName) {
+    private function datastreamIngestFailed(string $errorMessage, string $datastreamName) {
+        $completeErrorMessage = "[{$datastreamName}] ERROR: {$errorMessage}";
+        $this->processRecordError($completeErrorMessage);
+    }
+
+    /**
+     * Process a failed task.
+     * 
+     * @params string $errorMessage the error message to display.
+     */
+    private function processRecordError(string $errorMessage) {
         array_push($this->CRITICAL_ERRORS, $errorMessage);
-        $this->writeLog("[{$datastreamName}] ERROR: $errorMessage");
+        $this->writeLog($errorMessage);
         $this->STATUS = "failed";
-        throw new \Exception($errorMessage);
     }
 
     /**
@@ -896,13 +933,10 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}]   {$this->MODS}");
 
         try {
-            // TODO: this returns an exception on failure. bubble up the exception.
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return false;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -935,12 +969,10 @@ class FedoraRecord implements RecordTemplate {
         $datastream->state = 'I';
 
         try {
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return null;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -973,12 +1005,10 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}]   {$this->FILE_ETD}");
 
         try {
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return null;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -1013,8 +1043,8 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("[{$dsid}] Splash page created successfully.");
         } else {
             $errorMessage = "PDF splash page creation failed. ". $return;
-            $this->writeLog("[{$dsid}] ERROR: {$$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Update ETD file's object to store splash page's file location and name.
@@ -1059,8 +1089,8 @@ class FedoraRecord implements RecordTemplate {
         // INFO: copy() Returns true on success or false on failure.
         if ( copy($pdf,$concattemp) === false ) {
             $errorMessage = "Could not generate a concatenated PDF document.";
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         } else {
             $this->writeLog("[{$dsid}] PDF document cloned successfully.");
         }
@@ -1080,12 +1110,10 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}]    {$concattemp}");
 
         try {
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return null;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -1116,8 +1144,8 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("[{$dsid}] datastream generated successfully.");
         } else {
             $errorMessage = "FULL_TEXT document creation failed. " . $return;
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Build Fedora object FULL_TEXT datastream.
@@ -1134,7 +1162,8 @@ class FedoraRecord implements RecordTemplate {
         // Check if file read failed.
         if ( $fulltext === false ) {
             $errorMessage = "Could not read in file: ". $fttemp;
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Strip out junky characters that mess up SOLR.
@@ -1145,8 +1174,8 @@ class FedoraRecord implements RecordTemplate {
         // In the slim chance preg_replace returns an empty string.
         if ( $sanitized === '' ) {
             $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string. String has length of 0.";
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Set FULL_TEXT datastream to be sanitized version of full-text document.
@@ -1155,12 +1184,10 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}]    {$fttemp}");
 
         try {
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return null;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -1188,8 +1215,8 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("[{$dsid}] Datastream generated successfully.");
         } else {
             $errorMessage = "TN document creation failed. " . $return;
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Build Fedora object TN datastream.
@@ -1204,12 +1231,10 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}] Selecting file for datastream: thumbnail.jpg");
 
         try {
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return null;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -1237,8 +1262,8 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("[{$dsid}] PREVIEW datastream generated successfully.");
         } else {
             $errorMessage = "PREVIEW document creation failed. " . $return;
-            $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-            $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+            $this->datastreamIngestFailed($errorMessage, $dsid);
+            throw new \Exception($errorMessage);
         }
 
         // Build Fedora object PREVIEW datastream.
@@ -1253,12 +1278,10 @@ class FedoraRecord implements RecordTemplate {
         $this->writeLog("[{$dsid}] Selecting TN datastream to use: preview.jpg");
 
         try {
-            $status = $this->prepareIngestDatastream($datastream, $dsid);
+            $status = $this->manageIngestDatastream($datastream, $dsid);
         } catch(Exception $e) {
-            // Ingest failed. Continue to the next ETD.
-            
-            // TODO: handle error.
-            return null;
+            // Bubble up exception.
+            throw $e;
         }
 
         return $status;
@@ -1285,7 +1308,8 @@ class FedoraRecord implements RecordTemplate {
             // Check if file read failed.
             if ( $relsint === false ) {
                 $errorMessage = "Could not read in file: " . $relsFile;
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid);
+                throw new \Exception($errorMessage);
             }
 
             $relsint = str_replace('######', $this->PID, $relsint);
@@ -1299,8 +1323,8 @@ class FedoraRecord implements RecordTemplate {
             // Check if file read failed.
             if ( $relsint === false ) {
                 $errorMessage = "Could not read in file: " . $relsFile;
-                $this->writeLog("[{$dsid}] ERROR: {$errorMessage}");
-                $this->datastreamIngestFailed($errorMessage, $dsid, $etdShortName);
+                $this->datastreamIngestFailed($errorMessage, $dsid);
+                throw new \Exception($errorMessage);
             }
 
             $relsint = str_replace('######', $this->PID, $relsint);
@@ -1328,12 +1352,10 @@ class FedoraRecord implements RecordTemplate {
             $this->writeLog("[{$dsid}] Selecting fire for datastream: {$relsFile}");
 
             try {
-                $status = $this->prepareIngestDatastream($datastream, $dsid);
+                $status = $this->manageIngestDatastream($datastream, $dsid);
             } catch(Exception $e) {
-                // Ingest failed. Continue to the next ETD.
-                
-                // TODO: handle error.
-                return null;
+                // Bubble up exception.
+                throw $e;
             }
 
             return $status;

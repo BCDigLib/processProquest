@@ -865,19 +865,24 @@ class Processproquest {
         try {
             $this->scanForETDFiles();
         } catch (Exception $e) {
-            throw new \Exception($e);
+            // Bubble up exception.
+            throw $e;
         }
         
         $this->downloadETDFiles();
         $this->parseETDFiles();
     }
 
+    /**
+     * 
+     */
     public function processAllFiles() {
         // scanForETDFiles() can throw an exception.
         try {
             $this->scanForETDFiles();
         } catch (Exception $e) {
-            throw new \Exception($e);
+            // Bubble up exception.
+            throw $e;
         }
         
         // Download ETD zip file into the working directory.
@@ -893,16 +898,28 @@ class Processproquest {
             array_push($allRecords, $recordObj);
 
             // Parse through this record.
-            // TODO: catch exceptions.
-            $recordObj->parseETD();
+            try {
+                $recordObj->parseETD();
+            } catch (Exception $e) {
+                // Bubble up exception.
+                throw $e;
+            }
 
             // Process this record.
-            // TODO: catch exceptions.
-            $recordObj->processETD();
+            try {
+                $recordObj->processETD();
+            } catch (Exception $e) {
+                // Bubble up exception.
+                throw $e;
+            }
 
             // Ingest this record.
-            // TODO: catch exceptions.
-            $recordObj->ingestETD();
+            try {
+                $recordObj->ingestETD();
+            } catch (Exception $e) {
+                // Bubble up exception.
+                throw $e;
+            }
         }
 
         return; 
