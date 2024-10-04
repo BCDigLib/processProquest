@@ -12,7 +12,10 @@ interface RecordTemplate {
 
 class FedoraRecord implements RecordTemplate {
     public $id = "";
+    public $settings = [];
+    public $debug = "false";
     public $logger = null;
+    public $fedoraObj = null;
     public $ETD_SHORTNAME = "";
     public $WORKING_DIR = "";
     public $SUPPLEMENTS = [];
@@ -26,9 +29,9 @@ class FedoraRecord implements RecordTemplate {
     public $NONCRITICAL_ERRORS = [];
     public $CRITICAL_ERRORS = [];
     public $ZIP_FILE_FULLPATH = "";
-    public $debug = "true";
-    public $fedoraObj = null;
-
+    public $STATUS = "";
+    public $INGESTED = false;
+    public $DATASTREAMS_CREATED = [];
     public $fop_config = "";
     public $executable_fop = "";
     public $executable_convert = "";
@@ -53,20 +56,24 @@ class FedoraRecord implements RecordTemplate {
         $this->ZIP_FILE_FULLPATH = "{$this->WORKING_DIR}/{$this->ZIP_FILENAME}";
         $this->fedoraConnection = $fedoraConnection;
         $this->logger = $logger;
-        $this->debug = boolval($this->settings['script']['debug']);
 
+        // Parse settings array.
+        $this->debug = boolval($this->settings['script']['debug']);
         $this->root_url = $this->settings["islandora"]["root_url"];
         $this->path = $this->settings["islandora"]["path"];
+        $this->fetchDir = $this->settings["ftp"]["fetchdir"];
         $this->record_path = "{$this->root_url}{$this->path}";
-
         $this->fop_config = $this->settings['packages']['fop_config'];
         $this->executable_fop = $this->settings['packages']['fop'];
         $this->executable_convert = $this->settings['packages']['convert'];
         $this->executable_pdftk = $this->settings['packages']['pdftk'];
         $this->executable_pdftotext = $this->settings['packages']['pdftotext'];
 
-        $message = "DEBUG = " .  ($this->debug ? "TRUE" : "FALSE");
-        $this->writeLog($message);
+        $this->FTP_PATH_FOR_ETD = "{$this->fetchDir}{$zipFileName}";
+        $this->FTP_POSTPROCESS_LOCATION = $this->FTP_PATH_FOR_ETD;
+
+        // $message = "DEBUG = " .  ($this->debug ? "TRUE" : "FALSE");
+        // $this->writeLog($message);
     }
 
    /**
@@ -79,6 +86,15 @@ class FedoraRecord implements RecordTemplate {
     private function writeLog($message) {
         $completeMessage = "(FedoraRecord) [{$this->ETD_SHORTNAME}] {$message}";
         $this->logger->info($completeMessage);
+    }
+
+    /**
+     * Update this object's status.
+     * 
+     * @param string $newStatus the new status.
+     */
+    public function setStatus(string $newStatus) {
+        $this->STATUS = $newStatus;
     }
 
     /**
