@@ -542,7 +542,7 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @return boolean Success value.
      * 
-     * @throws Exception if there are no ETDs to ingest
+     * @throws Exception if there are no ETDs to ingest.
      */
     public function ingestETD() {
         $this->writeLog(SECTION_DIVIDER);
@@ -577,8 +577,8 @@ class FedoraRecord implements RecordTemplate {
             $this->fedoraObj = $this->fedoraConnection->constructObject($this->PID);
             $this->writeLog("Instantiated a Fedora object with PID: {$this->PID}");
         } catch (Exception $e) {
-            $errorMessage = "Could not instanciate a Fedora object with PID '" . $this->PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-            $this->datastreamIngestFailed($errorMessage, $dsid);
+            $errorMessage = "Could not instantiate a Fedora object with PID '{$this->PID}'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
+            $this->recordIngestFailed($errorMessage);
             throw new \Exception($errorMessage);
         }
 
@@ -649,7 +649,6 @@ class FedoraRecord implements RecordTemplate {
             // Bubble up exception.
             throw $e;
         }
-        
 
         /**
          * Build ARCHIVE MODS datastream.
@@ -773,7 +772,7 @@ class FedoraRecord implements RecordTemplate {
                 $this->writeLog("START ingestion of Fedora object...");
             } catch (Exception $e) {
                 $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
-                $this->datastreamIngestFailed($errorMessage, $dsid);
+                $this->recordIngestFailed($errorMessage);
                 throw new \Exception($errorMessage);
             }
         }
@@ -842,6 +841,17 @@ class FedoraRecord implements RecordTemplate {
     }
 
     /**
+     * Process a failed record ingest task.
+     * This is a wrapper for the processRecordError() function.
+     * 
+     * @param string $errorMessage the error message to display.
+     */
+    private function recordIngestFailed(string $errorMessage) {
+        $completeErrorMessage = "ERROR: {$errorMessage}";
+        $this->processRecordError($completeErrorMessage);
+    }
+
+    /**
      * Process a failed datastream ingest task.
      * This is a wrapper for the processRecordError() function.
      * 
@@ -856,7 +866,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Process a failed task.
      * 
-     * @params string $errorMessage the error message to display.
+     * @param string $errorMessage the error message to display.
      */
     private function processRecordError(string $errorMessage) {
         array_push($this->CRITICAL_ERRORS, $errorMessage);
@@ -896,6 +906,8 @@ class FedoraRecord implements RecordTemplate {
      * Strips out punctuation, spaces, and unicode chars from a string.
      * 
      * @return string A normalized string.
+     * 
+     * @throws Exception if the datastream ingest failed.
     */
     private function normalizeString($str) {
         # remove trailing spaces
@@ -914,6 +926,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the MODS datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamMODS() {
         $dsid = 'MODS';
@@ -946,6 +960,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the ARCHIVE datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamARCHIVE() {
         $dsid = 'ARCHIVE';
@@ -982,6 +998,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the ARCHIVE-PDF datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamARCHIVEPDF() {
         $dsid = 'ARCHIVE-PDF';
@@ -1018,6 +1036,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the PDF datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamPDF() {
         $dsid = "PDF";
@@ -1123,6 +1143,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the FULL_TEXT datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamFULLTEXT() {
         $dsid = "FULL_TEXT";
@@ -1197,6 +1219,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the TN datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamTN() {
         $dsid = "TN";
@@ -1244,6 +1268,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the PREVIEW datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamPREVIEW() {
         $dsid = "PREVIEW";
@@ -1291,6 +1317,8 @@ class FedoraRecord implements RecordTemplate {
      * Create the RELS-INT datastream.
      * 
      * @return boolean Success value.
+     * 
+     * @throws Exception if the datastream ingest failed.
      */
     public function datastreamRELSINT() {
         $dsid = "RELS-INT";
