@@ -16,6 +16,8 @@ class FedoraRecord implements RecordTemplate {
     public $debug = "false";
     public $logger = null;
     public $fedoraObj = null;
+    public $fedoraConnection = null;
+    public $ftpConnection = null;
     public $ETD_SHORTNAME = "";
     public $WORKING_DIR = "";
     public $SUPPLEMENTS = [];
@@ -46,7 +48,7 @@ class FedoraRecord implements RecordTemplate {
      * @param object $fedoraConnection  the fedoraConnection object.
      * @param object $logger the logger object.
      */
-    public function __construct(string $id, array $settings, string $workingDirectory, string $zipFileName, object $fedoraConnection, object $logger) {
+    public function __construct(string $id, array $settings, string $workingDirectory, string $zipFileName, object $fedoraConnection, object $ftpConnection, object $logger) {
         // TODO: we can pull $workingDirectory from $settings.
         $this->id = $id;
         $this->settings = $settings;
@@ -55,6 +57,7 @@ class FedoraRecord implements RecordTemplate {
         $this->ZIP_FILENAME = $zipFileName;
         $this->ZIP_FILE_FULLPATH = "{$this->WORKING_DIR}/{$this->ZIP_FILENAME}";
         $this->fedoraConnection = $fedoraConnection;
+        $this->ftpConnection = $ftpConnection;
         $this->logger = $logger;
 
         // Parse settings array.
@@ -95,6 +98,93 @@ class FedoraRecord implements RecordTemplate {
      */
     public function setStatus(string $newStatus) {
         $this->STATUS = $newStatus;
+    }
+
+    /**
+     * Download ETD zip file.
+     * 
+     * @return boolean Success value.
+     * 
+     * @throws Exception download error.
+     */
+    public function downloadETD() {
+        $this->writeLog(SECTION_DIVIDER);
+        $this->writeLog("BEGIN Downloading this ETD file.");
+
+        $etdShortName = $this->ETD_SHORTNAME;
+        $etdWorkingDir = $this->WORKING_DIR;
+        $zipFileName = $this->ZIP_FILENAME;
+        $etdZipFileFullPath = $this->ZIP_FILE_FULLPATH;
+
+        $this->writeLog(LOOP_DIVIDER);
+
+        // Check to see if zipFileName is more than four chars. Continue if string fails.
+        if ( strlen($zipFileName) <= 4 ) {
+            $errorMessage = "WARNING File name only has " . strlen($zipFileName) . " characters.";
+            array_push($this->CRITICAL_ERRORS, $errorMessage);
+            $this->writeLog("ERROR: {$errorMessage}");
+            $fedoraRecordObj->setStatus("invalid");
+            throw new \Exception($errorMessage);
+        }
+        $this->writeLog("Is file valid?... true.");
+        $this->writeLog("Local working directory status:");
+        $this->writeLog("   • Directory to create: {$etdWorkingDir}");
+
+        // Create the local directory if it doesn't already exists.
+        // INFO: file_exists() Returns true if the file or directory specified by filename exists; false otherwise.
+        if ( file_exists($etdWorkingDir) === true ) {
+            $this->writeLog("   • Directory already exists.");
+
+            // INFO: $this->recurseRmdir() Returns a boolean success value.
+            if ( $this->recurseRmdir($etdWorkingDir) === false ) {
+                // We couldn't clear out the directory.
+                $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}.";
+                array_push($this->CRITICAL_ERRORS, $errorMessage);
+                $this->writeLog("ERROR: {$errorMessage}");
+                $fedoraRecordObj->setStatus("invalid");
+                throw new \Exception($errorMessage);
+            } else {
+                $this->writeLog("   • Existing directory was removed.");
+            }
+        }
+        
+        // INFO: mkdir() Returns true on success or false on failure.
+        if ( mkdir($etdWorkingDir, 0755, true) === false ) {
+            $errorMessage = "Failed to create local working directory: {$etdWorkingDir}.";
+            array_push($this->CRITICAL_ERRORS, $errorMessage);
+            //array_push($this->allFailedETDs, $etdShortName);
+            //array_push($this->processingErrors, $errorMessage);
+            $this->writeLog("ERROR: {$errorMessage}");
+            $fedoraRecordObj->setStatus("invalid");
+            throw new \Exception($errorMessage);
+        } else {
+            $this->writeLog("   • Directory was created.");
+        }
+
+        // HACK: give loop some time to create directory.
+        usleep(30000); // 30 milliseconds
+
+        /**
+         * Gets the file from the FTP server.
+         * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
+         * File is saved locally as a binary file.
+         */
+        // INFO: getFile() Returns true on success or false on failure.
+        if ( $this->ftpConnection->getFile($etdZipFileFullPath, $zipFileName, FTP_BINARY) === true ) {
+            $this->writeLog("Downloaded ETD zip file from FTP server.");
+        } else {
+            $errorMessage = "Failed to download ETD zip file from FTP server: {$etdZipFileFullPath}.";
+            array_push($this->CRITICAL_ERRORS, $errorMessage);
+            $this->writeLog("ERROR: {$errorMessage}");
+            $this->setStatus("invalid");
+            throw new \Exception($errorMessage);
+        }
+
+        // Update status.
+        $this->setStatus("downloaded");
+        $this->writeLog("END Downloading this ETD file.");
+
+        return true;
     }
 
     /**
@@ -916,6 +1006,24 @@ class FedoraRecord implements RecordTemplate {
           }
         }
         return $result;
+    }
+
+    /**
+     * Recursively delete a directory.
+     * From: https://stackoverflow.com/a/18838141
+     * 
+     * @param string $dir The name of the directory to delete.
+     * 
+     * @return boolean The status of the rmdir() function.
+     */
+    private function recurseRmdir($dir) {
+        $files = array_diff(scandir($dir), array('.','..'));
+        foreach ($files as $file) {
+            // is_dir() Returns true if the filename exists and is a directory, false otherwise.
+            // is_link() Returns true if the filename exists and is a symbolic link, false otherwise.
+            ( (is_dir("$dir/$file") === true) && (is_link("$dir/$file") === false) ) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
+        }
+        return rmdir($dir);
     }
 
     /**  

@@ -45,7 +45,8 @@ class Processproquest {
 
     public $settings;                       // Object to store script settings
     public $debug;                          // Debug bool
-    protected $ftp;                         // FTP connection object
+    protected $fedoraConnection = null;     // FedoraRepository object
+    protected $ftpConnection = null;        // ProquestFTP object
     protected $localFiles = [];             // Object to store all ETD metadata
     protected $allFedoraRecordObjects = []; // List of all FedoraRecord objects
     protected $logFile = "";                // Log file name
@@ -124,7 +125,7 @@ class Processproquest {
      * @return object $this.
      */
     public function setFTPConnection($ftpConnectionObj) {
-        $this->ftp = $ftpConnectionObj;
+        $this->ftpConnection = $ftpConnectionObj;
 
         return $this;
     }
@@ -274,7 +275,7 @@ class Processproquest {
         // Pass login credentials to login method.
         // INFO: login() Returns true on success or false on failure. 
         //       If login fails, PHP will also throw a warning.
-        if ( $this->ftp->login($userFTP, $passwordFTP) ) {
+        if ( $this->ftpConnection->login($userFTP, $passwordFTP) ) {
             $this->writeLog("FTP login sucecssful.");
             return true;
         } else {
@@ -328,7 +329,7 @@ class Processproquest {
             }
 
             // INFO: moveFile() returns true on success or false on failure.
-            $ftpRes = $this->ftp->moveFile($ftpPathForETD, $moveFTPDir);
+            $ftpRes = $this->ftpConnection->moveFile($ftpPathForETD, $moveFTPDir);
             
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
@@ -348,24 +349,6 @@ class Processproquest {
 
         $this->currentProcessedETD = "";
         return true;
-    }
-
-    /**
-     * Recursively delete a directory.
-     * From: https://stackoverflow.com/a/18838141
-     * 
-     * @param string $dir The name of the directory to delete.
-     * 
-     * @return boolean The status of the rmdir() function.
-     */
-    private function recurseRmdir($dir) {
-        $files = array_diff(scandir($dir), array('.','..'));
-        foreach ($files as $file) {
-            // is_dir() Returns true if the filename exists and is a directory, false otherwise.
-            // is_link() Returns true if the filename exists and is a symbolic link, false otherwise.
-            ( (is_dir("$dir/$file") === true) && (is_link("$dir/$file") === false) ) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
-        }
-        return rmdir($dir);
     }
 
     /**
@@ -404,7 +387,7 @@ class Processproquest {
         if ( $this->fetchdirFTP != "" ) {
             // INFO: changeDir() Returns true on success or false on failure. 
             //       If changing directory fails, PHP will also throw a warning.
-            if ( $this->ftp->changeDir($this->fetchdirFTP) ) {
+            if ( $this->ftpConnection->changeDir($this->fetchdirFTP) ) {
                 $this->writeLog("Changed to local FTP directory: {$this->fetchdirFTP}");
             } else {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
@@ -421,7 +404,7 @@ class Processproquest {
          */
         $file_regex = $this->settings['ftp']['file_regex'];
          // INFO: getFileList() Returns an array of filenames from the specified directory on success or false on error.
-        $allFiles = $this->ftp->getFileList($file_regex);
+        $allFiles = $this->ftpConnection->getFileList($file_regex);
 
         // Only collect zip files.
         $etdZipFiles = [];
@@ -451,7 +434,7 @@ class Processproquest {
         foreach ($etdZipFiles as $zipFileName) {
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $workingDir = "{$localdirFTP}{$etdShortName}";
-            $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $workingDir, $zipFileName, $this->fedoraConnection, $this->logger);
+            $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $workingDir, $zipFileName, $this->fedoraConnection, $this->ftpConnection, $this->logger);
             $recordObj->setStatus("scanned");
             array_push($this->allFedoraRecordObjects, $recordObj);
             $this->writeLog("   • {$zipFileName}");
@@ -460,107 +443,6 @@ class Processproquest {
         $this->writeLog("END Scanning for valid ETD files on the FTP server.");
 
         return $this->allFedoraRecordObjects;
-    }
-
-    /**
-     * Downloads ETD zip files from the FTP server and places them into the designated working directory.
-     * 
-     * TODO: move into FedoraRecord.php
-     */
-    public function downloadETDFiles() {
-        $this->writeLog(SECTION_DIVIDER);
-        $this->writeLog("BEGIN Downloading each ETD file.");
-
-        $localdirFTP = $this->settings['ftp']['localdir'];
-        $countFedoraRecordObjects = count($this->allFedoraRecordObjects);
-
-        /**
-         * Loop through each match in $etdZipFiles.
-         * There may be multiple matched files so process each individually.
-         */
-        $f = 0;
-        foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
-            $f++;
-            $etdShortName = $fedoraRecordObj->ETD_SHORTNAME;
-            $etdWorkingDir = $fedoraRecordObj->WORKING_DIR;
-            $zipFileName = $fedoraRecordObj->ZIP_FILENAME;
-
-            $this->writeLog(LOOP_DIVIDER);
-            $this->writeLog("BEGIN Downloading ETD file [{$f} of {$countFedoraRecordObjects}]");
-
-            // Check to see if zipFileName is more than four chars. Continue if string fails.
-            if ( strlen($zipFileName) <= 4 ) {
-                $this->writeLog("WARNING File name only has " . strlen($zipFileName) . " characters. Moving to the next ETD." );
-                $this->countTotalInvalidETDs++;
-                array_push($this->allInvalidETDs, $zipFileName);
-                $fedoraRecordObj->setStatus("invalid");
-                continue;
-            }
-            $this->writeLog("Is file valid?... true.");
-
-            // Increment number of valid ETDs.
-            $this->countTotalValidETDs++;
-
-            $this->writeLog("Local working directory status:");
-            $this->writeLog("   • Directory to create: {$etdWorkingDir}");
-
-            // Create the local directory if it doesn't already exists.
-            // INFO: file_exists() Returns true if the file or directory specified by filename exists; false otherwise.
-            if ( file_exists($etdWorkingDir) === true ) {
-                $this->writeLog("   • Directory already exists.");
-
-                // INFO: $this->recurseRmdir() Returns a boolean success value.
-                if ( $this->recurseRmdir($etdWorkingDir) === false ) {
-                    // We couldn't clear out the directory.
-                    $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}. Moving to the next ETD.";
-                    array_push($this->allFailedETDs, $etdShortName);
-                    array_push($this->processingErrors, $errorMessage);
-                    $this->writeLog("ERROR: {$errorMessage}");
-                    $fedoraRecordObj->setStatus("invalid");
-                    continue;
-                } else {
-                    $this->writeLog("   • Existing directory was removed.");
-                }
-            }
-            
-            // INFO: mkdir() Returns true on success or false on failure.
-            if ( mkdir($etdWorkingDir, 0755, true) === false ) {
-                $errorMessage = "Failed to create local working directory: {$etdWorkingDir}. Moving to the next ETD.";
-                array_push($this->allFailedETDs, $etdShortName);
-                array_push($this->processingErrors, $errorMessage);
-                $this->writeLog("ERROR: {$errorMessage}");
-                $fedoraRecordObj->setStatus("invalid");
-                continue;
-            } else {
-                $this->writeLog("   • Directory was created.");
-            }
-            $etdZipFileFullPath = $etdWorkingDir . "/" . $zipFileName;
-
-            // HACK: give loop some time to create directory.
-            usleep(30000); // 30 milliseconds
-
-            /**
-             * Gets the file from the FTP server.
-             * Saves it locally to local working directory. Ex: /tmp/processing/file_name_1234
-             * File is saved locally as a binary file.
-             */
-            // INFO: getFile() Returns true on success or false on failure.
-            if ( $this->ftp->getFile($etdZipFileFullPath, $zipFileName, FTP_BINARY) === true ) {
-                $this->writeLog("Downloaded ETD zip file from FTP server.");
-            } else {
-                $errorMessage = "Failed to download ETD zip file from FTP server: {$etdZipFileFullPath}. Moving to the next ETD.";
-                array_push($this->allFailedETDs, $etdShortName);
-                array_push($this->processingErrors, $errorMessage);
-                $this->writeLog("ERROR: {$errorMessage}");
-                $fedoraRecordObj->setStatus("invalid");
-                continue;
-            }
-
-            // Update status.
-            $fedoraRecordObj->setStatus("downloaded");
-        }
-
-        $this->writeLog("END Downloading each ETD file.");
     }
 
     /**
@@ -583,12 +465,17 @@ class Processproquest {
             // Bubble up exception.
             throw $e;
         }
-        
-        // Download ETD zip file into the working directory.
-        $this->downloadETDFiles();
 
         // Generate Record objects for further processing.
         foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
+            // Download ETD zip file.
+            try {
+                $fedoraRecordObj->downloadETD();
+            } catch (Exception $e) {
+                // Bubble up exception.
+                throw $e;
+            }
+
             // Parse through this record.
             try {
                 $fedoraRecordObj->parseETD();
