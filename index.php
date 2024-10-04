@@ -208,40 +208,9 @@ try {
     $logger->info("Exiting.");
     exit(1);
 }
-
-// TESTING ENDS HERE.
 exit(1);
 
-// Get zip files from FTP server, unzip and store locally.
-// Exit when an exception is caught.
-try {
-    $process->getFiles();
-} catch(Exception $e) {
-    $process->postProcess();
-    $logger->info("Exiting.");
-    exit(1);
-}
-
-
-// Process each zip file.
-// Exit when an exception is caught.
-try {
-    $process->processFiles();
-} catch(Exception $e) {
-    $process->postProcess();
-    $logger->info("Exiting.");
-    exit(1);
-}
-
-// Ingest each processed zip file into Fedora.
-// Exit when an exception is caught.
-try {
-    $process->ingest();
-} catch(Exception $e) {
-    $process->postProcess();
-    $logger->info("Exiting.");
-    exit(1);
-}
+// TESTING ENDS HERE.
 
 // Finally, run postProcess().
 $process->postProcess();
