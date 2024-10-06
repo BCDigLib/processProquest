@@ -304,11 +304,10 @@ class Processproquest {
         $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}");
         $this->writeLog(LOOP_DIVIDER);
 
-        foreach ($this->localFiles as $etdShortName => $etdArray) {
-            $this->currentProcessedETD = $etdShortName;
-            $ingested = $this->localFiles[$etdShortName]["INGESTED"]; // boolean
-            $zipFileName = $this->localFiles[$etdShortName]["ZIP_FILENAME"];
-            $ftpPathForETD = $this->localFiles[$etdShortName]["FTP_PATH_FOR_ETD"];
+        foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
+            $ingested = $fedoraRecordObj->INGESTED; // boolean
+            $zipFileName = $fedoraRecordObj->ZIP_FILENAME;
+            $ftpPathForETD = $fedoraRecordObj->FTP_PATH_FOR_ETD;
 
             if ( $ingested === true ) {
                 $moveFTPDir = $processdirFTP . $zipFileName;
@@ -324,7 +323,7 @@ class Processproquest {
             if ( $this->debug === true ) {
                 $this->writeLog("DEBUG: Not moving ETD files on FTP.");
                 $this->writeLog(LOOP_DIVIDER);
-                $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
+                $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
                 continue;
             }
 
@@ -337,17 +336,16 @@ class Processproquest {
                 $this->writeLog("ERROR: {$errorMessage}");
                 $this->writeLog(LOOP_DIVIDER);
                 // Log this as a noncritical error and continue.
-                array_push($this->localFiles[$etdShortName]['NONCRITICAL_ERRORS'], $errorMessage);
+                array_push($fedoraRecordObj->NONCRITICAL_ERRORS, $errorMessage);
                 return false;
             }
             $this->writeLog("Move was successful.");
             $this->writeLog(LOOP_DIVIDER);
-            $this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION'] = $moveFTPDir;
+            $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
         }
 
         $this->writeLog("END Moving processed ETDs into respective post-processing directories.");
 
-        $this->currentProcessedETD = "";
         return true;
     }
 
