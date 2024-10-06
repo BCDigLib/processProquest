@@ -101,6 +101,15 @@ class FedoraRecord implements RecordTemplate {
     }
 
     /**
+     * Update this object's FTP_POSTPROCESS_LOCATION value.
+     * 
+     * @param string $location the new FTP_POSTPROCESS_LOCATION.
+     */
+    public function setFTPPostprocessLocation(string $location) {
+        $this->FTP_POSTPROCESS_LOCATION = $location;
+    }
+
+    /**
      * Download ETD zip file.
      * 
      * @return boolean Success value.
