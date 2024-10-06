@@ -187,34 +187,29 @@ try {
  */
 
 // Log into the FTP server.
-// This requires that the $this->ftp object was set earlier.
 // Exit when an exception is caught.
 try {
     $process->LogIntoFTPServer();
 } catch(Exception $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
+    // TODO: 
     $process->postProcess();
     $logger->info("Exiting.");
     exit(1);
 }
 
-
-// TESTING STARTS HERE
-
+// Process ETD files.
 try {
     $process->processAllFiles();
 } catch(Exception $e) {
     $process->postProcess();
+} finally {
+    // Run postProcess() to move ETD files on the FTP server and send out email notification.
+    $process->postProcess();
     $logger->info("Exiting.");
     exit(1);
 }
-exit(1);
 
-// TESTING ENDS HERE.
-
-// Finally, run postProcess().
-$process->postProcess();
-$logger->info("Exiting.");
 
 /**
  * Output usage strings.
