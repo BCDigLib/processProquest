@@ -507,7 +507,7 @@ class Processproquest {
     /**
      * Generate a simple status update message.
      * 
-     * TODO: update this function.
+     * @return string a summary message of all processed ETDs.
      */
     public function statusCheck(){
         $fn = "statusCheck";
@@ -524,48 +524,48 @@ class Processproquest {
             }
         } else {
             $i = 0;
-
-            $countETDs = count($this->localFiles);
+            $countETDs = count($this->allFedoraRecordObjects);
             $message .= "There were {$countETDs} ETD(s) processed.\n"; 
-            foreach ($this->localFiles as $etdShortName => $etdArray) {
+            foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
                 $i++;
-                $criticalErrorsCount = count($this->localFiles[$etdShortName]["CRITICAL_ERRORS"]);
-                $noncriticalErrorsCount = count($this->localFiles[$etdShortName]["NONCRITICAL_ERRORS"]);
-                $message .= "\n  [{$i}] Zip filename:      {$this->localFiles[$etdShortName]['ZIP_FILENAME']}\n";
-                $message .= "      Status:            {$this->localFiles[$etdShortName]['STATUS']}\n";
-                $message .= "      Has supplements:   " . ($this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] ? "true" : "false") . "\n";
+                $criticalErrorsCount = count($fedoraRecordObj->CRITICAL_ERRORS);
+                $noncriticalErrorsCount = count($fedoraRecordObj->NONCRITICAL_ERRORS);
+
+                $message .= "\n  [{$i}] Zip filename:      {$fedoraRecordObj->ZIP_FILENAME}\n";
+                $message .= "      Status:            {$fedoraRecordObj->STATUS}\n";
+                $message .= "      Has supplements:   " . ($fedoraRecordObj->HAS_SUPPLEMENTS ? "true" : "false") . "\n";
                 
                 // If this ETD has supplements then display message and continue to next ETD.
-                if ( $this->localFiles[$etdShortName]['HAS_SUPPLEMENTS'] === true ) {
+                if ( $fedoraRecordObj->HAS_SUPPLEMENTS === true ) {
                     $message .= "      WARNING: This ETD contains supplemental files and was not processed.\n";
                     $message .= "               Please manually process the ETD zip file, which can be found here on the FTP server:\n";
-                    $message .= "               {$this->localFiles[$etdShortName]['FTP_POSTPROCESS_LOCATION']}\n";
+                    $message .= "               {$fedoraRecordObj->FTP_POSTPROCESS_LOCATION}\n";
                     continue;
                 }
 
                 // Display critical errors and continue to next ETD.
                 if ( $criticalErrorsCount > 0 ) {
                     $message .= "      WARNING: This ETD failed to ingest because of the following reasons(s):\n";
-                    foreach ($this->localFiles[$etdShortName]["CRITICAL_ERRORS"] as $criticalError) {
+                    foreach ($fedoraRecordObj->CRITICAL_ERRORS as $criticalError) {
                         $message .= "       • {$criticalError}\n";
                     }
                     continue;
                 }
 
-                $message .= "      Has OA agreement:  " . ($this->localFiles[$etdShortName]['OA_AVAILABLE'] ? "true" : "false") . "\n";
-                $message .= "      Has embargo:       " . ($this->localFiles[$etdShortName]['HAS_EMBARGO'] ? "true" : "false") . "\n";
-                if ($this->localFiles[$etdShortName]['HAS_EMBARGO']) {
-                    $message .= "      Embargo date:      {$this->localFiles[$etdShortName]['EMBARGO_DATE']}\n";
+                $message .= "      Has OA agreement:  " . ($fedoraRecordObj->OA_AVAILABLE ? "true" : "false") . "\n";
+                $message .= "      Has embargo:       " . ($fedoraRecordObj->HAS_EMBARGO ? "true" : "false") . "\n";
+                if ($fedoraRecordObj->HAS_EMBARGO) {
+                    $message .= "      Embargo date:      {$fedoraRecordObj->EMBARGO_DATE}\n";
                 }
-                $message .= "      PID:               {$this->localFiles[$etdShortName]['PID']}\n";
-                $message .= "      URL:               {$this->localFiles[$etdShortName]['RECORD_URL']}\n";
-                $message .= "      Author:            {$this->localFiles[$etdShortName]['AUTHOR']}\n";
-                $message .= "      Title:             {$this->localFiles[$etdShortName]['LABEL']}\n";
+                $message .= "      PID:               {$fedoraRecordObj->PID}\n";
+                $message .= "      URL:               {$fedoraRecordObj->RECORD_URL}\n";
+                $message .= "      Author:            {$fedoraRecordObj->AUTHOR}\n";
+                $message .= "      Title:             {$fedoraRecordObj->LABEL}\n";
 
                 // Display noncritical errors.
                 if ( $noncriticalErrorsCount > 0 ) {
                     $message .= "      WARNING: This ETD was ingested but logged the following noncritical issues:\n";
-                    foreach ($this->localFiles[$etdShortName]["NONCRITICAL_ERRORS"] as $noncriticalError) {
+                    foreach ($fedoraRecordObj->NONCRITICAL_ERRORS as $noncriticalError) {
                         $message .= "       • {$noncriticalError}\n";
                     }
                 }
