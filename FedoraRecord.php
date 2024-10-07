@@ -80,7 +80,6 @@ class FedoraRecord implements RecordTemplate {
         $this->executable_convert = $this->settings['packages']['convert'];
         $this->executable_pdftk = $this->settings['packages']['pdftk'];
         $this->executable_pdftotext = $this->settings['packages']['pdftotext'];
-
         $this->FTP_PATH_FOR_ETD = "{$this->fetchDir}{$zipFileName}";
         $this->FTP_POSTPROCESS_LOCATION = $this->FTP_PATH_FOR_ETD;
     }
