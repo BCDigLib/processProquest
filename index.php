@@ -92,22 +92,18 @@ $dateFormatLogger = "Y-m-d H:i:s";
 
 // Default: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
 if ($debug) {
-    $output = "[%datetime%] [DEBUG] %message% %context% %extra%\n";
+    $output = "[%datetime%] !DEBUG! %extra% %message% %context%\n";
 } else {
-    $output = "[%datetime%] > %message% %context% %extra%\n";
+    $output = "[%datetime%] > %extra% %message% %context%\n";
 }
 
-/**
- * 
- * Create a log formatter.
- * 
- * Passing these arguments:
- *   ouput string format
- *   date string format
- *   allowInlineLineBreaks = true
- *   ignoreEmptyContextAndExtra = true
- */
-$formatter = new LineFormatter($output, $dateFormatLogger, true, true);
+// Create a log formatter.
+$formatter = new LineFormatter(
+    $output,            // Format of message.
+    $dateFormatLogger,  // Date string format.
+    true,               // allowInlineLineBreaks = true; default false.
+    true                // ignoreEmptyContextAndExtra = true; default false.
+);
 
 // Log to file.
 $fileOutput = new StreamHandler("{$logLocation}{$logFileName}", Level::Debug);
@@ -191,10 +187,9 @@ try {
 try {
     $process->LogIntoFTPServer();
 } catch(Exception $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    // TODO: 
+    $logger->info("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting.");
+    $logger->info("Exiting. 0");
     exit(1);
 }
 
@@ -202,14 +197,16 @@ try {
 try {
     $process->processAllFiles();
 } catch(Exception $e) {
+    $logger->info("ERROR: " . $e->getMessage());
     $process->postProcess();
-} finally {
-    // Run postProcess() to move ETD files on the FTP server and send out email notification.
-    $process->postProcess();
-    $logger->info("Exiting.");
+    $logger->info("Exiting. 1");
     exit(1);
 }
 
+// Run postProcess() to move ETD files on the FTP server and send out email notification.
+$process->postProcess();
+$logger->info("Exiting. 2");
+exit(1);
 
 /**
  * Output usage strings.
