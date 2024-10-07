@@ -978,7 +978,7 @@ class FedoraRecord implements RecordTemplate {
      */
     private function processRecordError(string $errorMessage) {
         array_push($this->CRITICAL_ERRORS, $errorMessage);
-        $this->logger->info($errorMessage);
+        $this->logger->error($errorMessage);
         $this->STATUS = "failed";
     }
 

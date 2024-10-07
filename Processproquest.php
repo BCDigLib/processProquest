@@ -175,19 +175,19 @@ class Processproquest {
         // Check for empty email values.
         if ( empty($email_to) === true ) {
             $errorMessage = "Email to: field is empty.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             return false;
         }
 
         if ( empty($email_subject) === true ) {
             $errorMessage = "Email subject: field is empty.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             return false;
         }
 
         if ( empty($email_message) === true ) {
             $errorMessage = "Email body: field is empty.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             return false;
         }
 
@@ -206,7 +206,7 @@ class Processproquest {
         // Check mail success.
         if ( $res === false ) {
             $errorMessage = "Email not sent.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             return false;
         }
 
@@ -234,7 +234,7 @@ class Processproquest {
 
         if ( (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
             $errorMessage = "FTP login values are missing. Please check your settings.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;
             throw new \Exception($errorMessage);
@@ -249,7 +249,7 @@ class Processproquest {
         } else {
             // TODO: get ftp error message with set_error_handler().
             $errorMessage = "FTP login failed.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;
             throw new \Exception($errorMessage);
@@ -301,7 +301,7 @@ class Processproquest {
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
                 $errorMessage = "Could not move ETD file to '{$moveFTPDir} FTP directory.";
-                $this->logger->info("ERROR: {$errorMessage}");
+                $this->logger->error("ERROR: {$errorMessage}");
                 $this->logger->info(LOOP_DIVIDER);
                 // Log this as a noncritical error and continue.
                 array_push($fedoraRecordObj->NONCRITICAL_ERRORS, $errorMessage);
@@ -344,7 +344,7 @@ class Processproquest {
         $localdirFTP = $this->settings['ftp']['localdir'];
         if ( empty($localdirFTP) === true ) {
             $errorMessage = "Local working directory not set.";
-            $this->logger->info("ERROR: {$errorMessage}");
+            $this->logger->error("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             throw new \Exception($errorMessage);
         }
@@ -357,7 +357,7 @@ class Processproquest {
                 $this->logger->info("Changed to local FTP directory: {$this->fetchdirFTP}");
             } else {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
-                $this->logger->info("ERROR: {$errorMessage}");
+                $this->logger->error("ERROR: {$errorMessage}");
                 array_push($this->processingErrors, $errorMessage);
                 throw new \Exception($errorMessage);
             }
@@ -390,7 +390,7 @@ class Processproquest {
         // Throw exception if there are no ETD files to process.
         if ( empty($etdZipFiles) === true ) {
             $errorMessage = "Did not find any ETD files on the FTP server.";
-            $this->logger->info("WARNING: {$errorMessage}");
+            $this->logger->warning("WARNING: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             throw new \Exception($errorMessage);
         }

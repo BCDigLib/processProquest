@@ -187,7 +187,7 @@ try {
 try {
     $process->LogIntoFTPServer();
 } catch(Exception $e) {
-    $logger->info("ERROR: " . $e->getMessage());
+    $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
     $logger->info("Exiting. 0");
     exit(1);
@@ -197,7 +197,7 @@ try {
 try {
     $process->processAllFiles();
 } catch(Exception $e) {
-    $logger->info("ERROR: " . $e->getMessage());
+    $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
     $logger->info("Exiting. 1");
     exit(1);
