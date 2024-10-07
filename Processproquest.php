@@ -50,6 +50,7 @@ class Processproquest {
     protected $allFedoraRecordObjects = []; // List of all FedoraRecord objects
     protected $logFile = "";                // Log file name
     protected $processingErrors = [];       // Keep track of processing errors
+    protected $processingFailure = false;   // Track if there's been a critical error
     protected $allFoundETDs = [];           // List of all found ETD zip files
     protected $allFoundETDPaths = [];       // List of all found ETD zip files with full FTP file path
     protected $configurationFile = [];      // The configuration file
@@ -57,7 +58,6 @@ class Processproquest {
     protected $path = "";                   // The Islandora record path
     protected $record_path = "";            // Combination of the $root_url and $path
     protected $ftpRoot = "";                // The root directory of the FTP server as defined in the settings ini flle
-    protected $processingFailure = false;   // Track if there's been a critical error
     protected $logger;                      // A Monolog object
     protected $logFileLocation = "";        // Location of the log file
     protected $fetchdirFTP = "";            // The FTP directory to fetch ETD files
@@ -151,7 +151,6 @@ class Processproquest {
      * @return boolean Was the email sent successfully.
      */
     private function sendEmail($message) {
-        $fn = "sendEmail";
         $this->logger->info("Generating an email notification.");
 
         $email_to = $this->settings['notify']['email'];
@@ -211,8 +210,6 @@ class Processproquest {
      * @throws Exception if the FTP connection failed.
      */
     public function LogIntoFTPServer() {
-        $fn = "LogIntoFTPServer";
-
         $this->logger->info("Logging into FTP server.");
 
         $userFTP = $this->settings['ftp']['user'];
@@ -220,9 +217,7 @@ class Processproquest {
 
         if ( (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
             $errorMessage = "FTP login values are missing. Please check your settings.";
-            $this->logger->error("ERROR: {$errorMessage}");
-            array_push($this->processingErrors, $errorMessage);
-            $this->processingFailure = true;
+            $this->manageProcessingError($errorMessage);
             throw new \Exception($errorMessage);
         }
 
@@ -233,9 +228,7 @@ class Processproquest {
             return true;
         } else {
             $errorMessage = "FTP login failed.";
-            $this->logger->error("ERROR: {$errorMessage}");
-            array_push($this->processingErrors, $errorMessage);
-            $this->processingFailure = true;
+            $this->manageProcessingError($errorMessage);
             throw new \Exception($errorMessage);
         }
     }
@@ -300,7 +293,7 @@ class Processproquest {
     }
 
     /**
-     * Fetch ETD zip files from FTP server. NEW.
+     * Fetch ETD zip files from FTP server.
      *
      * Create a local directory for each zip file from FTP server and save into directory.
      * Local directory name is based on file name.
@@ -308,7 +301,7 @@ class Processproquest {
      * 
      * @param string $customRegex overwrite the regular expression set in the settings file.
      * 
-     * @return array all instantiated FedoraRecord objects.
+     * @return array an array of all instantiated FedoraRecord objects.
      * 
      * @throws Exception if the working directory isn't reachable, or there are no ETDs found.
      */
@@ -328,8 +321,7 @@ class Processproquest {
         $localdirFTP = $this->settings['ftp']['localdir'];
         if ( empty($localdirFTP) === true ) {
             $errorMessage = "Local working directory not set.";
-            $this->logger->error("ERROR: {$errorMessage}");
-            array_push($this->processingErrors, $errorMessage);
+            $this->manageProcessingError($errorMessage);
             throw new \Exception($errorMessage);
         }
 
@@ -340,8 +332,7 @@ class Processproquest {
                 $this->logger->info("Changed to local FTP directory: {$this->fetchdirFTP}");
             } else {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
-                $this->logger->error("ERROR: {$errorMessage}");
-                array_push($this->processingErrors, $errorMessage);
+                $this->manageProcessingError($errorMessage);
                 throw new \Exception($errorMessage);
             }
         }
@@ -405,7 +396,7 @@ class Processproquest {
      *     c) Generates and ingests various datastreams.
      *     d) Ingests the record.
      * 
-     * @throws Exception on parse, process, or ingest error.
+     * @throws Exception on download, parse, process, or ingest errors.
      */
     public function processAllFiles() {
         // Generate Record objects for further processing.
@@ -447,9 +438,20 @@ class Processproquest {
     }
 
     /**
+     * Process a failed task.
+     * 
+     * @param string $errorMessage the error message to display.
+     */
+    public function manageProcessingError($errorMessage) {
+        array_push($this->processingErrors, $errorMessage);
+        $this->logger->error("ERROR: {$errorMessage}");
+        $this->processingFailure = true;
+    }
+
+    /**
      * Generate a simple status update message.
      * 
-     * @return string a summary message of all processed ETDs.
+     * @return string $message a summary message of all processed ETDs.
      */
     public function statusCheck(){
         $fn = "statusCheck";
@@ -542,8 +544,6 @@ class Processproquest {
 
         $this->logger->info("END Running post-process steps.");
         $this->logger->info(SECTION_DIVIDER);
-
-        return true;
     }
 }
 ?>
