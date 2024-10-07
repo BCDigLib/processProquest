@@ -155,7 +155,6 @@ class FedoraRecord implements RecordTemplate {
         if ( mkdir($etdWorkingDir, 0755, true) === false ) {
             $errorMessage = "Failed to create local working directory: {$etdWorkingDir}.";
             array_push($this->CRITICAL_ERRORS, $errorMessage);
-            //array_push($this->allFailedETDs, $etdShortName);
             //array_push($this->processingErrors, $errorMessage);
             $this->logger->info("ERROR: {$errorMessage}");
             $fedoraRecordObj->setStatus("invalid");
@@ -319,35 +318,35 @@ class FedoraRecord implements RecordTemplate {
             if ( $this->HAS_SUPPLEMENTS === true ){
                 // At this point we can leave this function if the ETD has supplemental files.
                 $this->logger->info("This ETD has supplementary files. No further processing is required. Moving to the next ETD.");
-                $this->logger->info("END Gathering ETD file");
+                $this->logger->info("END Gathering ETD file.");
                 $this->STATUS = "skipped";
                 continue;
             }
 
-            /**
-             * Check that both:
-             *  - $this->FILE_ETD
-             *  - $this->FILE_METADATA
-             * are defined and are nonempty strings.
-             */
-            //$this->logger->info("Checking that PDF and XML files were found in this zip file:");
-            if ( empty($this->FILE_ETD) === true ) {
-                $errorMessage = "   ❌ The ETD PDF file was not found or set.";
-                $this->recordParseFailed($errorMessage);
-                throw new \Exception($errorMessage);
-            }
-            $this->logger->info("   ✓ The ETD PDF file was found.");
-
-            if ( empty($this->FILE_METADATA) === true ) {
-                $errorMessage = "   ❌ The ETD XML file was not found or set.";
-                $this->recordParseFailed($errorMessage);
-                throw new \Exception($errorMessage);
-            }
-            $this->logger->info("   ✓ The ETD XML file was found.");
-            $this->logger->info("END Gathering ETD file [{$f} of {$this->countTotalValidETDs}]");
-            $this->STATUS = "success";
         }
 
+        /**
+         * Check that both:
+         *  - $this->FILE_ETD
+         *  - $this->FILE_METADATA
+         * are defined and are nonempty strings.
+         */
+        $this->logger->info("Checking that PDF and XML files were found in this zip file:");
+        if ( empty($this->FILE_ETD) === true ) {
+            $errorMessage = "   ❌ The ETD PDF file was not found or set.";
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
+        }
+        $this->logger->info("   ✓ The ETD PDF file was found.");
+
+        if ( empty($this->FILE_METADATA) === true ) {
+            $errorMessage = "   ❌ The ETD XML file was not found or set.";
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
+        }
+        $this->logger->info("   ✓ The ETD XML file was found.");
+        $this->STATUS = "success";
+        
         // Completed fetching all ETD zip files.
         $this->logger->info(LOOP_DIVIDER);
         $this->logger->info("END Parsing this ETD file.");
