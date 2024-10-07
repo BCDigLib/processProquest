@@ -111,9 +111,9 @@ class Processproquest {
             $this->logFileLocation = $url;
         }
 
-        $this->writeLog("STATUS: Starting processProquest script.");
-        $this->writeLog("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'));
-        $this->writeLog("STATUS: Using configuration file: {$this->configurationFile}");
+        $this->logger->info("STATUS: Starting processProquest script.");
+        $this->logger->info("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'));
+        $this->logger->info("STATUS: Using configuration file: {$this->configurationFile}");
     }
 
     /**
@@ -159,38 +159,6 @@ class Processproquest {
     }
 
     /**
-     * Output messages to log file and to console.
-     *
-     * @param string $message The message to log.
-     * @param string $functionName Optional. The name of the function calling this function. Is wrapped in ().
-     * @param string $prefix Optional. The prefix to include before the message. Is wrapped in [].
-     * 
-     * @return string The output string.
-     */
-    private function writeLog($message) {
-        $functionName = debug_backtrace()[1]['function'];
-        $completeMessage = "";
-        $completeMessage .= "({$functionName}) ";
-
-        // Check if $this->currentProcessedETD is nonempty and use the etdShortName as the $prefix value.
-        $currentETDShortName = $this->currentProcessedETD;
-
-        // INFO: empty() Returns true if var does not exist or has a value that is empty or equal to zero, 
-        //       aka falsey. Otherwise returns false.
-        if ( empty($currentETDShortName) === false ) {
-            $completeMessage .= "[{$currentETDShortName}] ";
-        } 
-
-        $completeMessage .= "{$message}";
-
-        // Write out message.
-        // TODO: handle other logging levels
-        $this->logger->info($completeMessage);
-
-        return $completeMessage;
-    }
-
-    /**
      * Send email notification.
      *
      * @param string $message The email body to send.
@@ -198,7 +166,7 @@ class Processproquest {
      */
     private function sendEmail($message) {
         $fn = "sendEmail";
-        $this->writeLog("Generating an email notification.");
+        $this->logger->info("Generating an email notification.");
 
         $email_to = $this->settings['notify']['email'];
         $email_subject = "Message from processProquest";
@@ -207,28 +175,28 @@ class Processproquest {
         // Check for empty email values.
         if ( empty($email_to) === true ) {
             $errorMessage = "Email to: field is empty.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             return false;
         }
 
         if ( empty($email_subject) === true ) {
             $errorMessage = "Email subject: field is empty.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             return false;
         }
 
         if ( empty($email_message) === true ) {
             $errorMessage = "Email body: field is empty.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             return false;
         }
 
-        $this->writeLog("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]");
+        $this->logger->info("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]");
 
         // DEBUG: don't send email.
         $res = true;
         if ( $this->debug === true ) {
-            $this->writeLog("DEBUG: Not sending email notification.");
+            $this->logger->info("DEBUG: Not sending email notification.");
             return true;
         } else {
             // INFO: mail() Returns true if the mail was successfully accepted for delivery, false otherwise.
@@ -238,11 +206,11 @@ class Processproquest {
         // Check mail success.
         if ( $res === false ) {
             $errorMessage = "Email not sent.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             return false;
         }
 
-        $this->writeLog("Email sent.");
+        $this->logger->info("Email sent.");
 
         return true;
     }
@@ -259,14 +227,14 @@ class Processproquest {
     public function LogIntoFTPServer() {
         $fn = "LogIntoFTPServer";
 
-        $this->writeLog("Logging into FTP server.");
+        $this->logger->info("Logging into FTP server.","test");
 
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
 
         if ( (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
             $errorMessage = "FTP login values are missing. Please check your settings.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;
             throw new \Exception($errorMessage);
@@ -276,12 +244,12 @@ class Processproquest {
         // INFO: login() Returns true on success or false on failure. 
         //       If login fails, PHP will also throw a warning.
         if ( $this->ftpConnection->login($userFTP, $passwordFTP) ) {
-            $this->writeLog("FTP login sucecssful.");
+            $this->logger->info("FTP login sucecssful.");
             return true;
         } else {
             // TODO: get ftp error message with set_error_handler().
             $errorMessage = "FTP login failed.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             $this->processingFailure = true;
             throw new \Exception($errorMessage);
@@ -300,9 +268,9 @@ class Processproquest {
         $processdirFTP = $this->settings['ftp']['processdir'];
         $faildirFTP = $this->settings['ftp']['faildir'];
 
-        $this->writeLog("BEGIN Moving processed ETDs into respective post-processing directories.");
-        $this->writeLog("Currently in FTP directory: {$this->fetchdirFTP}");
-        $this->writeLog(LOOP_DIVIDER);
+        $this->logger->info("BEGIN Moving processed ETDs into respective post-processing directories.");
+        $this->logger->info("Currently in FTP directory: {$this->fetchdirFTP}");
+        $this->logger->info(LOOP_DIVIDER);
 
         foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
             $ingested = $fedoraRecordObj->INGESTED; // boolean
@@ -315,14 +283,14 @@ class Processproquest {
                 $moveFTPDir = $faildirFTP . $zipFileName;
             }
 
-            $this->writeLog("Was ETD successfully ingested?: " . ($ingested ? "true" : "false"));
-            $this->writeLog("Now attempting to move:");
-            $this->writeLog("   from: {$ftpPathForETD}");
-            $this->writeLog("   into: {$moveFTPDir}");
+            $this->logger->info("Was ETD successfully ingested?: " . ($ingested ? "true" : "false"));
+            $this->logger->info("Now attempting to move:");
+            $this->logger->info("   from: {$ftpPathForETD}");
+            $this->logger->info("   into: {$moveFTPDir}");
 
             if ( $this->debug === true ) {
-                $this->writeLog("DEBUG: Not moving ETD files on FTP.");
-                $this->writeLog(LOOP_DIVIDER);
+                $this->logger->info("DEBUG: Not moving ETD files on FTP.");
+                $this->logger->info(LOOP_DIVIDER);
                 $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
                 continue;
             }
@@ -333,18 +301,18 @@ class Processproquest {
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
                 $errorMessage = "Could not move ETD file to '{$moveFTPDir} FTP directory.";
-                $this->writeLog("ERROR: {$errorMessage}");
-                $this->writeLog(LOOP_DIVIDER);
+                $this->logger->info("ERROR: {$errorMessage}");
+                $this->logger->info(LOOP_DIVIDER);
                 // Log this as a noncritical error and continue.
                 array_push($fedoraRecordObj->NONCRITICAL_ERRORS, $errorMessage);
                 return false;
             }
-            $this->writeLog("Move was successful.");
-            $this->writeLog(LOOP_DIVIDER);
+            $this->logger->info("Move was successful.");
+            $this->logger->info(LOOP_DIVIDER);
             $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
         }
 
-        $this->writeLog("END Moving processed ETDs into respective post-processing directories.");
+        $this->logger->info("END Moving processed ETDs into respective post-processing directories.");
 
         return true;
     }
@@ -363,8 +331,8 @@ class Processproquest {
     public function scanForETDFiles() {
         $fn = "fetchFilesFromFTP";
 
-        $this->writeLog(SECTION_DIVIDER);
-        $this->writeLog("BEGIN scanning for valid ETD files on the FTP server.");
+        $this->logger->info(SECTION_DIVIDER);
+        $this->logger->info("BEGIN scanning for valid ETD files on the FTP server.");
 
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $this->fetchdirFTP = $this->settings['ftp']['fetchdir'];
@@ -376,7 +344,7 @@ class Processproquest {
         $localdirFTP = $this->settings['ftp']['localdir'];
         if ( empty($localdirFTP) === true ) {
             $errorMessage = "Local working directory not set.";
-            $this->writeLog("ERROR: {$errorMessage}");
+            $this->logger->info("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             throw new \Exception($errorMessage);
         }
@@ -386,10 +354,10 @@ class Processproquest {
             // INFO: changeDir() Returns true on success or false on failure. 
             //       If changing directory fails, PHP will also throw a warning.
             if ( $this->ftpConnection->changeDir($this->fetchdirFTP) ) {
-                $this->writeLog("Changed to local FTP directory: {$this->fetchdirFTP}");
+                $this->logger->info("Changed to local FTP directory: {$this->fetchdirFTP}");
             } else {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
-                $this->writeLog("ERROR: {$errorMessage}");
+                $this->logger->info("ERROR: {$errorMessage}");
                 array_push($this->processingErrors, $errorMessage);
                 throw new \Exception($errorMessage);
             }
@@ -422,23 +390,23 @@ class Processproquest {
         // Throw exception if there are no ETD files to process.
         if ( empty($etdZipFiles) === true ) {
             $errorMessage = "Did not find any ETD files on the FTP server.";
-            $this->writeLog("WARNING: {$errorMessage}");
+            $this->logger->info("WARNING: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
             throw new \Exception($errorMessage);
         }
 
         // Create FedoraRecord objects.
-        $this->writeLog("Found {$this->countTotalETDs} ETD file(s).");
+        $this->logger->info("Found {$this->countTotalETDs} ETD file(s).");
         foreach ($etdZipFiles as $zipFileName) {
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $workingDir = "{$localdirFTP}{$etdShortName}";
             $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $workingDir, $zipFileName, $this->fedoraConnection, $this->ftpConnection, $this->logger);
             $recordObj->setStatus("scanned");
             array_push($this->allFedoraRecordObjects, $recordObj);
-            $this->writeLog("   • {$zipFileName}");
+            $this->logger->info("   • {$zipFileName}");
         }
 
-        $this->writeLog("END Scanning for valid ETD files on the FTP server.");
+        $this->logger->info("END Scanning for valid ETD files on the FTP server.");
 
         return $this->allFedoraRecordObjects;
     }
@@ -509,7 +477,7 @@ class Processproquest {
      */
     public function statusCheck(){
         $fn = "statusCheck";
-        $this->writeLog("Generating status message for email message.");
+        $this->logger->info("Generating status message for email message.");
         $message = "\n";
 
         // First, find if there are processing errors
@@ -581,8 +549,8 @@ class Processproquest {
     public function postProcess() {
         $fn = "postProcess";
 
-        $this->writeLog(SECTION_DIVIDER);
-        $this->writeLog("BEGIN Running post-process steps.");
+        $this->logger->info(SECTION_DIVIDER);
+        $this->logger->info("BEGIN Running post-process steps.");
 
         // Move files in FTP server only when applicable.
         // INFO processingFailure() Returns a boolean.
@@ -596,8 +564,8 @@ class Processproquest {
         // Send email.
         $ret = $this->sendEmail($message);
 
-        $this->writeLog("END Running post-process steps.");
-        $this->writeLog(SECTION_DIVIDER);
+        $this->logger->info("END Running post-process steps.");
+        $this->logger->info(SECTION_DIVIDER);
 
         return true;
     }
