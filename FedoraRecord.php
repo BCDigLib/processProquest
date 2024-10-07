@@ -121,16 +121,6 @@ class FedoraRecord implements RecordTemplate {
         $etdZipFileFullPath = $this->ZIP_FILE_FULLPATH;
 
         $this->logger->info(LOOP_DIVIDER);
-
-        // Check to see if zipFileName is more than four chars. Continue if string fails.
-        if ( strlen($zipFileName) <= 4 ) {
-            $errorMessage = "WARNING File name only has " . strlen($zipFileName) . " characters.";
-            array_push($this->CRITICAL_ERRORS, $errorMessage);
-            $this->logger->info("ERROR: {$errorMessage}");
-            $fedoraRecordObj->setStatus("invalid");
-            throw new \Exception($errorMessage);
-        }
-        $this->logger->info("Is file valid?... true.");
         $this->logger->info("Local working directory status:");
         $this->logger->info("   • Directory to create: {$etdWorkingDir}");
 
@@ -141,11 +131,9 @@ class FedoraRecord implements RecordTemplate {
 
             // INFO: $this->recurseRmdir() Returns a boolean success value.
             if ( $this->recurseRmdir($etdWorkingDir) === false ) {
-                // We couldn't clear out the directory.
+                // Failed to remove directory.
                 $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}.";
-                array_push($this->CRITICAL_ERRORS, $errorMessage);
-                $this->logger->info("ERROR: {$errorMessage}");
-                $fedoraRecordObj->setStatus("invalid");
+                $this->recordDownloadFailed($errorMessage);
                 throw new \Exception($errorMessage);
             } else {
                 $this->logger->info("   • Existing directory was removed.");
@@ -155,16 +143,13 @@ class FedoraRecord implements RecordTemplate {
         // INFO: mkdir() Returns true on success or false on failure.
         if ( mkdir($etdWorkingDir, 0755, true) === false ) {
             $errorMessage = "Failed to create local working directory: {$etdWorkingDir}.";
-            array_push($this->CRITICAL_ERRORS, $errorMessage);
-            //array_push($this->processingErrors, $errorMessage);
-            $this->logger->info("ERROR: {$errorMessage}");
-            $fedoraRecordObj->setStatus("invalid");
+            $this->recordDownloadFailed($errorMessage);
             throw new \Exception($errorMessage);
         } else {
             $this->logger->info("   • Directory was created.");
         }
 
-        // HACK: give loop some time to create directory.
+        // Give loop some time to create directory.
         usleep(30000); // 30 milliseconds
 
         /**
@@ -177,9 +162,7 @@ class FedoraRecord implements RecordTemplate {
             $this->logger->info("Downloaded ETD zip file from FTP server.");
         } else {
             $errorMessage = "Failed to download ETD zip file from FTP server: {$etdZipFileFullPath}.";
-            array_push($this->CRITICAL_ERRORS, $errorMessage);
-            $this->logger->info("ERROR: {$errorMessage}");
-            $this->setStatus("invalid");
+            $this->recordDownloadFailed($errorMessage);
             throw new \Exception($errorMessage);
         }
 
@@ -314,7 +297,6 @@ class FedoraRecord implements RecordTemplate {
                 $this->STATUS = "skipped";
                 continue;
             }
-
         }
 
         /**
@@ -613,7 +595,6 @@ class FedoraRecord implements RecordTemplate {
         // $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
 
         $this->STATUS = "processed";
-        //$this->logger->info("END Processing ETD [#{$s} of {$this->countTotalETDs}]");
         $this->logger->info("END Processing ETD");
 
         // Completed processing all ETD files.
@@ -923,6 +904,17 @@ class FedoraRecord implements RecordTemplate {
         $this->logger->info("[{$datastreamName}] Ingested datastream.");
 
         return true;
+    }
+
+    /**
+     * Process a failed file download task.
+     * This is a wrapper for the processRecordError() function.
+     * 
+     * @param string $errorMessage the error message to display.
+     */
+    private function recordDownloadFailed(string $errorMessage) {
+        $completeErrorMessage = "ERROR: {$errorMessage}";
+        $this->processRecordError($completeErrorMessage);
     }
 
     /**
