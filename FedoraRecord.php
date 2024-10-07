@@ -43,23 +43,25 @@ class FedoraRecord implements RecordTemplate {
     /**
      * @param string $id a unique ID for this record.
      * @param array $settings script settings.
-     * @param string $workingDirectory the directory to find the ETD zip file.
      * @param string $zipFileName the name of the ETD zip file.
-     * @param object $fedoraConnection  the fedoraConnection object.
+     * @param object $fedoraConnection the fedoraConnection object.
      * @param object $logger the logger object.
      */
-    public function __construct(string $id, array $settings, string $workingDirectory, string $zipFileName, object $fedoraConnection, object $ftpConnection, object $logger) {
-        // TODO: we can pull $workingDirectory from $settings.
+    public function __construct(string $id, array $settings, string $zipFileName, object $fedoraConnection, object $ftpConnection, object $logger) {
         $this->id = $id;
         $this->settings = $settings;
         $this->ETD_SHORTNAME = $id;
-        $this->WORKING_DIR = $workingDirectory;
         $this->ZIP_FILENAME = $zipFileName;
         $this->ZIP_FILE_FULLPATH = "{$this->WORKING_DIR}/{$this->ZIP_FILENAME}";
         $this->fedoraConnection = $fedoraConnection;
         $this->ftpConnection = $ftpConnection;
+
+        // Calculate WORKING_DIR.
+        $localdirFTP = $this->settings['ftp']['localdir'];
+        $workingDir = "{$localdirFTP}{$id}";
+        $this->WORKING_DIR = $workingDir;
         
-        // Clone logger object.
+        // Clone logger object to adjust the %extra% field in the logger object.
         $recordLogger = $logger->withName('FedoraRecord');
         $recordLogger->pushProcessor(function ($record) {
             // Add ETD_SHORTNAME as an extra field in logger object.
@@ -206,15 +208,6 @@ class FedoraRecord implements RecordTemplate {
         
         $this->logger->info(LOOP_DIVIDER);
         $this->logger->info("BEGIN Gathering ETD file");
-
-        // Check to see if zipFileName is more than four chars. Continue if string fails.
-        if ( strlen($this->ZIP_FILENAME) <= 4 ) {
-            $this->logger->info("WARNING File name only has " . strlen($this->ZIP_FILENAME) . " characters. Moving to the next ETD." );
-
-            // TODO: manage this error case.
-            return null;
-        }
-        $this->logger->info("Is file valid?... true.");
 
         $zip = new \ZipArchive;
 

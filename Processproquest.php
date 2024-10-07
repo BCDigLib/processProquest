@@ -369,7 +369,7 @@ class Processproquest {
         $this->allFoundETDs = $etdZipFiles;
         $this->allFoundETDPaths = $etdZipFilesOnFTP; 
         $countTotalETDs = count($etdZipFiles);
-        $localdirFTP = $this->settings['ftp']['localdir'];
+        //$localdirFTP = $this->settings['ftp']['localdir'];
 
         // Throw exception if there are no ETD files to process.
         if ( empty($etdZipFiles) === true ) {
@@ -383,8 +383,8 @@ class Processproquest {
         $this->logger->info("Found {$countTotalETDs} ETD file(s).");
         foreach ($etdZipFiles as $zipFileName) {
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
-            $workingDir = "{$localdirFTP}{$etdShortName}";
-            $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $workingDir, $zipFileName, $this->fedoraConnection, $this->ftpConnection, $this->logger);
+            // $workingDir = "{$localdirFTP}{$etdShortName}";
+            $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $zipFileName, $this->fedoraConnection, $this->ftpConnection, $this->logger);
             $recordObj->setStatus("scanned");
             array_push($this->allFedoraRecordObjects, $recordObj);
             $this->logger->info("   • {$zipFileName}");
