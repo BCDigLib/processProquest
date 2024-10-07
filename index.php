@@ -193,6 +193,16 @@ try {
     exit(1);
 }
 
+// Scan for ETD files.
+try {
+    $process->scanForETDFiles();
+} catch(Exception $e) {
+    $logger->error("ERROR: " . $e->getMessage());
+    $process->postProcess();
+    $logger->info("Exiting. 1");
+    exit(1);
+}
+
 // Process ETD files.
 try {
     $process->processAllFiles();

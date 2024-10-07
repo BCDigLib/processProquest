@@ -306,11 +306,13 @@ class Processproquest {
      * Local directory name is based on file name.
      * Next, varify that PDF and XML files exist. Also keep track of supplementary files.
      * 
+     * @param string $customRegex overwrite the regular expression set in the settings file.
+     * 
      * @return array all instantiated FedoraRecord objects.
      * 
      * @throws Exception if the working directory isn't reachable, or there are no ETDs found.
      */
-    public function scanForETDFiles() {
+    public function scanForETDFiles(string $customRegex = "") {
         $fn = "fetchFilesFromFTP";
 
         $this->logger->info(SECTION_DIVIDER);
@@ -344,13 +346,17 @@ class Processproquest {
             }
         }
 
-        /**
-         * Look for files that begin with a specific string.
-         * In our specific case the file prefix is "etdadmin_upload_*".
-         * Save results into $etdZipFiles array.
-         */
+        //Look for files that begin with a specific string.
         $file_regex = $this->settings['ftp']['file_regex'];
-         // INFO: getFileList() Returns an array of filenames from the specified directory on success or false on error.
+
+        // Use the custom regex instead if it was passed as an argument.
+        if ( empty($customRegex) === false ) {
+            $file_regex = $customRegex;
+        }
+
+        $this->logger->info("Looking for ETD zip files that match this pattern: /{$file_regex}/");
+
+        // INFO: getFileList() Returns an array of filenames from the specified directory on success or false on error.
         $allFiles = $this->ftpConnection->getFileList($file_regex);
 
         // Only collect zip files.
@@ -366,7 +372,6 @@ class Processproquest {
         $this->allFoundETDs = $etdZipFiles;
         $this->allFoundETDPaths = $etdZipFilesOnFTP; 
         $countTotalETDs = count($etdZipFiles);
-        //$localdirFTP = $this->settings['ftp']['localdir'];
 
         // Throw exception if there are no ETD files to process.
         if ( empty($etdZipFiles) === true ) {
@@ -380,7 +385,6 @@ class Processproquest {
         $this->logger->info("Found {$countTotalETDs} ETD file(s).");
         foreach ($etdZipFiles as $zipFileName) {
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
-            // $workingDir = "{$localdirFTP}{$etdShortName}";
             $recordObj = new FR\FedoraRecord($etdShortName, $this->settings, $zipFileName, $this->fedoraConnection, $this->ftpConnection, $this->logger);
             $recordObj->setStatus("scanned");
             array_push($this->allFedoraRecordObjects, $recordObj);
@@ -394,9 +398,8 @@ class Processproquest {
 
     /**
      * This function completes a few tasks.
-     *   1) Scans the FTP server for all available ETD files.
-     *   2) Downloads all available ETD files onto the working directory.
-     *   3) Creates a FedoraRecord object to process each ETD file.
+     *   1) Downloads all available ETD files onto the working directory.
+     *   2) Creates a FedoraRecord object to process each ETD file.
      *     a) Parses each ETD file and checks for supplementary files.
      *     b) Processes each file and collects metadata.
      *     c) Generates and ingests various datastreams.
@@ -405,17 +408,9 @@ class Processproquest {
      * @throws Exception on parse, process, or ingest error.
      */
     public function processAllFiles() {
-        // scanForETDFiles() can throw an exception.
-        try {
-            $this->scanForETDFiles();
-        } catch (Exception $e) {
-            // Bubble up exception.
-            throw $e;
-        }
-
         // Generate Record objects for further processing.
         foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
-            // Download ETD zip file.
+            // Download ETD zip file from FTP server.
             try {
                 $fedoraRecordObj->downloadETD();
             } catch (Exception $e) {
