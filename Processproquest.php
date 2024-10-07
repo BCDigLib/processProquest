@@ -47,24 +47,24 @@ class Processproquest {
     public $debug;                          // Debug bool
     protected $fedoraConnection = null;     // FedoraRepository object
     protected $ftpConnection = null;        // ProquestFTP object
-    protected $localFiles = [];             // Object to store all ETD metadata
+    // protected $localFiles = [];             // Object to store all ETD metadata
     protected $allFedoraRecordObjects = []; // List of all FedoraRecord objects
     protected $logFile = "";                // Log file name
     protected $processingErrors = [];       // Keep track of processing errors
     protected $allFoundETDs = [];           // List of all found ETD zip files
     protected $allFoundETDPaths = [];       // List of all found ETD zip files with full FTP file path
-    protected $allSupplementalETDs = [];    // List of all ETDs with supplemental files
-    protected $allRegularETDs = [];         // List of all ETDs without supplemental files
-    protected $allIngestedETDs = [];        // List of all ETDs that were successfully ingested
-    protected $allFailedETDs = [];          // List of all ETDs that failed to ingest
-    protected $allInvalidETDs = [];         // List of all ETDs that have invalid zip files
-    protected $countTotalETDs = 0;          // Total ETDs count
-    protected $countTotalValidETDs = 0;     // Total ETDs that are valid files
-    protected $countTotalInvalidETDs = 0;   // Total ETDS that are invalid files
-    protected $countSupplementalETDs = 0;   // Total ETDs with supplemental files
-    protected $countProcessedETDs = 0;      // Total ETDs successfully processed
-    protected $countFailedETDs = 0;         // Total ETDs failed to process
-    protected $currentProcessedETD = "";    // Current ETD that is being processed
+    // protected $allSupplementalETDs = [];    // List of all ETDs with supplemental files
+    // protected $allRegularETDs = [];         // List of all ETDs without supplemental files
+    // protected $allIngestedETDs = [];        // List of all ETDs that were successfully ingested
+    // protected $allFailedETDs = [];          // List of all ETDs that failed to ingest
+    // protected $allInvalidETDs = [];         // List of all ETDs that have invalid zip files
+    // protected $countTotalETDs = 0;          // Total ETDs count
+    // protected $countTotalValidETDs = 0;     // Total ETDs that are valid files
+    // protected $countTotalInvalidETDs = 0;   // Total ETDS that are invalid files
+    // protected $countSupplementalETDs = 0;   // Total ETDs with supplemental files
+    // protected $countProcessedETDs = 0;      // Total ETDs successfully processed
+    // protected $countFailedETDs = 0;         // Total ETDs failed to process
+    // protected $currentProcessedETD = "";    // Current ETD that is being processed
     protected $configurationFile = [];      // The configuration file
     protected $root_url = "";               // The Islandora root url
     protected $path = "";                   // The Islandora record path
@@ -227,7 +227,7 @@ class Processproquest {
     public function LogIntoFTPServer() {
         $fn = "LogIntoFTPServer";
 
-        $this->logger->info("Logging into FTP server.","test");
+        $this->logger->info("Logging into FTP server.");
 
         $userFTP = $this->settings['ftp']['user'];
         $passwordFTP = $this->settings['ftp']['password'];
@@ -384,7 +384,7 @@ class Processproquest {
 
         $this->allFoundETDs = $etdZipFiles;
         $this->allFoundETDPaths = $etdZipFilesOnFTP; 
-        $this->countTotalETDs = count($etdZipFiles);
+        $countTotalETDs = count($etdZipFiles);
         $localdirFTP = $this->settings['ftp']['localdir'];
 
         // Throw exception if there are no ETD files to process.
@@ -396,7 +396,7 @@ class Processproquest {
         }
 
         // Create FedoraRecord objects.
-        $this->logger->info("Found {$this->countTotalETDs} ETD file(s).");
+        $this->logger->info("Found {$countTotalETDs} ETD file(s).");
         foreach ($etdZipFiles as $zipFileName) {
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $workingDir = "{$localdirFTP}{$etdShortName}";
