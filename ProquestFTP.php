@@ -55,7 +55,8 @@ class ProquestFTP implements FileStorageTemplate {
     public function login(string $userName, string $userPassword) {
         // INFO: ftp_login() Returns true on success or false on failure. 
         //       If login fails, PHP will also throw a warning.
-        $ret = ftp_login($this->conn, $userName, $userPassword);
+        // Suppress warning by using @ error control operator.
+        $ret = @ftp_login($this->conn, $userName, $userPassword);
 
         return $ret;
     }
@@ -116,7 +117,8 @@ class ProquestFTP implements FileStorageTemplate {
     public function changeDir(string $dir) {
         // INFO: ftp_chdir() Returns true on success or false on failure. 
         //       If changing directory fails, PHP will also throw a warning.
-        $ret = ftp_chdir($this->conn, $dir);
+        // Suppress warning by using @ error control operator.
+        $ret = @ftp_chdir($this->conn, $dir);
 
         return $ret;
     }

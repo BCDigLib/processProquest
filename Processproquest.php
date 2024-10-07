@@ -227,13 +227,11 @@ class Processproquest {
         }
 
         // Pass login credentials to login method.
-        // INFO: login() Returns true on success or false on failure. 
-        //       If login fails, PHP will also throw a warning.
-        if ( $this->ftpConnection->login($userFTP, $passwordFTP) ) {
+        // INFO: login() Returns true on success or false on failure.
+        if ( $this->ftpConnection->login($userFTP, $passwordFTP) === true ) {
             $this->logger->info("FTP login sucecssful.");
             return true;
         } else {
-            // TODO: get ftp error message with set_error_handler().
             $errorMessage = "FTP login failed.";
             $this->logger->error("ERROR: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
@@ -335,8 +333,7 @@ class Processproquest {
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
         if ( $this->fetchdirFTP != "" ) {
-            // INFO: changeDir() Returns true on success or false on failure. 
-            //       If changing directory fails, PHP will also throw a warning.
+            // INFO: changeDir() Returns true on success or false on failure.
             if ( $this->ftpConnection->changeDir($this->fetchdirFTP) ) {
                 $this->logger->info("Changed to local FTP directory: {$this->fetchdirFTP}");
             } else {
