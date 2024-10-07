@@ -666,10 +666,6 @@ class FedoraRecord implements RecordTemplate {
             return false;
         }
 
-        // TODO: generate this value. See localFiles object.
-        $fullfnameFTP = $this->FTP_PATH_FOR_ETD;
-        //$this->logger->info("The full path of the ETD file on the FTP server is: {$fullfnameFTP}");
-
         // Instantiated a Fedora object and use the generated PID as its ID.
         // TODO: not sure this function throws an exception
         //       https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php
@@ -1193,7 +1189,6 @@ class FedoraRecord implements RecordTemplate {
          * Build concatted PDF document.
          *
          * Load splash page PDF to core PDF if under embargo.
-         * TODO: find out when/how this happens
          */
         $this->logger->info("[{$dsid}] Next, generate concatenated PDF document.");
 
