@@ -65,7 +65,7 @@ class FedoraRecord implements RecordTemplate {
         $recordLogger = $logger->withName('FedoraRecord');
         $recordLogger->pushProcessor(function ($record) {
             // Add ETD_SHORTNAME as an extra field in logger object.
-            $record['extra']["ETD"] = "[{$this->ETD_SHORTNAME}]";
+            $record['extra']["ETD"] = "{$this->ETD_SHORTNAME}";
 
             return $record;
         });
