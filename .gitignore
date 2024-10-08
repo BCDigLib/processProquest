@@ -2,5 +2,6 @@ processProquest.ini
 vendor
 logs
 staging
+local_ftp
 .vscode
 .phpunit.result.cache
