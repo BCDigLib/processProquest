@@ -242,6 +242,7 @@ class Processproquest {
         $fn = "moveFTPFiles";
         $processdirFTP = $this->settings['ftp']['processdir'];
         $faildirFTP = $this->settings['ftp']['faildir'];
+        $manualdirFTP = $this->settings['ftp']['manualdir'];
 
         $this->logger->info("BEGIN Moving processed ETDs into respective post-processing directories.");
         $this->logger->info("Currently in FTP directory: {$this->fetchdirFTP}");
@@ -249,11 +250,14 @@ class Processproquest {
 
         foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
             $ingested = $fedoraRecordObj->INGESTED; // boolean
+            $hasSupplements = $fedoraRecordObj->HAS_SUPPLEMENTS; // boolean
             $zipFileName = $fedoraRecordObj->ZIP_FILENAME;
             $ftpPathForETD = $fedoraRecordObj->FTP_PATH_FOR_ETD;
 
             if ( $ingested === true ) {
                 $moveFTPDir = $processdirFTP . $zipFileName;
+            } elseif ($hasSupplements  === true ) {
+                $moveFTPDir = $manualdirFTP . $zipFileName;
             } else {
                 $moveFTPDir = $faildirFTP . $zipFileName;
             }
