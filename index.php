@@ -183,13 +183,12 @@ try {
  */
 
 // Log into the FTP server.
-// Exit when an exception is caught.
 try {
     $process->LogIntoFTPServer();
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. 0");
+    $logger->info("Exiting. Code 1000");
     exit(1);
 }
 
@@ -199,7 +198,7 @@ try {
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. 1");
+    $logger->info("Exiting. Code 1001");
     exit(1);
 }
 
@@ -209,13 +208,13 @@ try {
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. 1");
+    $logger->info("Exiting. Code 1002");
     exit(1);
 }
 
 // Run postProcess() to move ETD files on the FTP server and send out email notification.
 $process->postProcess();
-$logger->info("Exiting. 2");
+$logger->info("Exiting. Code 1003");
 exit(1);
 
 /**
