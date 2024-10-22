@@ -188,7 +188,7 @@ try {
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. Code 1000");
+    $logger->info("Exiting. Error code: 1000");
     exit(1);
 }
 
@@ -198,7 +198,7 @@ try {
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. Code 1001");
+    $logger->info("Exiting. Error code: 1001");
     exit(1);
 }
 
@@ -208,13 +208,13 @@ try {
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. Code 1002");
+    $logger->info("Exiting. Error code: 1002");
     exit(1);
 }
 
 // Run postProcess() to move ETD files on the FTP server and send out email notification.
 $process->postProcess();
-$logger->info("Exiting. Code 1003");
+$logger->info("Script complete. Exiting.");
 exit(1);
 
 /**
