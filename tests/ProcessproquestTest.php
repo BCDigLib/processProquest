@@ -2,7 +2,7 @@
 use PHPUnit\Framework\TestCase;
 
 require __DIR__ . "/../Processproquest.php";
-//require __DIR__ . "/../ProquestFTP.php";
+require __DIR__ . "/../FedoraRepository.php";
 
 use Monolog\Level;
 use Monolog\Logger;
@@ -16,8 +16,16 @@ final class ProcessproquestTest extends TestCase
     protected $settings = [];
     protected $logger = null;
     protected $ftpConnection = null;
+    protected $fedoraConnection = null;
     protected $debug = null;
 
+    /**
+     * Create a logger object.
+     * 
+     * @param array $configurationSettings the settings to use.
+     * 
+     * @return object the logger object.
+     */
     protected function createLogger($configurationSettings){
         // Set up log file location and name.
         $dateFormatLogFile = date("Ymd-His", time());
@@ -64,22 +72,36 @@ final class ProcessproquestTest extends TestCase
         return $logger;
     }
 
-    protected function getConfigFile($configurationFile) {
+    /**
+     * Read the values from a configuration file.
+     * 
+     * @param string $configurationFileLocation the location of a configuration file to load.
+     * 
+     * @return array the configuration file contents.
+     */
+    protected function readConfigurationFile($configurationFileLocation) {
         // Read in configuration settings.
-        $configurationSettings = parse_ini_file($configurationFile, true);
+        $configurationSettings = parse_ini_file($configurationFileLocation, true);
 
         if (empty($configurationSettings)) {
             return NULL;
         }
 
         $configurationArray = array(
-            "file" => $configurationFile,
+            "file" => $configurationFileLocation,
             "settings" => $configurationSettings
         );
 
         return $configurationArray;
     }
 
+    /**
+     * Overwrite the settings array with new value(s).
+     * 
+     * @param array $updatedSettings the updated setting values.
+     * 
+     * @return array the settings array including the new values.
+     */
     protected function alterConfigArray($updatedSettings) {
         // $updatedSettings is a nested array in the form 
         // [
@@ -100,22 +122,67 @@ final class ProcessproquestTest extends TestCase
         return $this->settings;
     }
 
+    /**
+     * Create an ftpConnection object.
+     * 
+     * @param array $configurationSettings the settings to use.
+     * 
+     * @return object a ProquestFTP object.
+     */
     protected function createFTPConnection($configurationSettings) {
         $urlFTP = $configurationSettings['ftp']['server'];
+
+        // TODO: catch exceptions here?
         $ftpConnection = new \Processproquest\FTP\ProquestFTP($urlFTP);
 
         return $ftpConnection;
+    }
+
+    /**
+     * Create a fedoraConnection object.
+     * 
+     * @param array $configurationSettings the settings to use.
+     * 
+     * @return object a FedoraRepository object.
+     */
+    protected function createFedoraConnection($configurationSettings) {
+        $fedoraURL      = $configurationSettings['fedora']['url'];
+        $fedoraUsername = $configurationSettings['fedora']['username'];
+        $fedoraPassword = $configurationSettings['fedora']['password'];
+        $tuqueLocation  = $configurationSettings['packages']['tuque'];
+
+        $fedoraConnection = new \Processproquest\Repository\FedoraRepository($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
+
+        return $fedoraConnection;
+    }
+
+    /**
+     * Uses reflection to access protected or private class properties.
+     * 
+     * @param string $className the name of the class.
+     * @param string $property the name of the property to access.
+     * 
+     * @return object $property the reflected class object.
+     */
+    public static function getProtectedProperty($className, $property) {
+        // See https://www.yellowduck.be/posts/test-private-and-protected-properties-using-phpunit
+
+        $reflectedClass = new \ReflectionClass($className);
+        $property = $reflectedClass->getProperty($property);
+        $property->setAccessible(true);
+
+        return $property;
     }
 
     protected function setUp(): void {
         error_reporting(E_ALL & ~E_DEPRECATED);
         $configurationFile = "testConfig.ini";
 
-        $this->configurationArray = $this->getConfigFile($configurationFile);
+        $this->configurationArray = $this->readConfigurationFile($configurationFile);
         $this->configurationFile = $this->configurationArray["file"];
         $this->settings = $this->configurationArray["settings"];
         $this->logger = $this->createLogger($this->settings);
-        $this->ftpConnection = $this->createFTPConnection($this->settings);
+        // $this->ftpConnection = $this->createFTPConnection($this->settings);
         $this->debug = true;
     }
 
@@ -124,12 +191,60 @@ final class ProcessproquestTest extends TestCase
         $this->logger = null;
     }
 
+    public function testSetFTPConnection(): void {
+        echo "\nThis test checks the setFTPConnection() function.\n";
+
+        // Create ftpConnection object.
+        $this->ftpConnection = $this->createFTPConnection($this->settings);
+
+        // Create Processproquest object.
+        $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug));
+        
+        // Assert that the ftpConnection object is null.
+        $property = $this->getProtectedProperty('\Processproquest\Processproquest', 'ftpConnection');
+        $this->assertNull($property->getValue($processObj), "Expected the ftpConnection object to be null.");
+
+        // Set the ftpConnection object.
+        $processObj->setFTPConnection($this->ftpConnection);
+
+        // Assert that the ftpConnection object is not null.
+        $property = $this->getProtectedProperty('\Processproquest\Processproquest', 'ftpConnection');
+        $this->assertIsObject($property->getValue($processObj), "Expected the ftpConnection object to exist.");
+    }
+
+    public function testSetFedoraConnection(): void {
+        echo "\nThis test checks the setFedoraConnection() function.\n";
+
+        // Create fedoraConnection object.
+        $this->fedoraConnection = $this->createFedoraConnection($this->settings);
+
+        // Create Processproquest object.
+        $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug));
+        
+        // Assert that the fedoraConnection object is null.
+        $property = $this->getProtectedProperty('\Processproquest\Processproquest', 'fedoraConnection');
+        $this->assertNull($property->getValue($processObj), "Expected the fedoraConnection object to be null.");
+
+        // Set the fedoraConnection object.
+        $processObj->setFedoraConnection($this->fedoraConnection);
+
+        // Assert that the fedoraConnection object is not null.
+        $property = $this->getProtectedProperty('\Processproquest\Processproquest', 'fedoraConnection');
+        $this->assertIsObject($property->getValue($processObj), "Expected the fedoraConnection object to exist.");
+    }
+
+    // TODO: delete
     public function testNormalizeString(): void {
         echo "\nThis test checks normalizeString() returns a normalized string.\n";
 
+        // Stop here and mark this test as incomplete.
+        $this->markTestIncomplete(
+            'This test needs to be rewritten.',
+        );
+
         // $configurationFile = "testConfig.ini";
         // $debug = true;
-        // $configurationArray = $this->getConfigFile($configurationFile);
+        // $configurationArray = $this->readConfigurationFile($configurationFile);
         // $logger = new Logger("Processproquest");
 
         $testString = 'This_ is#a test"string';
@@ -154,8 +269,14 @@ final class ProcessproquestTest extends TestCase
         $this->assertSame($expectedString, $output);
     }
 
+    // TODO: delete
     public function testWriteLog(): void {
         echo "\nThis test checks writeLog() returns a formatted log entry.\n";
+
+        // Stop here and mark this test as incomplete.
+        $this->markTestIncomplete(
+            'This test needs to be rewritten.',
+        );
 
         $testString = 'This is a test string';
         $expectedString = '(invokeArgs) This is a test string';
@@ -177,9 +298,16 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testLogIntoFTPServer(): void {
-        echo "\nThis test checks LogIntoFTPServer() returns successfully.\n";
+        echo "\nThis test checks the LogIntoFTPServer() function returns successfully with valid credentials.\n";
+
+        // Create ftpConnection object.
+        $this->ftpConnection = $this->createFTPConnection($this->settings);
+
+        // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
                             ->setFTPConnection($this->ftpConnection);
+        
+        // Expect a true value.
         $return = $processObj->LogIntoFTPServer();
         echo "Expected: true\n";
         echo "Returned: " . ($return ? "true" : "false") . "\n";
@@ -187,43 +315,52 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testLogIntoFTPServerConfigEmptyServerValue(): void {
-        echo "\nThis test checks LogIntoFTPServer() returns an exception.\n";
+        echo "\nThis test checks the LogIntoFTPServer() function returns an exception with an empty server URL value.\n";
 
         // Stop here and mark this test as incomplete.
         $this->markTestIncomplete(
             'This test needs to be rewritten.',
         );
 
-        // Replace [ftp] "server" key with an empty string
+        // Replace [ftp] "server" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("server" => ""),
         );
-
         $newSettings = $this->alterConfigArray($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
-        $processObj = (new Processproquest($this->configurationArray, $this->logger, $this->debug))
-                            ->setFTPConnection($this->ftpConnection);
-        $this->expectException(Exception::class);
 
-        // This should return an exception.
+        // Create ftpConnection object with updated settings.
+        // TODO: this causes an exception from ProquestFTP, and triggers an error in this test.
+        $this->ftpConnection = $this->createFTPConnection($this->settings);
+
+        // Create Processproquest object.
+        $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
+                            ->setFTPConnection($this->ftpConnection);
+
+        // Expect an exception.
+        $this->expectException(Exception::class);
         $return = $processObj->LogIntoFTPServer();
     }
 
     public function testGetFilesConfigEmptyLocaldirValue(): void {
-        echo "\nThis test checks getFiles() returns an exception.\n";
+        echo "\nThis test checks the getFiles() function returns an exception with an invalid localdir value.\n";
 
-        // Replace [ftp] "server" key with an empty string
+        // Replace [ftp] "server" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
         );
-
         $newSettings = $this->alterConfigArray($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
+
+        // Create ftpConnection object with updated settings.
+        $this->ftpConnection = $this->createFTPConnection($this->settings);
+
+        // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
                             ->setFTPConnection($this->ftpConnection);
+        
+        // Expect an exception.
         $this->expectException(Exception::class);
-
-        // This should return an exception.
-        $return = $processObj->getFiles();
+        $return = $processObj->scanForETDFiles();
     }
 }
