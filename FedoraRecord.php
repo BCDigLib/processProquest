@@ -290,13 +290,18 @@ class FedoraRecord implements RecordTemplate {
                 array_push($this->NONCRITICAL_ERRORS, $errorMessage);
             }
 
-            if ( $this->HAS_SUPPLEMENTS === true ){
+            if ( $this->HAS_SUPPLEMENTS === true ) {
                 // At this point we can leave this function if the ETD has supplemental files.
                 $this->logger->info("This ETD has supplementary files. No further processing is required. Moving to the next ETD.");
                 $this->logger->info("END Gathering ETD file.");
                 $this->STATUS = "skipped";
                 continue;
             }
+        }
+
+        // No need for futher processing if supplemental files were found.
+        if ( $this->HAS_SUPPLEMENTS === true ) {
+            return false;
         }
 
         /**
