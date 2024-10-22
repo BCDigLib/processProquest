@@ -157,6 +157,49 @@ final class ProcessproquestTest extends TestCase
     }
 
     /**
+     * Create a mock ftpConnection object.
+     * 
+     * @return object a mock ProquestFTP object.
+     */
+    protected function createMockFTPConnection() {
+        // See https://stackoverflow.com/a/61595920
+        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['login', 'getFileList', 'changeDir'])
+            ->getMock();
+
+        $mockFTPConnection->method('login')->willReturn(true);
+        $mockFTPConnection->method('changeDir')->willReturn(true);
+
+        // TODO: allow custom file listings.
+        $mockFTPConnection->method('getFileList')->willReturn(['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']);
+
+        return $mockFTPConnection;
+    }
+
+    /**
+     * Create a mock fedoraConnection object.
+     * 
+     * @return object a mock FedoraRepository object.
+     */
+    protected function createMockFedoraConnection() {
+        // See https://stackoverflow.com/a/61595920
+        $mockFedoraConnection = $this->getMockBuilder(\Processproquest\Repository\FedoraRepository::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getNextPid', 'constructObject', 'getObject', 'ingestObject'])
+            ->getMock();
+
+        $genericObject = new stdClass();
+
+        $mockFedoraConnection->method('getNextPid')->willReturn("bc-ir:9999999");
+        $mockFedoraConnection->method('constructObject')->willReturn($genericObject);
+        $mockFedoraConnection->method('getObject')->willReturn($genericObject);
+        $mockFedoraConnection->method('ingestObject')->willReturn($genericObject);
+
+        return $mockFedoraConnection;
+    }
+
+    /**
      * Uses reflection to access protected or private class properties.
      * 
      * @param string $className the name of the class.
@@ -182,7 +225,6 @@ final class ProcessproquestTest extends TestCase
         $this->configurationFile = $this->configurationArray["file"];
         $this->settings = $this->configurationArray["settings"];
         $this->logger = $this->createLogger($this->settings);
-        // $this->ftpConnection = $this->createFTPConnection($this->settings);
         $this->debug = true;
     }
 
@@ -194,8 +236,8 @@ final class ProcessproquestTest extends TestCase
     public function testSetFTPConnection(): void {
         echo "\nThis test checks the setFTPConnection() function.\n";
 
-        // Create ftpConnection object.
-        $this->ftpConnection = $this->createFTPConnection($this->settings);
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
 
         // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug));
@@ -205,7 +247,7 @@ final class ProcessproquestTest extends TestCase
         $this->assertNull($property->getValue($processObj), "Expected the ftpConnection object to be null.");
 
         // Set the ftpConnection object.
-        $processObj->setFTPConnection($this->ftpConnection);
+        $processObj->setFTPConnection($mockFTPConnection);
 
         // Assert that the ftpConnection object is not null.
         $property = $this->getProtectedProperty('\Processproquest\Processproquest', 'ftpConnection');
@@ -215,8 +257,8 @@ final class ProcessproquestTest extends TestCase
     public function testSetFedoraConnection(): void {
         echo "\nThis test checks the setFedoraConnection() function.\n";
 
-        // Create fedoraConnection object.
-        $this->fedoraConnection = $this->createFedoraConnection($this->settings);
+        // Create a mock fedoraConnection object.
+        $this->fedoraConnection = $this->createMockFedoraConnection();
 
         // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug));
@@ -300,12 +342,12 @@ final class ProcessproquestTest extends TestCase
     public function testLogIntoFTPServer(): void {
         echo "\nThis test checks the LogIntoFTPServer() function returns successfully with valid credentials.\n";
 
-        // Create ftpConnection object.
-        $this->ftpConnection = $this->createFTPConnection($this->settings);
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
 
         // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
-                            ->setFTPConnection($this->ftpConnection);
+                            ->setFTPConnection($mockFTPConnection);
         
         // Expect a true value.
         $return = $processObj->LogIntoFTPServer();
@@ -329,13 +371,13 @@ final class ProcessproquestTest extends TestCase
         $newSettings = $this->alterConfigArray($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
 
-        // Create ftpConnection object with updated settings.
-        // TODO: this causes an exception from ProquestFTP, and triggers an error in this test.
-        $this->ftpConnection = $this->createFTPConnection($this->settings);
+        // Create a ftpConnection object with updated settings.
+        $ftpConnection = $this->createFTPConnection($this->settings);
+        //$mockFTPConnection = $this->createMockFTPConnection();
 
         // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
-                            ->setFTPConnection($this->ftpConnection);
+                            ->setFTPConnection($ftpConnection);
 
         // Expect an exception.
         $this->expectException(Exception::class);
@@ -352,15 +394,36 @@ final class ProcessproquestTest extends TestCase
         $newSettings = $this->alterConfigArray($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
 
-        // Create ftpConnection object with updated settings.
-        $this->ftpConnection = $this->createFTPConnection($this->settings);
+        // Create a ftpConnection object with updated settings.
+        $ftpConnection = $this->createFTPConnection($this->settings);
+        //$mockFTPConnection = $this->createMockFTPConnection();
 
         // Create Processproquest object.
         $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
-                            ->setFTPConnection($this->ftpConnection);
+                            ->setFTPConnection($ftpConnection);
         
         // Expect an exception.
         $this->expectException(Exception::class);
         $return = $processObj->scanForETDFiles();
+    }
+
+    public function testScanForETDFiles(): void {
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create Processproquest object using mock FTP server.
+        $processObj = (new \Processproquest\Processproquest($this->configurationArray, $this->logger, $this->debug))
+                            ->setFTPConnection($mockFTPConnection)
+                            ->setFedoraConnection($mockFedoraConnection);
+
+        $fileArray = $processObj->scanForETDFiles();
+        
+        // Stop here and mark this test as incomplete.
+        $this->markTestIncomplete(
+            'This test needs to be completed.',
+        );
     }
 }
