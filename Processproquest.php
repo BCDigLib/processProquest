@@ -303,6 +303,8 @@ class Processproquest {
      * Local directory name is based on file name.
      * Next, varify that PDF and XML files exist. Also keep track of supplementary files.
      * 
+     * TODO: split this function into scanning for files and fetching files.
+     * 
      * @param string $customRegex overwrite the regular expression set in the settings file.
      * 
      * @return array an array of all instantiated FedoraRecord objects.
