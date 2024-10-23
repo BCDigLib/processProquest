@@ -7,6 +7,7 @@ namespace Processproquest\Record;
 interface RecordTemplate {
     public function parseETD();
     public function processETD();
+    public function generateDatastreams();
     public function ingestETD();
 }
 
@@ -112,8 +113,8 @@ class FedoraRecord implements RecordTemplate {
      * @throws Exception download error.
      */
     public function downloadETD() {
-        $this->logger->info(SECTION_DIVIDER);
-        $this->logger->info("BEGIN Downloading this ETD file.");
+        // $this->logger->info(SECTION_DIVIDER);
+        $this->logger->info("[BEGIN] Downloading this ETD file.");
 
         $etdShortName = $this->ETD_SHORTNAME;
         $etdWorkingDir = $this->WORKING_DIR;
@@ -168,7 +169,8 @@ class FedoraRecord implements RecordTemplate {
 
         // Update status.
         $this->setStatus("downloaded");
-        $this->logger->info("END Downloading this ETD file.");
+        $this->logger->info(LOOP_DIVIDER);
+        $this->logger->info("[END] Downloading this ETD file.");
 
         return true;
     }
@@ -187,10 +189,9 @@ class FedoraRecord implements RecordTemplate {
      */
     public function parseETD() {
         $this->logger->info(SECTION_DIVIDER);
-        $this->logger->info("BEGIN Parsing this ETD file.");
+        $this->logger->info("[BEGIN] Parsing this ETD file.");
         
         $this->logger->info(LOOP_DIVIDER);
-        $this->logger->info("BEGIN Gathering ETD file");
 
         $zip = new \ZipArchive;
 
@@ -328,7 +329,7 @@ class FedoraRecord implements RecordTemplate {
         
         // Completed fetching all ETD zip files.
         $this->logger->info(LOOP_DIVIDER);
-        $this->logger->info("END Parsing this ETD file.");
+        $this->logger->info("[END] Parsing this ETD file.");
 
         return true;
     }
@@ -348,12 +349,13 @@ class FedoraRecord implements RecordTemplate {
      */
     public function processETD() {
         $this->logger->info(SECTION_DIVIDER);
-        $this->logger->info("Now processing this ETD file.");
+        $this->logger->info("[BEGIN] Processing this ETD file.");
+        $this->logger->info(LOOP_DIVIDER);
 
         // No need to process ETDs that have supplemental files.
         if ( $this->HAS_SUPPLEMENTS === true ) {
             $this->logger->info("SKIP Processing ETD since it contains supplemental files.");
-            $this->logger->info("END Processing ETD file.");
+            $this->logger->info("[END] Processing ETD file.");
 
             return false;
         }
@@ -398,9 +400,6 @@ class FedoraRecord implements RecordTemplate {
 
         $zipFileName = $this->ZIP_FILENAME;
         $etdShortName = $this->ETD_SHORTNAME;
-
-        $this->logger->info(LOOP_DIVIDER);
-        $this->logger->info("BEGIN Processing this ETD file.");
 
         // Create XPath object from the ETD XML file.
         $metadata = new \DOMDocument();
@@ -589,7 +588,6 @@ class FedoraRecord implements RecordTemplate {
         $this->MODS = $normalizedAuthor . ".xml";
         $this->logger->info("Created new ETD MODS file {$this->MODS}");
 
-
         /**
          * Check for supplemental files.
          * This looks for the existance of an "DISS_attachment" node in the ETD XML XPath object.
@@ -600,17 +598,14 @@ class FedoraRecord implements RecordTemplate {
         // $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
 
         $this->STATUS = "processed";
-        $this->logger->info("END Processing ETD");
-
-        // Completed processing all ETD files.
         $this->logger->info(LOOP_DIVIDER);
-        $this->logger->info("Completed processing this ETD file.");
+        $this->logger->info("[END] Processing this ETD file.");
 
         return true;
     }
 
     /**
-     * Ingest files into Fedora
+     * Generate Fedora datastreams.
      *
      * This creates and ingests the following Fedora datastreams:
      * - RELS-EXT       (external relationship)
@@ -623,16 +618,15 @@ class FedoraRecord implements RecordTemplate {
      * - PREVIEW        (image of PDF first page)
      * - XACML          (access control policy)
      * - RELS-INT       (internal relationship)
-     *
-     * Then, it ingests the completed object into Fedora.
      * 
      * @return boolean Success value.
      * 
      * @throws Exception if there are no ETDs to ingest.
      */
-    public function ingestETD() {
+    public function generateDatastreams() {
         $this->logger->info(SECTION_DIVIDER);
-        $this->logger->info("Now Ingesting ETD file.");
+        $this->logger->info("[BEGIN] Generating datastreams.");
+        $this->logger->info(LOOP_DIVIDER);
 
         $etdShortName = $this->ETD_SHORTNAME;
 
@@ -640,14 +634,12 @@ class FedoraRecord implements RecordTemplate {
         $workingDir = $this->WORKING_DIR;
         $this->DATASTREAMS_CREATED = [];
         $this->INGESTED = false;
-        
-        $this->logger->info(LOOP_DIVIDER);
-        $this->logger->info("BEGIN Ingesting ETD file.");
 
         // No need to process ETDs that have supplemental files.
         if ( $this->HAS_SUPPLEMENTS === true ) {
             $this->logger->info("SKIP Ingesting ETD since it contains supplemental files.");
-            $this->logger->info("END Ingesting ETD file.");
+            $this->logger->info(LOOP_DIVIDER);
+            $this->logger->info("[END] Generating datastreams.");
 
             return false;
         }
@@ -671,8 +663,7 @@ class FedoraRecord implements RecordTemplate {
         // All Fedora objects are owned by the same generic account
         $this->fedoraObj->owner = 'fedoraAdmin';
 
-        $this->logger->info("Now generating Fedora datastreams.");
-
+        $this->logger->info("Now generating Fedora datastreams:");
 
         /**
          * Generate RELS-EXT (XACML) datastream.
@@ -856,6 +847,7 @@ class FedoraRecord implements RecordTemplate {
                 $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
                 $this->recordIngestFailed($errorMessage);
                 throw new \Exception($errorMessage);
+                $this->logger->info("END ingestion of Fedora object...");
             }
         }
 
@@ -869,9 +861,53 @@ class FedoraRecord implements RecordTemplate {
         $this->RECORD_URL = "{$this->record_path}{$this->PID}";
 
         // $this->logger->info("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
-        $this->logger->info("END Ingesting ETD file.");
         $this->logger->info(LOOP_DIVIDER);
-        $this->logger->info("Completed ingesting this ETD file.");
+        $this->logger->info("[END] Generating datastreams.");
+        $this->logger->info(SECTION_DIVIDER);
+
+        return true;
+    }
+
+    /**
+     * Ingest a Fedora record.
+     * 
+     * @return boolean Success value.
+     * 
+     * @throws Exception if the Fedora record failed to ingest.
+     */
+    public function ingestETD() {
+        $this->logger->info(SECTION_DIVIDER);
+        $this->logger->info("[BEGIN] Ingesting this ETD file.");
+        $this->logger->info(LOOP_DIVIDER);
+        
+        // DEBUG: ignore Fedora ingest.
+        if ( $this->debug === true ) {
+            $this->logger->info("DEBUG: Ignore ingesting object into Fedora.");
+        } else {
+            try {
+                $this->fedoraConnection->ingestObject($this->fedoraObj);
+                $this->logger->info("START ingestion of Fedora object...");
+
+                // Make sure we give this ingest process enough time to complete.
+                usleep(30000); // 30 milliseconds
+            } catch (Exception $e) {
+                $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
+                $this->recordIngestFailed($errorMessage);
+                throw new \Exception($errorMessage);
+                $this->logger->info("END ingestion of Fedora object...");
+            }
+        }
+
+        $this->STATUS = "ingested";
+        $this->INGESTED = true;
+
+        // Assign URL to this ETD
+        $this->RECORD_URL = "{$this->record_path}{$this->PID}";
+
+        // $this->logger->info("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
+        $this->logger->info(LOOP_DIVIDER);
+        $this->logger->info("[END] Ingesting this ETD file.");
+        $this->logger->info(SECTION_DIVIDER);
 
         return true;
     }

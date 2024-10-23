@@ -202,13 +202,23 @@ try {
     exit(1);
 }
 
+// Generate Fedora objects.
+try {
+    $process->createFedoraObjects();
+} catch(Exception $e) {
+    $logger->error("ERROR: " . $e->getMessage());
+    $process->postProcess();
+    $logger->info("Exiting. Error code: 1005");
+    exit(1);
+}
+
 // Process ETD files.
 try {
     $process->processAllFiles();
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
-    $logger->info("Exiting. Error code: 1002");
+    $logger->info("Exiting. Error code: 1010");
     exit(1);
 }
 
