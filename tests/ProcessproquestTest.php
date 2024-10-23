@@ -14,8 +14,7 @@ use Monolog\Formatter\LineFormatter;
 #[CoversClass(\Processproquest\Processproquest::class)]
 #[UsesClass(\Processproquest\FTP\ProquestFTP::class)]
 #[UsesClass(\Processproquest\Repository\FedoraRepository::class)]
-final class ProcessproquestTest extends TestCase
-{
+final class ProcessproquestTest extends TestCase {
     protected $configurationArray = [];
     protected $configurationFile = null;
     protected $settings = [];
@@ -327,6 +326,22 @@ final class ProcessproquestTest extends TestCase
         // Assert that the fedoraConnection object is not null.
         $property = $this->getProtectedProperty('\Processproquest\Processproquest', 'fedoraConnection');
         $this->assertIsObject($property->getValue($processObj), "Expected the fedoraConnection object to exist.");
+    }
+
+    public function testSetDebug(): void {
+        echo "\n[*] This test checks the setDebug() function.\n";
+
+        // Create Processproquest object.
+        $processObj = $this->generateProcessproquestObject();
+
+        // Check that the debug property is set to true.
+        $this->assertTrue($processObj->debug, "Expected the default debug property to be true");
+
+        // Set the debug property to false.
+        $processObj->setDebug(false);
+
+        // Check that the debug property is set to false.
+        $this->assertNotTrue($processObj->debug, "Expected the updated debug property to be false");
     }
 
     public function testLogIntoFTPServer(): void {
