@@ -18,6 +18,7 @@ final class ProcessproquestTest extends TestCase
     protected $ftpConnection = null;
     protected $fedoraConnection = null;
     protected $debug = null;
+    protected $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip'];
 
     /**
      * Create a logger object.
@@ -174,7 +175,7 @@ final class ProcessproquestTest extends TestCase
         $mockFTPConnection->method('changeDir')->willReturn(true);
 
         // TODO: allow custom file listings.
-        $mockFTPConnection->method('getFileList')->willReturn(['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']);
+        $mockFTPConnection->method('getFileList')->willReturn($this->listOfETDs);
 
         return $mockFTPConnection;
     }
@@ -234,6 +235,37 @@ final class ProcessproquestTest extends TestCase
         return $property;
     }
 
+    /**
+     * Determine if two associative arrays are similar.
+     *
+     * Both arrays must have the same indexes with identical values
+     * without respect to key ordering.
+     * 
+     * Copied from: https://stackoverflow.com/a/3843768
+     * 
+     * @param array $a The first array.
+     * @param array $b The second array.
+     * 
+     * @return bool Do the arrays match.
+     */
+    function arrays_are_similar($a, $b) {
+        // If the indexes don't match, return immediately.
+        if (count(array_diff_assoc($a, $b))) {
+            return false;
+        }
+
+        // We know that the indexes, but maybe not values, match.
+        // Compare the values between the two arrays.
+        foreach($a as $k => $v) {
+            if ($v !== $b[$k]) {
+                return false;
+            }
+        }
+
+        // We have identical indexes, and no unequal values.
+        return true;
+    }
+
     protected function setUp(): void {
         error_reporting(E_ALL & ~E_DEPRECATED);
         $configurationFile = "testConfig.ini";
@@ -251,7 +283,7 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testSetFTPConnection(): void {
-        echo "\nThis test checks the setFTPConnection() function.\n";
+        echo "\n[*] This test checks the setFTPConnection() function.\n";
 
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->createMockFTPConnection();
@@ -272,7 +304,7 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testSetFedoraConnection(): void {
-        echo "\nThis test checks the setFedoraConnection() function.\n";
+        echo "\n[*] This test checks the setFedoraConnection() function.\n";
 
         // Create a mock fedoraConnection object.
         $this->fedoraConnection = $this->createMockFedoraConnection();
@@ -293,7 +325,7 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testLogIntoFTPServer(): void {
-        echo "\nThis test checks the LogIntoFTPServer() function returns successfully with valid credentials.\n";
+        echo "\n[*] This test checks the LogIntoFTPServer() function returns successfully with valid credentials.\n";
 
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->createMockFTPConnection();
@@ -305,12 +337,12 @@ final class ProcessproquestTest extends TestCase
         // Expect a true value.
         $return = $processObj->LogIntoFTPServer();
         echo "Expected: true\n";
-        echo "Returned: " . ($return ? "true" : "false") . "\n";
+        echo "Received: " . ($return ? "true" : "false") . "\n";
         $this->assertSame($return, true);
     }
 
     public function testLogIntoFTPServerConfigEmptyServerValue(): void {
-        echo "\nThis test checks the LogIntoFTPServer() function returns an exception with an empty server URL value.\n";
+        echo "\n[*] This test checks the LogIntoFTPServer() function returns an exception with an empty server URL value.\n";
 
         // Stop here and mark this test as incomplete.
         $this->markTestIncomplete(
@@ -338,7 +370,7 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testGetFilesConfigEmptyLocaldirValue(): void {
-        echo "\nThis test checks the getFiles() function returns an exception with an invalid localdir value.\n";
+        echo "\n[*] This test checks the getFiles() function returns an exception with an invalid localdir value.\n";
 
         // Replace [ftp] "server" key with an empty string.
         $updatedSettings = array(
@@ -361,6 +393,8 @@ final class ProcessproquestTest extends TestCase
     }
 
     public function testScanForETDFiles(): void {
+        echo "\n[*] This test checks the scanForETDFiles() function returns a list of valid ETD zip files.\n";
+
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->createMockFedoraConnection();
 
@@ -373,10 +407,13 @@ final class ProcessproquestTest extends TestCase
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         $fileArray = $processObj->scanForETDFiles();
-        
-        // Stop here and mark this test as incomplete.
-        $this->markTestIncomplete(
-            'This test needs to be completed.',
-        );
+
+        echo "\nExpected: ";
+        print_r($this->listOfETDs);
+
+        echo "\nReceived: ";
+        print_r($fileArray);
+
+        $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs));
     }
 }
