@@ -489,9 +489,11 @@ class Processproquest {
     /**
      * Process a failed task.
      * 
+     * @codeCoverageIgnore
+     * 
      * @param string $errorMessage the error message to display.
      */
-    public function manageProcessingError($errorMessage) {
+    private function manageProcessingError($errorMessage) {
         array_push($this->processingErrors, $errorMessage);
         $this->logger->error("ERROR: {$errorMessage}");
         $this->processingFailure = true;
