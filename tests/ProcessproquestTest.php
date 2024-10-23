@@ -358,7 +358,7 @@ final class ProcessproquestTest extends TestCase {
         $return = $processObj->LogIntoFTPServer();
         echo "Expected: true\n";
         echo "Received: " . ($return ? "true" : "false") . "\n";
-        $this->assertSame($return, true);
+        $this->assertTrue($return, "Expected LogIntoFTPServer() to return true.");
     }
 
     // Incomplete.
@@ -435,8 +435,9 @@ final class ProcessproquestTest extends TestCase {
 
         echo "\nReceived: ";
         print_r($fileArray);
+        echo "\n";
 
-        $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs));
+        $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs), "Expected the two arrays to match.");
     }
 
     public function testcreateFedoraObjects(): void {
@@ -499,7 +500,7 @@ final class ProcessproquestTest extends TestCase {
         $message = $processObj->statusCheck();
 
         echo "\nExpected substring: '{$errorMessage}'";
-        echo "\nReceived string: '{$message}'";
+        echo "\nReceived string: '{$message}'\n";
 
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
@@ -548,7 +549,7 @@ final class ProcessproquestTest extends TestCase {
         $expectedString = '/Has supplements:\s+true/';
 
         echo "\nRegular expression: '{$expectedString}'";
-        echo "\nReceived string   : '{$message}'";
+        echo "\nReceived string   : '{$message}'\n";
 
         $this->assertMatchesRegularExpression($expectedString, $message, "Expecting the regular expression match '{$expectedString}' in the returned message.");
     }
@@ -604,7 +605,7 @@ final class ProcessproquestTest extends TestCase {
 
         echo "\nRegular expression 1: '{$expectedString1}'";
         echo "\nRegular expression 2: '{$expectedString2}'";
-        echo "\nReceived string     : '{$message}'";
+        echo "\nReceived string     : '{$message}'\n";
 
         $this->assertMatchesRegularExpression($expectedString1, $message, "Expecting the regular expression match '{$expectedString1}' in the returned message.");
         $this->assertMatchesRegularExpression($expectedString2, $message, "Expecting the regular expression match '{$expectedString2}' in the returned message.");
@@ -659,7 +660,7 @@ final class ProcessproquestTest extends TestCase {
         $message = $processObj->statusCheck();
 
         echo "\nExpected: '{$errorMessage}'";
-        echo "\nReceived: '{$message}'";
+        echo "\nReceived: '{$message}'\n";
 
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
@@ -713,7 +714,7 @@ final class ProcessproquestTest extends TestCase {
         $message = $processObj->statusCheck();
 
         echo "\nExpected: '{$errorMessage}'";
-        echo "\nReceived: '{$message}'";
+        echo "\nReceived: '{$message}'\n";
 
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
