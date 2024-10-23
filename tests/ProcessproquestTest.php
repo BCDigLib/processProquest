@@ -438,4 +438,241 @@ final class ProcessproquestTest extends TestCase {
 
         $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs));
     }
+
+    public function testStatusCheckWithProcessingErrors(): void {
+        echo "\n[*] This test checks the statusCheck() function continaing processing errors.\n";
+
+        $errorMessage = "This is an error: WXYZ";
+
+        // Create Processproquest object.
+        $processObj = $this->generateProcessproquestObject();
+
+        // Get protected property processingErrors using reflection.
+        $processingErrorsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'processingErrors');
+
+        // Set the processingErrors property.
+        $processingErrorsProperty->setValue($processObj, [$errorMessage]);
+
+        // Get output of statusCheck() function.
+        $message = $processObj->statusCheck();
+
+        echo "\nExpected substring: '{$errorMessage}'";
+        echo "\nReceived string: '{$message}'";
+
+        $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
+    }
+
+    public function testStatusCheckWithSupplements(): void {
+        echo "\n[*] This test checks the statusCheck() function containing ETDs with supplemental files.\n";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create FedoraRecord object.
+        $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
+            "etdadmin_upload_100000",       // ID
+            $this->settings,                // settings
+            "etdadmin_upload_100000.zip",   // zip file name
+            $mockFedoraConnection,          // Fedora connection object
+            $mockFTPConnection,             // FTP connection object
+            $this->logger                   // logger object
+        );
+
+        $fedoraRecordObject->STATUS = "ingested";
+        $fedoraRecordObject->HAS_SUPPLEMENTS = true;
+        $fedoraRecordObject->OA_AVAILABLE = true;
+        $fedoraRecordObject->HAS_EMBARGO = false;
+        $fedoraRecordObject->PID = "bc-ir:9999999";
+
+        // Push this object into an array.
+        $arrayOfFedoraRecords = [];
+        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
+
+        // Create Processproquest object.
+        $processObj = $this->generateProcessproquestObject();
+
+        // Get protected property allFedoraRecordObjects using reflection.
+        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
+
+        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
+        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+
+        // Get output of statusCheck() function.
+        $message = $processObj->statusCheck();
+
+        $expectedString = '/Has supplements:\s+true/';
+
+        echo "\nRegular expression: '{$expectedString}'";
+        echo "\nReceived string   : '{$message}'";
+
+        $this->assertMatchesRegularExpression($expectedString, $message, "Expecting the regular expression match '{$expectedString}' in the returned message.");
+    }
+
+    public function testStatusCheckWithEmbargo(): void {
+        echo "\n[*] This test checks the statusCheck() function containing ETDs with an embargo.\n";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create FedoraRecord object.
+        $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
+            "etdadmin_upload_100000",       // ID
+            $this->settings,                // settings
+            "etdadmin_upload_100000.zip",   // zip file name
+            $mockFedoraConnection,          // Fedora connection object
+            $mockFTPConnection,             // FTP connection object
+            $this->logger                   // logger object
+        );
+
+        $fedoraRecordObject->STATUS = "ingested";
+        $fedoraRecordObject->HAS_SUPPLEMENTS = false;
+        $fedoraRecordObject->OA_AVAILABLE = true;
+        $fedoraRecordObject->HAS_EMBARGO = true;
+        $fedoraRecordObject->EMBARGO_DATE = "indefinite";
+        $fedoraRecordObject->PID = "bc-ir:9999999";
+        $fedoraRecordObject->AUTHOR = "Foo";
+        $fedoraRecordObject->RECORD_URL = "https://foo.bar";
+        $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
+
+        // Push this object into an array.
+        $arrayOfFedoraRecords = [];
+        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
+
+        // Create Processproquest object.
+        $processObj = $this->generateProcessproquestObject();
+
+        // Get protected property allFedoraRecordObjects using reflection.
+        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
+
+        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
+        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+
+        // Get output of statusCheck() function.
+        $message = $processObj->statusCheck();
+
+        // Match with these regular expressions.
+        $expectedString1 = '/Has embargo:\s+true/';
+        $expectedString2 = '/Embargo date:\s+indefinite/';
+
+        echo "\nRegular expression 1: '{$expectedString1}'";
+        echo "\nRegular expression 2: '{$expectedString2}'";
+        echo "\nReceived string     : '{$message}'";
+
+        $this->assertMatchesRegularExpression($expectedString1, $message, "Expecting the regular expression match '{$expectedString1}' in the returned message.");
+        $this->assertMatchesRegularExpression($expectedString2, $message, "Expecting the regular expression match '{$expectedString2}' in the returned message.");
+    }
+
+    public function testStatusCheckWithCriticalErrors(): void {
+        echo "\n[*] This test checks the statusCheck() function containing ETDs with a critical error.\n";
+
+        $errorMessage = "This is a critical error: WXYZ";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create FedoraRecord object.
+        $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
+            "etdadmin_upload_100000",       // ID
+            $this->settings,                // settings
+            "etdadmin_upload_100000.zip",   // zip file name
+            $mockFedoraConnection,          // Fedora connection object
+            $mockFTPConnection,             // FTP connection object
+            $this->logger                   // logger object
+        );
+
+        $fedoraRecordObject->STATUS = "ingested";
+        $fedoraRecordObject->HAS_SUPPLEMENTS = false;
+        $fedoraRecordObject->OA_AVAILABLE = true;
+        $fedoraRecordObject->HAS_EMBARGO = true;
+        $fedoraRecordObject->EMBARGO_DATE = "indefinite";
+        $fedoraRecordObject->PID = "bc-ir:9999999";
+        $fedoraRecordObject->AUTHOR = "Foo";
+        $fedoraRecordObject->RECORD_URL = "https://foo.bar";
+        $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
+        $fedoraRecordObject->CRITICAL_ERRORS = [$errorMessage];
+
+        // Push this object into an array.
+        $arrayOfFedoraRecords = [];
+        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
+
+        // Create Processproquest object.
+        $processObj = $this->generateProcessproquestObject();
+
+        // Get protected property allFedoraRecordObjects using reflection.
+        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
+
+        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
+        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+
+        // Get output of statusCheck() function.
+        $message = $processObj->statusCheck();
+
+        echo "\nExpected: '{$errorMessage}'";
+        echo "\nReceived: '{$message}'";
+
+        $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
+    }
+    
+    public function testStatusCheckWithNonCriticalErrors(): void {
+        echo "\n[*] This test checks the statusCheck() function containing ETDs with a non-critical error.\n";
+
+        $errorMessage = "This is a non-critical error: WXYZ";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create FedoraRecord object.
+        $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
+            "etdadmin_upload_100000",       // ID
+            $this->settings,                // settings
+            "etdadmin_upload_100000.zip",   // zip file name
+            $mockFedoraConnection,          // Fedora connection object
+            $mockFTPConnection,             // FTP connection object
+            $this->logger                   // logger object
+        );
+
+        $fedoraRecordObject->STATUS = "ingested";
+        $fedoraRecordObject->HAS_SUPPLEMENTS = false;
+        $fedoraRecordObject->OA_AVAILABLE = true;
+        $fedoraRecordObject->HAS_EMBARGO = true;
+        $fedoraRecordObject->EMBARGO_DATE = "indefinite";
+        $fedoraRecordObject->PID = "bc-ir:9999999";
+        $fedoraRecordObject->AUTHOR = "Foo";
+        $fedoraRecordObject->RECORD_URL = "https://foo.bar";
+        $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
+        $fedoraRecordObject->NONCRITICAL_ERRORS = [$errorMessage];
+
+        // Push this object into an array.
+        $arrayOfFedoraRecords = [];
+        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
+
+        // Create Processproquest object.
+        $processObj = $this->generateProcessproquestObject();
+
+        // Get protected property allFedoraRecordObjects using reflection.
+        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
+
+        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
+        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+
+        // Get output of statusCheck() function.
+        $message = $processObj->statusCheck();
+
+        echo "\nExpected: '{$errorMessage}'";
+        echo "\nReceived: '{$message}'";
+
+        $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
+    }
 }
