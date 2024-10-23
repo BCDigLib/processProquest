@@ -230,7 +230,7 @@ final class ProcessproquestTest extends TestCase
      * 
      * @return object $property the reflected class object.
      */
-    public static function getProtectedProperty($className, $property) {
+    protected static function getProtectedProperty($className, $property) {
         // See https://www.yellowduck.be/posts/test-private-and-protected-properties-using-phpunit
 
         $reflectedClass = new \ReflectionClass($className);
@@ -253,7 +253,7 @@ final class ProcessproquestTest extends TestCase
      * 
      * @return bool Do the arrays match.
      */
-    function arrays_are_similar($a, $b) {
+    protected function arrays_are_similar($a, $b) {
         // If the indexes don't match, return immediately.
         if (count(array_diff_assoc($a, $b))) {
             return false;
