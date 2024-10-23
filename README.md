@@ -130,3 +130,15 @@ pdftotext  = "/usr/bin/pdftotext"
 [script]
 debug      = "false"                    ; run this script in Debug mode?
 ```
+
+# Tests
+
+Unit tests can be found in the [tests](tests) directory. 
+
+PHPUnit should be installed using composer, otherwise install manually.
+
+Run tests using this command
+
+```
+./vendor/bin/phpunit tests
+```
