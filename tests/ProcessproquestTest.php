@@ -439,6 +439,48 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs));
     }
 
+    public function testcreateFedoraObjects(): void {
+        echo "\n[*] This test checks the createFedoraObjects() function returns an array of FedoraRecord object.\n";
+
+        // Create array containing a zip filename.
+        $zipFileName = "etdadmin_upload_100000.zip";
+        $listOfETDFiles = [];
+        array_push($listOfETDFiles, $zipFileName);
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Get protected property allFoundETDs using reflection.
+        $allFoundETDsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFoundETDs');
+
+        // Set the allFoundETDs property.
+        $allFoundETDsProperty->setValue($processObj, $listOfETDFiles);
+        $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
+        $firstFedoraRecordObject = $listOfFedoraRecordObjects[0];
+
+        // Check the class type for the first object returned by createFedoraObjects()
+        $className = get_class($firstFedoraRecordObject);
+        echo "\nChecking class name of FedoraRecord object returned:";
+        echo "\nExpected: Processproquest\Record\FedoraRecord";
+        echo "\nReceived: {$className}\n";
+        $this->assertEquals($className, "Processproquest\Record\FedoraRecord", "Expected the values 'Processproquest\Record\FedoraRecord' and '{$className}' to match.");
+
+        // Check the FedoraRecord object name returned by createFedoraObjects()
+        $etdZipFileName = $firstFedoraRecordObject->ZIP_FILENAME;
+        echo "\nChecking zip filename of FedoraRecord object returned:";
+        echo "\nExpected: {$zipFileName}";
+        echo "\nReceived: {$etdZipFileName}\n";
+        $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
+    }
+
     public function testStatusCheckWithProcessingErrors(): void {
         echo "\n[*] This test checks the statusCheck() function continaing processing errors.\n";
 
