@@ -23,6 +23,10 @@ class FedoraRecord implements RecordTemplate {
     public $WORKING_DIR = "";
     public $SUPPLEMENTS = [];
     public $HAS_SUPPLEMENTS = false;
+    public $OA_AVAILABLE = false;
+    public $HAS_EMBARGO = false;
+    public $EMBARGO = "";
+    public $EMBARGO_DATE = "";
     public $FILE_ETD = "";
     public $FILE_METADATA = "";
     public $ZIP_FILENAME = "";
