@@ -505,7 +505,6 @@ class Processproquest {
      * @return string $message a summary message of all processed ETDs.
      */
     public function statusCheck(){
-        $fn = "statusCheck";
         $this->logger->info("Generating status message for email message.");
         $message = "\n";
 
