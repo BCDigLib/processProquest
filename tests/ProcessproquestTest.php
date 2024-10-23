@@ -440,7 +440,7 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs), "Expected the two arrays to match.");
     }
 
-    public function testcreateFedoraObjects(): void {
+    public function testCreateFedoraObjects(): void {
         echo "\n[*] This test checks the createFedoraObjects() function returns an array of FedoraRecord object.\n";
 
         // Create array containing a zip filename.
