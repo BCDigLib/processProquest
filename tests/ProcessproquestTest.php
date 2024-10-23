@@ -1,4 +1,6 @@
 <?php declare(strict_types=1);
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 require __DIR__ . "/../Processproquest.php";
@@ -9,6 +11,9 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
+#[CoversClass(\Processproquest\Processproquest::class)]
+#[UsesClass(\Processproquest\FTP\ProquestFTP::class)]
+#[UsesClass(\Processproquest\Repository\FedoraRepository::class)]
 final class ProcessproquestTest extends TestCase
 {
     protected $configurationArray = [];

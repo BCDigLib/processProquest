@@ -146,6 +146,8 @@ class Processproquest {
 
     /**
      * Send email notification.
+     * 
+     * @codeCoverageIgnore
      *
      * @param string $message The email body to send.
      * @return boolean Was the email sent successfully.
@@ -236,6 +238,8 @@ class Processproquest {
 
     /**
      * Moves files on FTP server at the end of the process.
+     * 
+     * @codeCoverageIgnore
      * 
      * @return boolean Success value.
      */
