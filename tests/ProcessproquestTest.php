@@ -341,12 +341,14 @@ final class ProcessproquestTest extends TestCase
         $this->assertSame($return, true);
     }
 
+    // Incomplete.
+    // This test throws an exception on setFTPConnection().
     public function testLogIntoFTPServerConfigEmptyServerValue(): void {
         echo "\n[*] This test checks the LogIntoFTPServer() function returns an exception with an empty server URL value.\n";
 
         // Stop here and mark this test as incomplete.
         $this->markTestIncomplete(
-            'This test needs to be rewritten.',
+            'This test is incomplete.',
         );
 
         // Replace [ftp] "server" key with an empty string.
