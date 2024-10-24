@@ -383,6 +383,8 @@ class Processproquest {
 
     /**
      * Generate a FedoraRecord object for every ETD zip file found.
+     * TODO: don't run this as a loop, but call this function
+     *       for each $this->allFoundETDs element.
      * 
      * @return array an array of all instantiated FedoraRecord objects.
      * 
@@ -437,10 +439,16 @@ class Processproquest {
      *     c) Generates and ingests various datastreams.
      *     d) Ingests the record.
      * 
+     * TODO: don't run this as a loop, but call this function
+     *       for each $this->allFedoraRecordObjects element.
+     * 
+     * @return boolean Success value.
+     * 
      * @throws Exception on download, parse, process, or ingest errors.
      */
     public function processAllFiles() {
         // Generate Record objects for further processing.
+        // TODO: don't end this loop when a single ETD fails a step.
         foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
             // Download ETD zip file from FTP server.
             try {
@@ -483,7 +491,7 @@ class Processproquest {
             }
         }
 
-        return; 
+        return true; 
     }
 
     /**
