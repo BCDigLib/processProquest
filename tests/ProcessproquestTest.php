@@ -462,6 +462,8 @@ final class ProcessproquestTest extends TestCase {
 
     /**
      * @covers ::scanForETDFiles
+     * 
+     * TODO: rewrite this to use a mockFTPConnection.
      */
     public function testScanForETDFilesConfigEmptyLocaldirValue(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns an exception with an invalid localdir value.\n";
@@ -492,16 +494,12 @@ final class ProcessproquestTest extends TestCase {
     public function testScanForETDFiles(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns a list of valid ETD zip files.\n";
 
-        // Create a mock fedoraConnection object.
-        $mockFedoraConnection = $this->createMockFedoraConnection();
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->createMockFTPConnection();
 
-        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        // Create a Processproquest object using a mock FTP connection.
         $processObj = $this->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
-        $processObj->setFedoraConnection($mockFedoraConnection);
 
         $fileArray = $processObj->scanForETDFiles();
 
@@ -523,16 +521,12 @@ final class ProcessproquestTest extends TestCase {
 
         $expectedValue = "~/";
 
-        // Create a mock fedoraConnection object.
-        $mockFedoraConnection = $this->createMockFedoraConnection();
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->createMockFTPConnection();
 
-        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        // Create a Processproquest object using a mock FTP connection.
         $processObj = $this->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
-        $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Get protected property fetchdirFTP using reflection.
         $fetchdirFTPProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'fetchdirFTP');
@@ -556,9 +550,6 @@ final class ProcessproquestTest extends TestCase {
     public function testScanForETDFilesChangeDirReturnsFalse(): void {
         echo "\n[*] This test checks the scanForETDFiles() function when \Processproquest\FTP\ProquestFTP->changeDir() returns false.\n";
 
-        // Create a mock fedoraConnection object.
-        $mockFedoraConnection = $this->createMockFedoraConnection();
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
@@ -569,10 +560,9 @@ final class ProcessproquestTest extends TestCase {
         // Change default return value of changeDir to be false.
         $mockFTPConnection->method('changeDir')->willReturn(false);
 
-        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        // Create a Processproquest object using a mock FTP connection.
         $processObj = $this->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
-        $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
         $this->expectException(Exception::class);
@@ -585,9 +575,6 @@ final class ProcessproquestTest extends TestCase {
     public function testScanForETDFilesRegexNoMatch(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns an exception with this->settings['ftp']['localdir'] is empty.\n";
 
-        // Create a mock fedoraConnection object.
-        $mockFedoraConnection = $this->createMockFedoraConnection();
-
         // Replace [ftp] "localdir" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
@@ -597,15 +584,13 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object with an empty initial array of ETD files.
         $mockFTPConnection = $this->createMockFTPConnection();
 
-        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
-        // $processObj = $this->generateProcessproquestObject();
+        // Create a Processproquest object using a mock FTP connection.
         $processObj = new \Processproquest\Processproquest(
             $newConfigurationArray, 
             $this->logger, 
             $this->debug
         );
         $processObj->setFTPConnection($mockFTPConnection);
-        $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
         $this->expectException(Exception::class);
@@ -618,16 +603,13 @@ final class ProcessproquestTest extends TestCase {
     public function testScanForETDFilesNoETDsFound(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns an exception when there are no ETDs on the FTP server.\n";
 
-        // Create a mock fedoraConnection object.
-        $mockFedoraConnection = $this->createMockFedoraConnection();
-
         // Create a mock ftpConnection object with an empty initial array of ETD files.
         $mockFTPConnection = $this->createMockFTPConnection([]);
 
-        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        // Create a Processproquest object using a mock FTP connection.
         $processObj = $this->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
-        $processObj->setFedoraConnection($mockFedoraConnection);
+        //$processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
         $this->expectException(Exception::class);
