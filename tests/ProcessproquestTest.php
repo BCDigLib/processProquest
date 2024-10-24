@@ -703,19 +703,11 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject->HAS_EMBARGO = false;
         $fedoraRecordObject->PID = "bc-ir:9999999";
 
-        // Push this object into an array.
-        $arrayOfFedoraRecords = [];
-        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
-
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
-        // TODO: update this with new appendAllFedoraRecordObjects() setter function
-        // Get protected property allFedoraRecordObjects using reflection.
-        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
-
-        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
-        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+        // Append mock FedoraRecord object.
+        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
 
         // Get output of statusCheck() function.
         $message = $processObj->statusCheck();
@@ -757,19 +749,11 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject->RECORD_URL = "https://foo.bar";
         $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
 
-        // Push this object into an array.
-        $arrayOfFedoraRecords = [];
-        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
-
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
-        // TODO: update this with new appendAllFedoraRecordObjects() setter function
-        // Get protected property allFedoraRecordObjects using reflection.
-        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
-
-        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
-        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+        // Append mock FedoraRecord object.
+        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
 
         // Get output of statusCheck() function.
         $message = $processObj->statusCheck();
@@ -818,19 +802,11 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
         $fedoraRecordObject->CRITICAL_ERRORS = [$errorMessage];
 
-        // Push this object into an array.
-        $arrayOfFedoraRecords = [];
-        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
-
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
-        // TODO: update this with new appendAllFedoraRecordObjects() setter function
-        // Get protected property allFedoraRecordObjects using reflection.
-        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
-
-        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
-        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+        // Append mock FedoraRecord object.
+        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
 
         // Get output of statusCheck() function.
         $message = $processObj->statusCheck();
@@ -873,19 +849,11 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
         $fedoraRecordObject->NONCRITICAL_ERRORS = [$errorMessage];
 
-        // Push this object into an array.
-        $arrayOfFedoraRecords = [];
-        array_push($arrayOfFedoraRecords, $fedoraRecordObject);
-
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
-        // TODO: update this with new appendAllFedoraRecordObjects() setter function
-        // Get protected property allFedoraRecordObjects using reflection.
-        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
-
-        // Set allFedoraRecordObjects to be an array of Fedora objects defined above. 
-        $allFedoraRecordObjectsProperty->setValue($processObj, $arrayOfFedoraRecords);
+        // Append mock FedoraRecord object.
+        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
 
         // Get output of statusCheck() function.
         $message = $processObj->statusCheck();
@@ -899,28 +867,22 @@ final class ProcessproquestTest extends TestCase {
     public function testProcessAllFiles(): void {
         echo "\n[*] This test checks the processAllFiles() function on an array of FedoraRecord objects.\n";
 
-        // Create array containing a mock FedoraRecord object.
-        $listOfFedoraRecords = [];
-        $sampleFedoraRecord = $this->createMockFedoraRecord();
-        array_push($listOfFedoraRecords, $sampleFedoraRecord);
-
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->createMockFedoraConnection();
 
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->createMockFTPConnection();
 
+        // Create array containing a mock FedoraRecord object.
+        $fedoraRecordObject = $this->createMockFedoraRecord();
+
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        // TODO: update this with new appendAllFedoraRecordObjects() setter function
-        // Get protected property allFedoraRecordObjects using reflection.
-        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
-
-        // Set the allFoundETDs property.
-        $allFedoraRecordObjectsProperty->setValue($processObj, $listOfFedoraRecords);
+        // Append mock FedoraRecord object.
+        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
 
         $ret = $processObj->processAllFiles();
 
