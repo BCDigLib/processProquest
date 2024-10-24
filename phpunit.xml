@@ -12,6 +12,7 @@
          failOnPhpunitDeprecation="true"
          failOnRisky="true"
          failOnWarning="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
          colors="true">
     <testsuites>
         <testsuite name="default">
