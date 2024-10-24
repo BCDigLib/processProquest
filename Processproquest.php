@@ -370,6 +370,8 @@ class Processproquest {
         $this->allFoundETDPaths = $etdZipFilesOnFTP; 
         $countTotalETDs = count($etdZipFiles);
 
+        // TODO: throw exception when count($etdZipFiles) == 0
+
         $this->logger->info("Found {$countTotalETDs} ETD file(s):");
         foreach ($etdZipFiles as $zipFileName) {
             $this->logger->info("   • {$zipFileName}");
