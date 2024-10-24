@@ -283,7 +283,6 @@ class Processproquest {
      * @return boolean Success value.
      */
     private function moveFTPFiles(){
-        $fn = "moveFTPFiles";
         $processdirFTP = $this->settings['ftp']['processdir'];
         $faildirFTP = $this->settings['ftp']['faildir'];
         $manualdirFTP = $this->settings['ftp']['manualdir'];
@@ -319,7 +318,7 @@ class Processproquest {
             }
 
             // INFO: moveFile() returns true on success or false on failure.
-            $ftpRes = $this->ftpConnection->moveFile($ftpPathForETD, $moveFTPDir);
+            $ftpRes = $this->ftpConnection->moveFile($zipFileName, $ftpPathForETD, $moveFTPDir);
             
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
@@ -328,13 +327,13 @@ class Processproquest {
                 $this->logger->info(LOOP_DIVIDER);
                 // Log this as a noncritical error and continue.
                 array_push($fedoraRecordObj->NONCRITICAL_ERRORS, $errorMessage);
-                return false;
+                continue;
+            } else {
+                $this->logger->info("Move was successful.");
+                $this->logger->info(LOOP_DIVIDER);
+                $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
             }
-            $this->logger->info("Move was successful.");
-            $this->logger->info(LOOP_DIVIDER);
-            $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
         }
-
         $this->logger->info("END Moving processed ETDs into respective post-processing directories.");
 
         return true;
