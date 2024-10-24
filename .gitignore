@@ -5,3 +5,4 @@ staging
 local_ftp
 .vscode
 .phpunit.result.cache
+.phpunit.cache

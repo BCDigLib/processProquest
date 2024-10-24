@@ -12,8 +12,8 @@ namespace Processproquest;
 /**
  * Custom FTP connection handler.
  */
-require_once 'ProquestFTP.php';
-require_once 'FedoraRecord.php';
+require_once 'src/ProquestFTP.php';
+require_once 'src/FedoraRecord.php';
 use \Processproquest\Record as FR;
 
 /*

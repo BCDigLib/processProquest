@@ -121,7 +121,7 @@ $logger->pushHandler($consoleOutput);
  * 
  */
 
-require_once 'ProquestFTP.php';
+require_once 'src/ProquestFTP.php';
 use \Processproquest\FTP as FTP;
 $urlFTP = $configurationSettings['ftp']['server'];
 try {
@@ -139,7 +139,7 @@ try {
  * 
  */
 
-require_once 'FedoraRepository.php';
+require_once 'src/FedoraRepository.php';
 use \Processproquest\Repository as REPO;
 $fedoraUrl = $configurationSettings['fedora']['url'];
 $fedoraUsername = $configurationSettings['fedora']['username'];
@@ -163,7 +163,7 @@ try {
  * and a FedoraConnection object.
  */
 
-require_once 'Processproquest.php';
+require_once 'src/Processproquest.php';
 use \Processproquest as PP;
 try {
     $process = (new PP\Processproquest($configurationArray, $logger, $debug))
@@ -194,7 +194,7 @@ try {
 
 // Scan for ETD files.
 try {
-    $process->scanForETDFiles();
+    $allFedoraRecordObjects = $process->scanForETDFiles();
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();

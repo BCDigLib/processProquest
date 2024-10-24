@@ -3,8 +3,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
-require __DIR__ . "/../Processproquest.php";
-require __DIR__ . "/../FedoraRepository.php";
+require __DIR__ . "/../src/Processproquest.php";
+require __DIR__ . "/../src/FedoraRepository.php";
 
 use Monolog\Level;
 use Monolog\Logger;
