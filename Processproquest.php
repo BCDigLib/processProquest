@@ -278,8 +278,6 @@ class Processproquest {
     /**
      * Moves files on FTP server at the end of the process.
      * 
-     * @codeCoverageIgnore
-     * 
      * @return boolean Success value.
      */
     private function moveFTPFiles(){
