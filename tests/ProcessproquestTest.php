@@ -482,6 +482,32 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
+    public function testCreateFedoraObjectsZero(): void {
+        echo "\n[*] This test checks the createFedoraObjects() function returns an exception when there are no ETD zip files to process.\n";
+
+        // Create an array.
+        $listOfZeroETDFiles = [];
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Get protected property allFoundETDs using reflection.
+        $allFoundETDsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFoundETDs');
+
+        // Expect an exception.
+        $this->expectException(Exception::class);
+        $allFoundETDsProperty->setValue($processObj, $listOfZeroETDFiles);
+        $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
+    }
+
     public function testStatusCheckWithProcessingErrors(): void {
         echo "\n[*] This test checks the statusCheck() function continaing processing errors.\n";
 
