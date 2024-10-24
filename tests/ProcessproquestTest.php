@@ -14,6 +14,7 @@ use Monolog\Formatter\LineFormatter;
 #[CoversClass(\Processproquest\Processproquest::class)]
 #[UsesClass(\Processproquest\FTP\ProquestFTP::class)]
 #[UsesClass(\Processproquest\Repository\FedoraRepository::class)]
+#[UsesClass(\Processproquest\Record\FedoraRecord::class)]
 final class ProcessproquestTest extends TestCase {
     protected $configurationArray = [];
     protected $configurationFile = null;
@@ -223,6 +224,26 @@ final class ProcessproquestTest extends TestCase {
         $mockFedoraConnection->method('ingestObject')->willReturn($genericObject);
 
         return $mockFedoraConnection;
+    }
+
+    /**
+     * Create a mock FedoraRecord object.
+     * 
+     * @return object a mock FedoraRecord object.
+     */
+    protected function createMockFedoraRecord() {
+        $mockFedoraRecord = $this->getMockBuilder(\Processproquest\Record\FedoraRecord::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['downloadETD', 'parseETD', 'processETD', 'generateDatastreams', 'ingestETD'])
+            ->getMock();
+
+        $mockFedoraRecord->method('downloadETD')->willReturn(true);
+        $mockFedoraRecord->method('parseETD')->willReturn(true);
+        $mockFedoraRecord->method('processETD')->willReturn(true);
+        $mockFedoraRecord->method('generateDatastreams')->willReturn(true);
+        $mockFedoraRecord->method('ingestETD')->willReturn(true);
+
+        return $mockFedoraRecord;
     }
 
     /**
@@ -876,5 +897,35 @@ final class ProcessproquestTest extends TestCase {
         echo "\nReceived: '{$message}'\n";
 
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
+    }
+
+    public function testProcessAllFiles(): void {
+        echo "\n[*] This test checks the processAllFiles() function on an array of FedoraRecord objects.\n";
+
+        // Create array containing a mock FedoraRecord object.
+        $listOfFedoraRecords = [];
+        $sampleFedoraRecord = $this->createMockFedoraRecord();
+        array_push($listOfFedoraRecords, $sampleFedoraRecord);
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Get protected property allFedoraRecordObjects using reflection.
+        $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
+
+        // Set the allFoundETDs property.
+        $allFedoraRecordObjectsProperty->setValue($processObj, $listOfFedoraRecords);
+
+        $ret = $processObj->processAllFiles();
+
+        $this->assertTrue($ret, "Expected processAllFiles() to return true.");
     }
 }
