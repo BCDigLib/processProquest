@@ -611,18 +611,18 @@ final class ProcessproquestTest extends TestCase {
 
         // Set the allFoundETDs property.
         $allFoundETDsProperty->setValue($processObj, $listOfETDFiles);
-        $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
-        $firstFedoraRecordObject = $listOfFedoraRecordObjects[0];
+        $createdFedoraRecords = $processObj->createFedoraObjects();
+        $firstCreatedFedoraRecords = $createdFedoraRecords[0];
 
         // Check the class type for the first object returned by createFedoraObjects()
-        $className = get_class($firstFedoraRecordObject);
+        $className = get_class($firstCreatedFedoraRecords);
         echo "\nChecking class name of FedoraRecord object returned:";
         echo "\nExpected: Processproquest\Record\FedoraRecord";
         echo "\nReceived: {$className}\n";
         $this->assertEquals($className, "Processproquest\Record\FedoraRecord", "Expected the values 'Processproquest\Record\FedoraRecord' and '{$className}' to match.");
 
         // Check the FedoraRecord object name returned by createFedoraObjects()
-        $etdZipFileName = $firstFedoraRecordObject->ZIP_FILENAME;
+        $etdZipFileName = $firstCreatedFedoraRecords->ZIP_FILENAME;
         echo "\nChecking zip filename of FedoraRecord object returned:";
         echo "\nExpected: {$zipFileName}";
         echo "\nReceived: {$etdZipFileName}\n";
@@ -710,6 +710,7 @@ final class ProcessproquestTest extends TestCase {
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
+        // TODO: update this with new appendAllFedoraRecordObjects() setter function
         // Get protected property allFedoraRecordObjects using reflection.
         $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
 
@@ -763,6 +764,7 @@ final class ProcessproquestTest extends TestCase {
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
+        // TODO: update this with new appendAllFedoraRecordObjects() setter function
         // Get protected property allFedoraRecordObjects using reflection.
         $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
 
@@ -823,6 +825,7 @@ final class ProcessproquestTest extends TestCase {
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
+        // TODO: update this with new appendAllFedoraRecordObjects() setter function
         // Get protected property allFedoraRecordObjects using reflection.
         $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
 
@@ -877,6 +880,7 @@ final class ProcessproquestTest extends TestCase {
         // Create Processproquest object.
         $processObj = $this->generateProcessproquestObject();
 
+        // TODO: update this with new appendAllFedoraRecordObjects() setter function
         // Get protected property allFedoraRecordObjects using reflection.
         $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
 
@@ -911,6 +915,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
+        // TODO: update this with new appendAllFedoraRecordObjects() setter function
         // Get protected property allFedoraRecordObjects using reflection.
         $allFedoraRecordObjectsProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'allFedoraRecordObjects');
 
@@ -920,5 +925,90 @@ final class ProcessproquestTest extends TestCase {
         $ret = $processObj->processAllFiles();
 
         $this->assertTrue($ret, "Expected processAllFiles() to return true.");
+    }
+
+    public function testGetAllFedoraRecordObjects(): void {
+        echo "\n[*] This test checks the getAllFedoraRecordObjects() function returns the allFedoraRecordObjects property.\n";
+
+        // Create array containing a zip filename.
+        $zipFileName = "etdadmin_upload_100000.zip";
+        $listOfETDFiles = [];
+        array_push($listOfETDFiles, $zipFileName);
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object with custom list of ETD files.
+        $mockFTPConnection = $this->createMockFTPConnection($listOfETDFiles);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Get list of scanned ETD files returned by scanForETDFiles() and createFedoraObjects().
+        $processObj->scanForETDFiles();
+        $createdFedoraRecords = $processObj->createFedoraObjects();
+
+        // Get list of scanned ETD files from getter function.
+        $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
+
+        echo "\nExpected count: 1";
+        echo "\nReceived count: " . count($returnedFedoraRecords) . "\n";
+
+        $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
+    }
+
+    public function testAppendAllFedoraRecordObjects(): void {
+        echo "\n[*] This test checks the appendAllFedoraRecordObjects() function updates the allFedoraRecordObjects property.\n";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object with custom list of ETD files.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock FedoraRecord.
+        $mockFedoraRecord = $this->createMockFedoraRecord();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Append a FedoraRecord object using the setter function.
+        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+
+        // Get list of scanned ETD files from getter function.
+        $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
+
+        echo "\nExpected count: 1";
+        echo "\nReceived count: " . count($returnedFedoraRecords) . "\n";
+        echo "\nClass type    : " . get_class($mockFedoraRecord);
+
+        $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
+    }
+
+    public function testAppendAllFedoraRecordObjectsWrongObjectType(): void {
+        echo "\n[*] This test checks the appendAllFedoraRecordObjects() function returns false when passed the wrong object type.\n";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object with custom list of ETD files.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock Object.
+        $wrongObjectType = new stdClass();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Append the wrong object type using the setter function.
+        $returnValue = $processObj->appendAllFedoraRecordObjects($wrongObjectType);
+
+        $this->assertNotTrue($returnValue, "Expecting a false value.");
     }
 }
