@@ -5,6 +5,7 @@ namespace Processproquest\Record;
  * Record template.
  */
 interface RecordTemplate {
+    public function downloadETD();
     public function parseETD();
     public function processETD();
     public function generateDatastreams();
