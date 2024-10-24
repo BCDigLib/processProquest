@@ -12,6 +12,7 @@ interface RecordTemplate {
     public function ingestETD();
 }
 
+// TODO: set properties to protected and create a generalized getter function.
 class FedoraRecord implements RecordTemplate {
     public $id = "";
     public $settings = [];
