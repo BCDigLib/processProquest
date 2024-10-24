@@ -101,30 +101,52 @@ final class ProcessproquestTest extends TestCase {
     }
 
     /**
-     * Overwrite the settings array with new value(s).
+     * Overwrite the configuration settings array with new value(s).
+     * This makes and edits and returns a copy of the default settings array.
      * 
      * @param array $updatedSettings the updated setting values.
      * 
-     * @return array the settings array including the new values.
+     * @return array a settings array copy that includes the new values.
      */
-    protected function alterConfigArray($updatedSettings) {
+    protected function alterConfigurationSettings($updatedSettings) {
         // $updatedSettings is a nested array in the form 
         // [
         //    "ftp" => ["server" -> "foo", "user" => "bar"],
         //    "fedora" => ["url" => "foo", "username" => "bar"]
         // ]
-        $foo = $this->settings;
+
+        // Create a copy of the default settings array.
+        $newSettings = $this->settings;
 
         echo "\n--------\nUpdating configuration settings\n";
         foreach ($updatedSettings as $keyParent => $valueArray) {
             foreach ($valueArray as $keyChild => $value) {
                 print "[{$keyParent}]\n{$keyChild} = {$value}\n";
-                $this->settings[$keyParent][$keyChild] = $value;
+                $newSettings[$keyParent][$keyChild] = $value;
             }
         }
         echo "--------\n\n";
 
-        return $this->settings;
+        return $newSettings;
+    }
+
+    /**
+     * Overwrite the configuration array with new settings value(s).
+     * This calls alterConfigurationSettings() to update the settings array.
+     * This makes and edits and returns a copy of the default configurationArray array.
+     * 
+     * @param array $updatedSettings the updated setting values.
+     * 
+     * @return array the configuration array including the new values.
+     */
+    protected function alterConfigurationArray($updatedSettings) {
+        // Create a copy of the default configurationArray array.
+        $newConfigurationArray = $this->configurationArray;
+
+        $newSettingsArray = $this->alterConfigurationSettings($updatedSettings);
+        $newConfigurationArray["settings"] = $newSettingsArray;
+
+        return $newConfigurationArray;
     }
 
     /**
@@ -164,22 +186,19 @@ final class ProcessproquestTest extends TestCase {
     /**
      * Create a mock ftpConnection object.
      * 
+     * @param array $listofETDs an optional array of ETD file names.
+     * 
      * @return object a mock ProquestFTP object.
      */
-    protected function createMockFTPConnection() {
-        // TODO: mock up the FTP connection using optional settings.
-
+    protected function createMockFTPConnection(array $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']) {
         // See https://stackoverflow.com/a/61595920
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['login', 'getFileList', 'changeDir'])
             ->getMock();
-
         $mockFTPConnection->method('login')->willReturn(true);
         $mockFTPConnection->method('changeDir')->willReturn(true);
-
-        // TODO: allow custom file listings.
-        $mockFTPConnection->method('getFileList')->willReturn($this->listOfETDs);
+        $mockFTPConnection->method('getFileList')->willReturn($listOfETDs);
 
         return $mockFTPConnection;
     }
@@ -375,7 +394,7 @@ final class ProcessproquestTest extends TestCase {
         $updatedSettings = array(
             "ftp" => array("server" => ""),
         );
-        $newSettings = $this->alterConfigArray($updatedSettings);
+        $newSettings = $this->alterConfigurationSettings($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
 
         // Create a ftpConnection object with updated settings.
@@ -398,7 +417,7 @@ final class ProcessproquestTest extends TestCase {
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
         );
-        $newSettings = $this->alterConfigArray($updatedSettings);
+        $newSettings = $this->alterConfigurationSettings($updatedSettings);
         $this->configurationArray["settings"] = $newSettings;
 
         // Create a ftpConnection object with updated settings.
@@ -438,6 +457,120 @@ final class ProcessproquestTest extends TestCase {
         echo "\n";
 
         $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs), "Expected the two arrays to match.");
+    }
+
+    public function testScanForETDFilesEmptyFetchdirFTPProperty(): void {
+        echo "\n[*] This test checks the scanForETDFiles() function replaces an empty fetchdirFTP property with a default value.\n";
+
+        $expectedValue = "~/";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Get protected property fetchdirFTP using reflection.
+        $fetchdirFTPProperty = $this->getProtectedProperty('\Processproquest\Processproquest', 'fetchdirFTP');
+
+        // Set fetchdirFTP to be an empty string.
+        $fetchdirFTPProperty->setValue($processObj, "");
+
+        $fileArray = $processObj->scanForETDFiles();
+
+        echo "\nExpected: {$expectedValue}";
+
+        echo "\nReceived: {$fetchdirFTPProperty->getValue($processObj)}\n";
+
+        $this->assertEquals($expectedValue, $fetchdirFTPProperty->getValue($processObj));
+
+    }
+
+    public function testScanForETDFilesChangeDirReturnsFalse(): void {
+        echo "\n[*] This test checks the scanForETDFiles() function when \Processproquest\FTP\ProquestFTP->changeDir() returns false.\n";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['login', 'getFileList', 'changeDir'])
+            ->getMock();
+
+        $mockFTPConnection->method('login')->willReturn(true);
+        // Change default return value of changeDir to be false.
+        $mockFTPConnection->method('changeDir')->willReturn(false);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(Exception::class);
+        $fileArray = $processObj->scanForETDFiles();
+    }
+
+    public function testScanForETDFilesRegexNoMatch(): void {
+        echo "\n[*] This test checks the scanForETDFiles() function returns an exception with this->settings['ftp']['localdir'] is empty.\n";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("localdir" => ""),
+        );
+        $newConfigurationArray = $this->alterConfigurationArray($updatedSettings);
+
+        // Create a mock ftpConnection object with an empty initial array of ETD files.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        // $processObj = $this->generateProcessproquestObject();
+        $processObj = new \Processproquest\Processproquest(
+            $newConfigurationArray, 
+            $this->logger, 
+            $this->debug
+        );
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(Exception::class);
+        $fileArray = $processObj->scanForETDFiles();
+    }
+
+    public function testScanForETDFilesNoETDsFound(): void {
+        echo "\n[*] This test checks the scanForETDFiles() function returns an empty array when there are no ETDs on the FTP server.\n";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object with an empty initial array of ETD files.
+        $mockFTPConnection = $this->createMockFTPConnection([]);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        $fileArray = $processObj->scanForETDFiles();
+
+        echo "\nExpected:";
+        print_r([]);
+
+        echo "\nReceived: ";
+        print_r($fileArray);
+        echo "\n";
+
+        $this->assertTrue($this->arrays_are_similar($fileArray, []), "Expected the two arrays to match.");
     }
 
     public function testCreateFedoraObjects(): void {
@@ -509,7 +642,7 @@ final class ProcessproquestTest extends TestCase {
     }
 
     public function testStatusCheckWithProcessingErrors(): void {
-        echo "\n[*] This test checks the statusCheck() function continaing processing errors.\n";
+        echo "\n[*] This test checks the statusCheck() function containing processing errors.\n";
 
         $errorMessage = "This is an error: WXYZ";
 
