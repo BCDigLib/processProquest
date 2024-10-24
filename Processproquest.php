@@ -390,9 +390,31 @@ class Processproquest {
     }
 
     /**
+     * Generate a single FedoraRecord object.
+     * 
+     * @param string $zipFileName the name of the zip file.
+     * 
+     * @return object $recordObj the generated FedoraRecord object.
+     */
+    public function createFedoraObject($zipFileName) {
+        // Create a FedoraRecord object.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $recordObj = new FR\FedoraRecord(
+                            $etdShortName, 
+                            $this->settings, 
+                            $zipFileName, 
+                            $this->fedoraConnection, 
+                            $this->ftpConnection, 
+                            $this->logger
+                        );
+        $recordObj->setStatus("scanned");
+
+        return $recordObj;
+    }
+
+    /**
      * Generate a FedoraRecord object for every ETD zip file found.
-     * TODO: don't run this as a loop, but call this function
-     *       for each $this->allFoundETDs element.
+     * This function calls createFedoraObject() for every ETD zip file found.
      * 
      * @return array an array of all instantiated FedoraRecord objects.
      * 
@@ -417,17 +439,10 @@ class Processproquest {
         // Create FedoraRecord objects.
         $this->logger->info("Generating the following Fedora records from ETD file(s):");
         foreach ($etdZipFiles as $zipFileName) {
-            $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
-            $recordObj = new FR\FedoraRecord(
-                                $etdShortName, 
-                                $this->settings, 
-                                $zipFileName, 
-                                $this->fedoraConnection, 
-                                $this->ftpConnection, 
-                                $this->logger
-                            );
-            $recordObj->setStatus("scanned");
+            // Generate a single FedoraRecord object.
+            $recordObj = $this->createFedoraObject($zipFileName);
             array_push($this->allFedoraRecordObjects, $recordObj);
+            $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $this->logger->info("   • {$etdShortName}");
         }
 
