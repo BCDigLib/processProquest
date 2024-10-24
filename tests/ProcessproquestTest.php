@@ -343,6 +343,9 @@ final class ProcessproquestTest extends TestCase {
         $this->logger = null;
     }
 
+    /**
+     * @covers ::setFTPConnection
+     */
     public function testSetFTPConnection(): void {
         echo "\n[*] This test checks the setFTPConnection() function.\n";
 
@@ -364,6 +367,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertIsObject($property->getValue($processObj), "Expected the ftpConnection object to exist.");
     }
 
+    /**
+     * @covers ::setFedoraConnection
+     */
     public function testSetFedoraConnection(): void {
         echo "\n[*] This test checks the setFedoraConnection() function.\n";
 
@@ -385,6 +391,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertIsObject($property->getValue($processObj), "Expected the fedoraConnection object to exist.");
     }
 
+    /**
+     * @covers ::setDebug
+     */
     public function testSetDebug(): void {
         echo "\n[*] This test checks the setDebug() function.\n";
 
@@ -401,6 +410,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertNotTrue($processObj->debug, "Expected the updated debug property to be false");
     }
 
+    /**
+     * @covers ::LogIntoFTPServer
+     */
     public function testLogIntoFTPServer(): void {
         echo "\n[*] This test checks the LogIntoFTPServer() function returns successfully with valid credentials.\n";
 
@@ -448,8 +460,11 @@ final class ProcessproquestTest extends TestCase {
         $return = $processObj->LogIntoFTPServer();
     }
 
-    public function testGetFilesConfigEmptyLocaldirValue(): void {
-        echo "\n[*] This test checks the getFiles() function returns an exception with an invalid localdir value.\n";
+    /**
+     * @covers ::scanForETDFiles
+     */
+    public function testScanForETDFilesConfigEmptyLocaldirValue(): void {
+        echo "\n[*] This test checks the scanForETDFiles() function returns an exception with an invalid localdir value.\n";
 
         // Replace [ftp] "server" key with an empty string.
         $updatedSettings = array(
@@ -471,6 +486,9 @@ final class ProcessproquestTest extends TestCase {
         $return = $processObj->scanForETDFiles();
     }
 
+    /**
+     * @covers ::scanForETDFiles
+     */
     public function testScanForETDFiles(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns a list of valid ETD zip files.\n";
 
@@ -497,6 +515,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue($this->arrays_are_similar($fileArray, $this->listOfETDs), "Expected the two arrays to match.");
     }
 
+    /**
+     * @covers ::scanForETDFiles
+     */
     public function testScanForETDFilesEmptyFetchdirFTPProperty(): void {
         echo "\n[*] This test checks the scanForETDFiles() function replaces an empty fetchdirFTP property with a default value.\n";
 
@@ -529,6 +550,9 @@ final class ProcessproquestTest extends TestCase {
 
     }
 
+    /**
+     * @covers ::scanForETDFiles
+     */
     public function testScanForETDFilesChangeDirReturnsFalse(): void {
         echo "\n[*] This test checks the scanForETDFiles() function when \Processproquest\FTP\ProquestFTP->changeDir() returns false.\n";
 
@@ -555,6 +579,9 @@ final class ProcessproquestTest extends TestCase {
         $fileArray = $processObj->scanForETDFiles();
     }
 
+    /**
+     * @covers ::scanForETDFiles
+     */
     public function testScanForETDFilesRegexNoMatch(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns an exception with this->settings['ftp']['localdir'] is empty.\n";
 
@@ -585,6 +612,9 @@ final class ProcessproquestTest extends TestCase {
         $fileArray = $processObj->scanForETDFiles();
     }
 
+    /**
+     * @covers ::scanForETDFiles
+     */
     public function testScanForETDFilesNoETDsFound(): void {
         echo "\n[*] This test checks the scanForETDFiles() function returns an exception when there are no ETDs on the FTP server.\n";
 
@@ -604,6 +634,9 @@ final class ProcessproquestTest extends TestCase {
         $fileArray = $processObj->scanForETDFiles();
     }
 
+    /**
+     * @covers ::createFedoraObjects
+     */
     public function testCreateFedoraObjects(): void {
         echo "\n[*] This test checks the createFedoraObjects() function returns an array of FedoraRecord object.\n";
 
@@ -646,6 +679,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
+    /**
+     * @covers ::createFedoraObject
+     */
     public function testCreateFedoraObject(): void {
         echo "\n[*] This test checks the createFedoraObject() function returns a single FedoraRecord object.\n";
 
@@ -681,6 +717,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
+    /**
+     * @covers ::createFedoraObjects
+     */
     public function testCreateFedoraObjectsZero(): void {
         echo "\n[*] This test checks the createFedoraObjects() function returns an exception when there are no ETD zip files to process.\n";
 
@@ -707,6 +746,9 @@ final class ProcessproquestTest extends TestCase {
         $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
     }
 
+    /**
+     * @covers ::statusCheck
+     */
     public function testStatusCheckWithProcessingErrors(): void {
         echo "\n[*] This test checks the statusCheck() function containing processing errors.\n";
 
@@ -730,6 +772,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
 
+    /**
+     * @covers ::statusCheck
+     */
     public function testStatusCheckWithSupplements(): void {
         echo "\n[*] This test checks the statusCheck() function containing ETDs with supplemental files.\n";
 
@@ -772,6 +817,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertMatchesRegularExpression($expectedString, $message, "Expecting the regular expression match '{$expectedString}' in the returned message.");
     }
 
+    /**
+     * @covers ::statusCheck
+     */
     public function testStatusCheckWithEmbargo(): void {
         echo "\n[*] This test checks the statusCheck() function containing ETDs with an embargo.\n";
 
@@ -822,6 +870,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertMatchesRegularExpression($expectedString2, $message, "Expecting the regular expression match '{$expectedString2}' in the returned message.");
     }
 
+    /**
+     * @covers ::statusCheck
+     */
     public function testStatusCheckWithCriticalErrors(): void {
         echo "\n[*] This test checks the statusCheck() function containing ETDs with a critical error.\n";
 
@@ -869,6 +920,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
     
+    /**
+     * @covers ::statusCheck
+     */
     public function testStatusCheckWithNonCriticalErrors(): void {
         echo "\n[*] This test checks the statusCheck() function containing ETDs with a non-critical error.\n";
 
@@ -916,6 +970,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
 
+    /**
+     * @covers ::processAllFiles
+     */
     public function testProcessAllFiles(): void {
         echo "\n[*] This test checks the processAllFiles() function on an array of FedoraRecord objects.\n";
 
@@ -941,6 +998,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue($ret, "Expected processAllFiles() to return true.");
     }
 
+    /**
+     * @covers ::appendAllFedoraRecordObjects
+     */
     public function testGetAllFedoraRecordObjects(): void {
         echo "\n[*] This test checks the getAllFedoraRecordObjects() function returns the allFedoraRecordObjects property.\n";
 
@@ -973,6 +1033,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
     }
 
+    /**
+     * @covers ::appendAllFedoraRecordObjects
+     */
     public function testAppendAllFedoraRecordObjects(): void {
         echo "\n[*] This test checks the appendAllFedoraRecordObjects() function updates the allFedoraRecordObjects property.\n";
 
@@ -1003,6 +1066,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
     }
 
+    /**
+     * @covers ::appendAllFedoraRecordObjects
+     */
     public function testAppendAllFedoraRecordObjectsWrongObjectType(): void {
         echo "\n[*] This test checks the appendAllFedoraRecordObjects() function returns false when passed the wrong object type.\n";
 
@@ -1026,6 +1092,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertNotTrue($returnValue, "Expecting a false value.");
     }
     
+    /**
+     * @covers ::moveFTPFiles
+     */
     public function testMoveFTPFiles(): void {
         echo "\n[*] This test checks the moveFTPFiles() method returns true.\n";
 
@@ -1051,6 +1120,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue($returnValue, "Expected moveFTPFiles() to return true.");
     }
 
+    /**
+     * @covers ::moveFTPFiles
+     */
     public function testMoveFTPFilesFailOnMove(): void {
         echo "\n[*] This test checks the moveFTPFiles() method returns an error message on failure.\n";
 
@@ -1086,6 +1158,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue(count($noncriticalErrors) > 0, "Expected at least one noncritical error to be reported.");
     }
 
+    /**
+     * @covers ::moveFTPFiles
+     */
     public function testMoveFTPFilesCorrectFTPFileLocationOnIngest(): void {
         echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location.\n";
 
@@ -1122,6 +1197,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals($processdirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
     }
 
+    /**
+     * @covers ::moveFTPFiles
+     */
     public function testMoveFTPFilesCorrectFTPFileLocationHasSupplement(): void {
         echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location with supplements.\n";
 
@@ -1158,6 +1236,9 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals($manualdirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
     }
 
+    /**
+     * @covers ::moveFTPFiles
+     */
     public function testMoveFTPFilesCorrectFTPFileLocationOnFail(): void {
         echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location on failure.\n";
 
