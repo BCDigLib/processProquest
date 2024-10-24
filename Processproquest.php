@@ -145,6 +145,45 @@ class Processproquest {
     }
 
     /**
+     * Setter function to append FedoraRecord objects into the allFedoraRecordObjects array.
+     * 
+     * @param object $fedoraRecord a FedoraRecord object.
+     * @param boolean $forceAppend ignore class checking and append object regardless.
+     * 
+     * @return boolean status value.
+     */
+    public function appendAllFedoraRecordObjects($fedoraRecord, $forceAppend = false) {
+        
+        // Don't check class type of passed object.
+        if ($forceAppend === true) {
+            // Push FedoraRecord object onto the allFedoraRecordObjects array.
+            array_push($this->allFedoraRecordObjects, $fedoraRecord);
+
+            return true;
+        }
+
+        // Check class type and reject if this is not a FedoraRecord object.
+        $className = get_class($fedoraRecord);
+        if (strcmp($className, "Processproquest\Record\FedoraRecord") == 0) {
+            // Push FedoraRecord object onto the allFedoraRecordObjects array.
+            array_push($this->allFedoraRecordObjects, $fedoraRecord);
+
+            return true;
+        } 
+
+        return false;
+    }
+
+    /**
+     * Getter function for allFedoraRecordObjects array.
+     * 
+     * @return array the allFedoraRecordObjects array.
+     */
+    public function getAllFedoraRecordObjects() {
+        return $this->allFedoraRecordObjects;
+    }
+
+    /**
      * Send email notification.
      * 
      * @codeCoverageIgnore
