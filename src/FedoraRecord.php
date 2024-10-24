@@ -17,6 +17,10 @@ class FedoraRecord implements RecordTemplate {
     public $id = "";
     public $settings = [];
     public $debug = "false";
+    public $root_url = "";
+    public $path = "";
+    public $fetchDir = "";
+    public $record_path = "";
     public $logger = null;
     public $fedoraObj = null;
     public $fedoraConnection = null;
