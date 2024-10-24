@@ -195,9 +195,10 @@ final class ProcessproquestTest extends TestCase {
         // See https://stackoverflow.com/a/61595920
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['login', 'getFileList', 'changeDir'])
+            ->onlyMethods(['login', 'moveFile', 'getFileList', 'changeDir'])
             ->getMock();
         $mockFTPConnection->method('login')->willReturn(true);
+        $mockFTPConnection->method('moveFile')->willReturn(true);
         $mockFTPConnection->method('changeDir')->willReturn(true);
         $mockFTPConnection->method('getFileList')->willReturn($listOfETDs);
 
@@ -277,6 +278,22 @@ final class ProcessproquestTest extends TestCase {
         $property->setAccessible(true);
 
         return $property;
+    }
+
+    /**
+     * Uses reflection to access protected or private class methods.
+     * 
+     * @param string $className the name of the class.
+     * @param string $methodName the name of the method to access.
+     * 
+     * @return object $method the reflected class method.
+     */
+    protected static function getProtectedMethod($className, $methodName) {
+        $reflectedClass = new ReflectionClass($className);
+        $method = $reflectedClass->getMethod($methodName);
+        $method->setAccessible(true);
+
+        return $method;
     }
 
     /**
@@ -629,6 +646,41 @@ final class ProcessproquestTest extends TestCase {
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
+    public function testCreateFedoraObject(): void {
+        echo "\n[*] This test checks the createFedoraObject() function returns a single FedoraRecord object.\n";
+
+        // A sample zip filename.
+        $zipFileName = "etdadmin_upload_100000.zip";
+
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        $createdFedoraRecord = $processObj->createFedoraObject($zipFileName);
+        $firstCreatedFedoraRecord = $createdFedoraRecord;
+
+        // Check the class type for the first object returned by createFedoraObject()
+        $className = get_class($firstCreatedFedoraRecord);
+        echo "\nChecking class name of FedoraRecord object returned:";
+        echo "\nExpected: Processproquest\Record\FedoraRecord";
+        echo "\nReceived: {$className}\n";
+        $this->assertEquals($className, "Processproquest\Record\FedoraRecord", "Expected the values 'Processproquest\Record\FedoraRecord' and '{$className}' to match.");
+
+        // Check the FedoraRecord object name returned by createFedoraObject()
+        $etdZipFileName = $firstCreatedFedoraRecord->ZIP_FILENAME;
+        echo "\nChecking zip filename of FedoraRecord object returned:";
+        echo "\nExpected: {$zipFileName}";
+        echo "\nReceived: {$etdZipFileName}\n";
+        $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
+    }
+
     public function testCreateFedoraObjectsZero(): void {
         echo "\n[*] This test checks the createFedoraObjects() function returns an exception when there are no ETD zip files to process.\n";
 
@@ -927,7 +979,7 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->createMockFedoraConnection();
 
-        // Create a mock ftpConnection object with custom list of ETD files.
+        // Create a mock ftpConnection object.
         $mockFTPConnection = $this->createMockFTPConnection();
 
         // Create a mock FedoraRecord.
@@ -946,7 +998,7 @@ final class ProcessproquestTest extends TestCase {
 
         echo "\nExpected count: 1";
         echo "\nReceived count: " . count($returnedFedoraRecords) . "\n";
-        echo "\nClass type    : " . get_class($mockFedoraRecord);
+        // echo "\nClass type    : " . get_class($mockFedoraRecord);
 
         $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
     }
@@ -972,5 +1024,173 @@ final class ProcessproquestTest extends TestCase {
         $returnValue = $processObj->appendAllFedoraRecordObjects($wrongObjectType);
 
         $this->assertNotTrue($returnValue, "Expecting a false value.");
+    }
+    
+    public function testMoveFTPFiles(): void {
+        echo "\n[*] This test checks the moveFTPFiles() method returns true.\n";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock FedoraRecord.
+        $mockFedoraRecord = $this->createMockFedoraRecord();
+        $mockFedoraRecord->INGESTED = true;
+
+        // Create a Processproquest object using a mock FTP connection, and set debug to false.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setDebug(false);
+
+        // Append a FedoraRecord object using the setter function.
+        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+
+        // Use reflection to call on private method moveFTPFiles().
+        $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
+        $returnValue = $method->invoke($processObj, "moveFTPFiles");
+
+        $this->assertTrue($returnValue, "Expected moveFTPFiles() to return true.");
+    }
+
+    public function testMoveFTPFilesFailOnMove(): void {
+        echo "\n[*] This test checks the moveFTPFiles() method returns an error message on failure.\n";
+
+        // Create a mock ftpConnection object that returns false for moveFile().
+        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['moveFile'])
+            ->getMock();
+        $mockFTPConnection->method('moveFile')->willReturn(false);
+
+        // Create a mock FedoraRecord.
+        $mockFedoraRecord = $this->createMockFedoraRecord();
+
+        // Create a Processproquest object using a mock FTP connection, and set debug to false.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setDebug(false);
+
+        // Append a FedoraRecord object using the setter function.
+        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+
+        // Use reflection to call on private method moveFTPFiles().
+        $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
+        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+
+        // Check that NONCRITICAL_ERRORS was updated.
+        $noncriticalErrors = $mockFedoraRecord->NONCRITICAL_ERRORS;
+
+        echo "\nErrors Recived: ";
+        print_r($noncriticalErrors);
+        echo "\n";
+
+        $this->assertTrue(count($noncriticalErrors) > 0, "Expected at least one noncritical error to be reported.");
+    }
+
+    public function testMoveFTPFilesCorrectFTPFileLocationOnIngest(): void {
+        echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location.\n";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock FedoraRecord.
+        $mockFedoraRecord = $this->createMockFedoraRecord();
+        $mockFedoraRecord->INGESTED = true;
+        $mockFedoraRecord->HAS_SUPPLEMENTS = false;
+
+        // Create a Processproquest object using a mock FTP connection, and set debug to false.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setDebug(false);
+
+        // Append a FedoraRecord object using the setter function.
+        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+
+        // Use reflection to call on private method moveFTPFiles().
+        $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
+        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+
+        // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
+        $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
+
+        $processdirFTP = $this->settings['ftp']['processdir'];
+        //$faildirFTP = $this->settings['ftp']['faildir'];
+        //$manualdirFTP = $this->settings['ftp']['manualdir'];
+
+        echo "\nExpected: {$processdirFTP}";
+        echo "\nReceived: {$ftpPostprocessLocation}\n";
+
+        $this->assertEquals($processdirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
+    }
+
+    public function testMoveFTPFilesCorrectFTPFileLocationHasSupplement(): void {
+        echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location with supplements.\n";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock FedoraRecord.
+        $mockFedoraRecord = $this->createMockFedoraRecord();
+        $mockFedoraRecord->INGESTED = false;
+        $mockFedoraRecord->HAS_SUPPLEMENTS = true;
+
+        // Create a Processproquest object using a mock FTP connection, and set debug to false.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setDebug(false);
+
+        // Append a FedoraRecord object using the setter function.
+        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+
+        // Use reflection to call on private method moveFTPFiles().
+        $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
+        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+
+        // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
+        $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
+
+        //$processdirFTP = $this->settings['ftp']['processdir'];
+        //$faildirFTP = $this->settings['ftp']['faildir'];
+        $manualdirFTP = $this->settings['ftp']['manualdir'];
+
+        echo "\nExpected: {$manualdirFTP}";
+        echo "\nReceived: {$ftpPostprocessLocation}\n";
+
+        $this->assertEquals($manualdirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
+    }
+
+    public function testMoveFTPFilesCorrectFTPFileLocationOnFail(): void {
+        echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location on failure.\n";
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->createMockFTPConnection();
+
+        // Create a mock FedoraRecord.
+        $mockFedoraRecord = $this->createMockFedoraRecord();
+        $mockFedoraRecord->INGESTED = false;
+        $mockFedoraRecord->HAS_SUPPLEMENTS = false;
+
+        // Create a Processproquest object using a mock FTP connection, and set debug to false.
+        $processObj = $this->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setDebug(false);
+
+        // Append a FedoraRecord object using the setter function.
+        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+
+        // Use reflection to call on private method moveFTPFiles().
+        $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
+        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+
+        // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
+        $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
+
+        //$processdirFTP = $this->settings['ftp']['processdir'];
+        $faildirFTP = $this->settings['ftp']['faildir'];
+        //$manualdirFTP = $this->settings['ftp']['manualdir'];
+
+        echo "\nExpected: {$faildirFTP}";
+        echo "\nReceived: {$ftpPostprocessLocation}\n";
+
+        $this->assertEquals($faildirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
     }
 }
