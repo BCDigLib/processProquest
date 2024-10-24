@@ -569,7 +569,7 @@ final class ProcessproquestTest extends TestCase {
     }
 
     public function testScanForETDFilesNoETDsFound(): void {
-        echo "\n[*] This test checks the scanForETDFiles() function returns an empty array when there are no ETDs on the FTP server.\n";
+        echo "\n[*] This test checks the scanForETDFiles() function returns an exception when there are no ETDs on the FTP server.\n";
 
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->createMockFedoraConnection();
@@ -582,16 +582,9 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
+        // Expect an exception.
+        $this->expectException(Exception::class);
         $fileArray = $processObj->scanForETDFiles();
-
-        echo "\nExpected:";
-        print_r([]);
-
-        echo "\nReceived: ";
-        print_r($fileArray);
-        echo "\n";
-
-        $this->assertTrue($this->arrays_are_similar($fileArray, []), "Expected the two arrays to match.");
     }
 
     public function testCreateFedoraObjects(): void {

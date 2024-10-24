@@ -308,7 +308,7 @@ class Processproquest {
      * 
      * @return array an array of all ETD files found on the FTP server matching the regular expression.
      * 
-     * @throws Exception if the working directory isn't reachable.
+     * @throws Exception if the working directory isn't reachable, or if there are no ETDs found.
      */
     public function scanForETDFiles(string $customRegex = "") {
         $fn = "fetchFilesFromFTP";
@@ -370,7 +370,13 @@ class Processproquest {
         $this->allFoundETDPaths = $etdZipFilesOnFTP; 
         $countTotalETDs = count($etdZipFiles);
 
-        // TODO: throw exception when count($etdZipFiles) == 0
+        // Throw exception if there are no ETD files to process.
+        if ( empty($etdZipFiles) === true ) {
+            $errorMessage = "Did not find any ETD files on the FTP server.";
+            $this->logger->warning("WARNING: {$errorMessage}");
+            array_push($this->processingErrors, $errorMessage);
+            throw new \Exception($errorMessage);
+        }
 
         $this->logger->info("Found {$countTotalETDs} ETD file(s):");
         foreach ($etdZipFiles as $zipFileName) {
