@@ -194,17 +194,7 @@ try {
 
 // Scan for ETD files.
 try {
-    $allFedoraRecordObjects = $process->scanForETDFiles();
-} catch(Exception $e) {
-    $logger->error("ERROR: " . $e->getMessage());
-    $process->postProcess();
-    $logger->info("Exiting. Error code: 1001");
-    exit(1);
-}
-
-// Generate Fedora objects.
-try {
-    $process->createFedoraObjects();
+    $allETDs = $process->scanForETDFiles();
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
@@ -212,17 +202,21 @@ try {
     exit(1);
 }
 
-// Process ETD files.
-try {
-    $process->processAllFiles();
-} catch(Exception $e) {
-    $logger->error("ERROR: " . $e->getMessage());
-    $process->postProcess();
-    $logger->info("Exiting. Error code: 1010");
-    exit(1);
+// Loop through each ETD file found and process it.
+foreach ($allETDs as $etdRecord) {
+    try {
+        // Create FedoraRecord object and process it.
+        $fedoraRecord = $process->createFedoraObject($etdRecord);
+        $process->processFile($fedoraRecord);
+    } catch(Exception $e) {
+        $logger->error("ERROR: " . $e->getMessage());
+        $logger->error("Error code: 1010");
+        $logger->error("Continuing to the next ETD file.");
+        continue;
+    }
 }
 
-// Run postProcess() to move ETD files on the FTP server and send out email notification.
+// Run postProcess() to clean up and send out email notification.
 $process->postProcess();
 $logger->info("Script complete. Exiting.");
 exit(1);

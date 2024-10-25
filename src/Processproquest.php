@@ -421,6 +421,7 @@ class Processproquest {
 
         $this->logger->info(LOOP_DIVIDER);
         $this->logger->info("[END] Scanning for valid ETD files on the FTP server.");
+        $this->logger->info(SECTION_DIVIDER);
 
         return $this->allFoundETDs;
     }
@@ -444,6 +445,9 @@ class Processproquest {
                             $this->logger
                         );
         $recordObj->setStatus("scanned");
+
+        // Append this record to out collection.
+        array_push($this->allFedoraRecordObjects, $recordObj);
 
         return $recordObj;
     }
@@ -477,7 +481,7 @@ class Processproquest {
         foreach ($etdZipFiles as $zipFileName) {
             // Generate a single FedoraRecord object.
             $recordObj = $this->createFedoraObject($zipFileName);
-            array_push($this->allFedoraRecordObjects, $recordObj);
+            //array_push($this->allFedoraRecordObjects, $recordObj);
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $this->logger->info("   • {$etdShortName}");
         }
@@ -490,64 +494,88 @@ class Processproquest {
     }
 
     /**
+     * Depricated.
+     * This method processes a batch of ETD files. 
+     * It calls on processFile() for each ETD to process.
+     * 
+     * @deprecated
+     * 
+     * @return array $caughtExceptions Any exceptions caught.
+     */
+    public function processAllFiles() {
+        $caughtExceptions = [];
+
+        foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {            
+            // Call processFile() method to process each ETD.
+            try {
+                $this->processFile($fedoraRecordObj);
+            } catch (Exception $e) {
+                // Capture any exception and pass them back to calling method.
+                $thisException = [
+                    "record" => $fedoraRecordObj,
+                    "exception_caught" => $e
+                ];
+                array_push($caughtExceptions, $thisException);
+            }
+        }
+
+        return $caughtExceptions; 
+    }
+
+    /**
      * This function completes a few tasks.
-     *   1) Downloads all available ETD files onto the working directory.
-     *   2) Creates a FedoraRecord object to process each ETD file.
-     *     a) Parses each ETD file and checks for supplementary files.
-     *     b) Processes each file and collects metadata.
+     *   1) Download an ETD file onto the working directory.
+     *   2) Creates a FedoraRecord object.
+     *     a) Parses the ETD file and checks for supplementary files.
+     *     b) Processes the ETD file and collects metadata.
      *     c) Generates and ingests various datastreams.
      *     d) Ingests the record.
      * 
-     * TODO: don't run this as a loop, but call this function
-     *       for each $this->allFedoraRecordObjects element.
-     * 
      * @return boolean Success value.
      * 
-     * @throws Exception on download, parse, process, or ingest errors.
+     * @throws Exception on download, parse, process, datastream creation, or ingest errors.
      */
-    public function processAllFiles() {
+    public function processFile($fedoraRecordObj) {
         // Generate Record objects for further processing.
-        // TODO: don't end this loop when a single ETD fails a step.
-        foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
-            // Download ETD zip file from FTP server.
-            try {
-                $fedoraRecordObj->downloadETD();
-            } catch (Exception $e) {
-                // Bubble up exception.
-                throw $e;
-            }
 
-            // Parse through this record.
-            try {
-                $fedoraRecordObj->parseETD();
-            } catch (Exception $e) {
-                // Bubble up exception.
-                throw $e;
-            }
+        // Download ETD zip file from FTP server.
+        try {
+            $fedoraRecordObj->downloadETD();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
-            // Process this record.
-            try {
-                $fedoraRecordObj->processETD();
-            } catch (Exception $e) {
-                // Bubble up exception.
-                throw $e;
-            }
+        // Parse through this record.
+        try {
+            $fedoraRecordObj->parseETD();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
-            // Generate datastreams for this record.
-            try {
-                $fedoraRecordObj->generateDatastreams();
-            } catch (Exception $e) {
-                // Bubble up exception.
-                throw $e;
-            }
+        // Process this record.
+        try {
+            $fedoraRecordObj->processETD();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
 
-            // Ingest this record.
-            try {
-                $fedoraRecordObj->ingestETD();
-            } catch (Exception $e) {
-                // Bubble up exception.
-                throw $e;
-            }
+        // Generate datastreams for this record.
+        try {
+            $fedoraRecordObj->generateDatastreams();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
+        }
+
+        // Ingest this record.
+        try {
+            $fedoraRecordObj->ingestETD();
+        } catch (Exception $e) {
+            // Bubble up exception.
+            throw $e;
         }
 
         return true; 
