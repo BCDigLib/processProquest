@@ -429,10 +429,10 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         
         // Expect a true value.
-        $return = $processObj->LogIntoFTPServer();
+        $result = $processObj->LogIntoFTPServer();
         echo "Expected: true\n";
-        echo "Received: " . ($return ? "true" : "false") . "\n";
-        $this->assertTrue($return, "Expected LogIntoFTPServer() to return true.");
+        echo "Received: " . ($result ? "true" : "false") . "\n";
+        $this->assertTrue($result, "Expected LogIntoFTPServer() to return true.");
     }
 
     // Incomplete.
@@ -462,7 +462,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(Exception::class);
-        $return = $processObj->LogIntoFTPServer();
+        $result = $processObj->LogIntoFTPServer();
     }
 
     /**
@@ -489,7 +489,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(Exception::class);
-        $return = $processObj->scanForETDFiles();
+        $result = $processObj->scanForETDFiles();
     }
 
     #[Test]
@@ -537,7 +537,6 @@ final class ProcessproquestTest extends TestCase {
         $fileArray = $processObj->scanForETDFiles();
 
         echo "\nExpected: {$expectedValue}";
-
         echo "\nReceived: {$fetchdirFTPProperty->getValue($processObj)}\n";
 
         $this->assertEquals($expectedValue, $fetchdirFTPProperty->getValue($processObj));
@@ -1011,7 +1010,6 @@ final class ProcessproquestTest extends TestCase {
 
         echo "\nExpected count: 1";
         echo "\nReceived count: " . count($returnedFedoraRecords) . "\n";
-        // echo "\nClass type    : " . get_class($mockFedoraRecord);
 
         $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
     }
@@ -1061,9 +1059,9 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $returnValue = $method->invoke($processObj, "moveFTPFiles");
+        $result = $method->invoke($processObj, "moveFTPFiles");
 
-        $this->assertTrue($returnValue, "Expected moveFTPFiles() to return true.");
+        $this->assertTrue($result, "Expected moveFTPFiles() to return true.");
     }
 
     #[Test]
@@ -1090,7 +1088,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invokeArgs($processObj, ["", "", ""]);
 
         // Check that NONCRITICAL_ERRORS was updated.
         $noncriticalErrors = $mockFedoraRecord->NONCRITICAL_ERRORS;
@@ -1124,7 +1122,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invokeArgs($processObj, ["", "", ""]);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
@@ -1161,7 +1159,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invokeArgs($processObj, ["", "", ""]);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
@@ -1198,7 +1196,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $returnValue = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invokeArgs($processObj, ["", "", ""]);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
