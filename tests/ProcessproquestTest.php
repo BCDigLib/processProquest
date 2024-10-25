@@ -1,4 +1,6 @@
 <?php declare(strict_types=1);
+namespace Processproquest\test;
+
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -29,7 +31,7 @@ final class ProcessproquestTest extends TestCase {
         error_reporting(E_ALL & ~E_DEPRECATED);
         $configurationFile = "testConfig.ini";
 
-        $this->helper = new TestHelpers("test");
+        $this->helper = new  \Processproquest\test\TestHelpers("test");
         $this->configurationFile = $configurationFile;
         $this->configurationSettings = $this->helper->readConfigurationFile($configurationFile);
         $this->logger = $this->helper->createLogger($this->configurationSettings);
@@ -137,7 +139,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $result = $processObj->logIntoFTPServer();
     }
 
@@ -159,7 +161,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $result = $processObj->logIntoFTPServer();
     }
 
@@ -188,7 +190,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($ftpConnection);
 
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $result = $processObj->logIntoFTPServer();
     }
 
@@ -213,7 +215,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($ftpConnection);
 
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $result = $processObj->scanForETDFiles();
     }
 
@@ -287,7 +289,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $fileArray = $processObj->scanForETDFiles();
     }
 
@@ -309,7 +311,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $fileArray = $processObj->scanForETDFiles();
     }
 
@@ -325,7 +327,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $fileArray = $processObj->scanForETDFiles();
     }
 
@@ -430,7 +432,7 @@ final class ProcessproquestTest extends TestCase {
         $allFoundETDsProperty = $this->helper->getProtectedProperty('\Processproquest\Processproquest', 'allFoundETDs');
 
         // Expect an exception.
-        $this->expectException(Exception::class);
+        $this->expectException(\Exception::class);
         $allFoundETDsProperty->setValue($processObj, $listOfZeroETDFiles);
         $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
     }
@@ -515,7 +517,7 @@ final class ProcessproquestTest extends TestCase {
         // Create FedoraRecord object.
         $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
             "etdadmin_upload_100000",       // ID
-            $this->configurationSettings,                // settings
+            $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
@@ -746,7 +748,7 @@ final class ProcessproquestTest extends TestCase {
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
         // Create a mock Object.
-        $wrongObjectType = new stdClass();
+        $wrongObjectType = new \stdClass();
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();

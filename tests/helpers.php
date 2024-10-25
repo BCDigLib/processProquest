@@ -1,4 +1,6 @@
 <?php declare(strict_types=1);
+namespace Processproquest\test;
+
 use PHPUnit\Framework\TestCase;
 
 require __DIR__ . "/../src/Processproquest.php";
@@ -197,7 +199,7 @@ final class TestHelpers extends TestCase {
             ->onlyMethods(['getNextPid', 'constructObject', 'getObject', 'ingestObject'])
             ->getMock();
 
-        $genericObject = new stdClass();
+        $genericObject = new \stdClass();
 
         $mockFedoraConnection->method('getNextPid')->willReturn("bc-ir:9999999");
         $mockFedoraConnection->method('constructObject')->willReturn($genericObject);
@@ -275,7 +277,7 @@ final class TestHelpers extends TestCase {
      * @return object $method the reflected class method.
      */
     public static function getProtectedMethod($className, $methodName) {
-        $reflectedClass = new ReflectionClass($className);
+        $reflectedClass = new \ReflectionClass($className);
         $method = $reflectedClass->getMethod($methodName);
         $method->setAccessible(true);
 
