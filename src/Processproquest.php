@@ -499,6 +499,7 @@ class Processproquest {
      * It calls on processFile() for each ETD to process.
      * 
      * @deprecated
+     * @codeCoverageIgnore
      * 
      * @return array $caughtExceptions Any exceptions caught.
      */

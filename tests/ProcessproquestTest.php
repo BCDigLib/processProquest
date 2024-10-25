@@ -931,8 +931,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
-    public function processAllFiles(): void {
-        echo "\n[*] This test checks the processAllFiles() function on an array of FedoraRecord objects.\n";
+    public function processFile(): void {
+        echo "\n[*] This test checks the processFile() method on a FedoraRecord object.\n";
 
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->createMockFedoraConnection();
@@ -948,12 +948,9 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        // Append mock FedoraRecord object.
-        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordObject);
 
-        $ret = $processObj->processAllFiles();
-
-        $this->assertTrue($ret, "Expected processAllFiles() to return true.");
+        $this->assertTrue($result, "Expected processAllFiles() to return true.");
     }
 
     #[Test]
