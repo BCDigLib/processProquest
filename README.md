@@ -5,7 +5,7 @@ A library for ingesting ProQuest ETDs into Islandora/Fedora DAM. This script is 
 # Requirements
 The following packages are required to run this script:
  * [fop](https://xmlgraphics.apache.org/fop/)
- * php
+ * php (version >= 8.3.x)
  * php-dom
  * php-zip
  * php-curl
@@ -26,7 +26,7 @@ The following packages will be very useful for development, debugging, and testi
  * php-pcov
  * php-xdebug
  * xpdf
- * phpunit
+ * [phpunit](https://phpunit.de/index.html)
 
 # Installation
 Clone this repository within your `drupal/sites/all/libraries/` directory.
@@ -36,9 +36,18 @@ cd /var/www/html/drupal/sites/all/libraries
 git clone https://github.com/BCDigLib/processProquest
 ```
 
-Next, install packages with composer.
+Next, install additional PHP packages using composer. 
+
+Depending on how you installed composer the following commands will install all required packages.
+
 ```
 php composer.phar install
+```
+
+or
+
+```
+composer install
 ```
 
 # Usage
