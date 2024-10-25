@@ -10,7 +10,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
 final class TestHelpers extends TestCase {
-    protected $configurationArray = [];
+    protected $configurationSettings = [];
     protected $configurationFile = null;
     protected $settings = [];
     protected $logger = null;
@@ -19,12 +19,13 @@ final class TestHelpers extends TestCase {
     protected $debug = null;
     //protected $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip'];
 
+    // TODO: pass configurationFile as an argument
     public function __construct($name) {
         $this->configurationFile = "testConfig.ini";
-        $this->configurationArray = $this->readConfigurationFile($this->configurationFile);
-        $this->configurationFile = $this->configurationArray["file"];
-        $this->settings = $this->configurationArray["settings"];
-        $this->logger = $this->createLogger($this->settings);
+        $this->configurationSettings = $this->readConfigurationFile($this->configurationFile);
+        //$this->configurationFile = $this->configurationSettings["file"];
+        //$this->settings = $this->configurationSettings["settings"];
+        $this->logger = $this->createLogger($this->configurationSettings);
         $this->debug = true;
     }
 
@@ -35,10 +36,10 @@ final class TestHelpers extends TestCase {
      * 
      * @return object the logger object.
      */
-    public function createLogger($configurationSettings){
+    public function createLogger($customConfigurationSettings){
         // Set up log file location and name.
         $dateFormatLogFile = date("Ymd-His", time());
-        $logLocation = $configurationSettings['log']['location'];
+        $logLocation = $customConfigurationSettings['log']['location'];
         $logFileName = "ingest-" . $dateFormatLogFile . ".txt";
         $debug = true;
 
@@ -96,12 +97,7 @@ final class TestHelpers extends TestCase {
             return NULL;
         }
 
-        $configurationArray = array(
-            "file" => $configurationFileLocation,
-            "settings" => $configurationSettings
-        );
-
-        return $configurationArray;
+        return $configurationSettings;
     }
 
     /**
@@ -120,7 +116,7 @@ final class TestHelpers extends TestCase {
         // ]
 
         // Create a copy of the default settings array.
-        $newSettings = $this->settings;
+        $newSettings = $this->configurationSettings;
 
         echo "\n--------\nUpdating configuration settings\n";
         foreach ($updatedSettings as $keyParent => $valueArray) {
@@ -132,25 +128,6 @@ final class TestHelpers extends TestCase {
         echo "--------\n\n";
 
         return $newSettings;
-    }
-
-    /**
-     * Overwrite the configuration array with new settings value(s).
-     * This calls alterConfigurationSettings() to update the settings array.
-     * This makes and edits and returns a copy of the default configurationArray array.
-     * 
-     * @param array $updatedSettings the updated setting values.
-     * 
-     * @return array the configuration array including the new values.
-     */
-    public function alterConfigurationArray($updatedSettings) {
-        // Create a copy of the default configurationArray array.
-        $newConfigurationArray = $this->configurationArray;
-
-        $newSettingsArray = $this->alterConfigurationSettings($updatedSettings);
-        $newConfigurationArray["settings"] = $newSettingsArray;
-
-        return $newConfigurationArray;
     }
 
     /**
@@ -253,11 +230,17 @@ final class TestHelpers extends TestCase {
     /**
      * Generate a new Processproquest object.
      * 
+     * @param array $customSettings Optional array of settings.
+     * 
      * @return object a Processproquest object.
      */
-    public function generateProcessproquestObject() {
+    public function generateProcessproquestObject($customSettings = []) {
+        if (empty($customSettings)) {
+            $customSettings = $this->configurationSettings;
+        }
         $newObj = new \Processproquest\Processproquest(
-                            $this->configurationArray, 
+                            $this->configurationFile,
+                            $customSettings, 
                             $this->logger, 
                             $this->debug
                         );

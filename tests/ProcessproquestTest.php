@@ -30,16 +30,15 @@ final class ProcessproquestTest extends TestCase {
         $configurationFile = "testConfig.ini";
 
         $this->helper = new TestHelpers("test");
-        $this->configurationArray = $this->helper->readConfigurationFile($configurationFile);
-        $this->configurationFile = $this->configurationArray["file"];
-        $this->settings = $this->configurationArray["settings"];
-        $this->logger = $this->helper->createLogger($this->settings);
+        $this->configurationFile = $configurationFile;
+        $this->configurationSettings = $this->helper->readConfigurationFile($configurationFile);
+        $this->logger = $this->helper->createLogger($this->configurationSettings);
         $this->debug = true;
         $this->listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip'];
     }
 
     protected function tearDown(): void {
-        $this->configurationArray = null;
+        $this->helper = null;
         $this->logger = null;
     }
 
@@ -122,6 +121,51 @@ final class ProcessproquestTest extends TestCase {
         $this->assertTrue($result, "Expected logIntoFTPServer() to return true.");
     }
 
+    #[Test]
+    public function logIntoFTPServerFailure(): void {
+        echo "\n[*] This test checks the logIntoFTPServer() method throws on error on login failure.\n";
+
+        // Create a custom mock ftpConnection object that returns false on login.
+        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['login'])
+            ->getMock();
+        $mockFTPConnection->method('login')->willReturn(false);
+
+        // Create a Processproquest object using a custom mock FTP connection.
+        $processObj = $this->helper->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        
+        // Expect an exception.
+        $this->expectException(Exception::class);
+        $result = $processObj->logIntoFTPServer();
+    }
+
+    /**
+     * TODO: rewrite this to use a mockFTPConnection.
+     */
+    #[Test]
+    public function logIntoFTPServerNoUsername(): void {
+        echo "\n[*] This test checks the logIntoFTPServer() method throws on error when there is no user name provided.\n";
+
+        // Replace [ftp] "user" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("user" => ""),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a mock ProquestFTP object.
+        $mockFTPConnection = $this->helper->createMockFTPConnection();
+
+        // Create a Processproquest object using the updated ProquestFTP object.
+        $processObj = $this->helper->generateProcessproquestObject($newSettings);
+        $processObj->setFTPConnection($mockFTPConnection);
+        
+        // Expect an exception.
+        $this->expectException(Exception::class);
+        $result = $processObj->logIntoFTPServer();
+    }
+
     // Incomplete.
     // This test throws an exception on setFTPConnection().
     public function logIntoFTPServerConfigEmptyServerValue(): void {
@@ -137,10 +181,9 @@ final class ProcessproquestTest extends TestCase {
             "ftp" => array("server" => ""),
         );
         $newSettings = $this->alterConfigurationSettings($updatedSettings);
-        $this->configurationArray["settings"] = $newSettings;
 
         // Create a ftpConnection object with updated settings.
-        $ftpConnection = $this->createFTPConnection($this->settings);
+        $ftpConnection = $this->createFTPConnection($newSettings);
         // $mockFTPConnection = $this->helper->createMockFTPConnection();
 
         // Create Processproquest object using the updated FTP connection.
@@ -164,13 +207,11 @@ final class ProcessproquestTest extends TestCase {
             "ftp" => array("localdir" => ""),
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
-        $this->configurationArray["settings"] = $newSettings;
 
-        // Create a ftpConnection object with updated settings.
-        $ftpConnection = $this->helper->createFTPConnection($this->settings);
-        // $mockFTPConnection = $this->helper->createMockFTPConnection();
+        // Create a ProquestFTP object with updated settings.
+        $ftpConnection = $this->helper->createFTPConnection($newSettings);
 
-        // Create a Processproquest object using the updated FTP connection.
+        // Create a Processproquest object using the updated ProquestFTP object.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($ftpConnection);
 
@@ -237,7 +278,7 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['login', 'getFileList', 'changeDir'])
+            ->onlyMethods(['login', 'changeDir'])
             ->getMock();
 
         $mockFTPConnection->method('login')->willReturn(true);
@@ -261,17 +302,13 @@ final class ProcessproquestTest extends TestCase {
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
         );
-        $newConfigurationArray = $this->helper->alterConfigurationArray($updatedSettings);
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
         // Create a mock ftpConnection object with an empty initial array of ETD files.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
         // Create a Processproquest object using a mock FTP connection.
-        $processObj = new \Processproquest\Processproquest(
-            $newConfigurationArray, 
-            $this->logger, 
-            $this->debug
-        );
+        $processObj = $this->helper->generateProcessproquestObject($newSettings);
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
@@ -438,7 +475,7 @@ final class ProcessproquestTest extends TestCase {
         // Create FedoraRecord object.
         $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
             "etdadmin_upload_100000",       // ID
-            $this->settings,                // settings
+            $this->configurationSettings,                // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
@@ -481,7 +518,7 @@ final class ProcessproquestTest extends TestCase {
         // Create FedoraRecord object.
         $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
             "etdadmin_upload_100000",       // ID
-            $this->settings,                // settings
+            $this->configurationSettings,                // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
@@ -534,7 +571,7 @@ final class ProcessproquestTest extends TestCase {
         // Create FedoraRecord object.
         $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
             "etdadmin_upload_100000",       // ID
-            $this->settings,                // settings
+            $this->configurationSettings,                // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
@@ -582,7 +619,7 @@ final class ProcessproquestTest extends TestCase {
         // Create FedoraRecord object.
         $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
             "etdadmin_upload_100000",       // ID
-            $this->settings,                // settings
+            $this->configurationSettings,                // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
@@ -814,9 +851,9 @@ final class ProcessproquestTest extends TestCase {
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
 
-        $processdirFTP = $this->settings['ftp']['processdir'];
-        //$faildirFTP = $this->settings['ftp']['faildir'];
-        //$manualdirFTP = $this->settings['ftp']['manualdir'];
+        $processdirFTP = $this->configurationSettings['ftp']['processdir'];
+        //$faildirFTP = $this->configurationSettings['ftp']['faildir'];
+        //$manualdirFTP = $this->configurationSettings['ftp']['manualdir'];
 
         echo "\nExpected: {$processdirFTP}";
         echo "\nReceived: {$ftpPostprocessLocation}\n";
@@ -851,9 +888,9 @@ final class ProcessproquestTest extends TestCase {
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
 
-        //$processdirFTP = $this->settings['ftp']['processdir'];
-        //$faildirFTP = $this->settings['ftp']['faildir'];
-        $manualdirFTP = $this->settings['ftp']['manualdir'];
+        //$processdirFTP = $this->configurationSettings['ftp']['processdir'];
+        //$faildirFTP = $this->configurationSettings['ftp']['faildir'];
+        $manualdirFTP = $this->configurationSettings['ftp']['manualdir'];
 
         echo "\nExpected: {$manualdirFTP}";
         echo "\nReceived: {$ftpPostprocessLocation}\n";
@@ -888,9 +925,9 @@ final class ProcessproquestTest extends TestCase {
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
 
-        //$processdirFTP = $this->settings['ftp']['processdir'];
-        $faildirFTP = $this->settings['ftp']['faildir'];
-        //$manualdirFTP = $this->settings['ftp']['manualdir'];
+        //$processdirFTP = $this->configurationSettings['ftp']['processdir'];
+        $faildirFTP = $this->configurationSettings['ftp']['faildir'];
+        //$manualdirFTP = $this->configurationSettings['ftp']['manualdir'];
 
         echo "\nExpected: {$faildirFTP}";
         echo "\nReceived: {$ftpPostprocessLocation}\n";

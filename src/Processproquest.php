@@ -67,15 +67,16 @@ class Processproquest {
      *
      * This builds a local '$this' object that contains various script settings.
      *
-     * @param array $configurationArray An array containing the configuration file and values.
+     * @param string $configurationFile The configuration file name.
+     * @param array $configurationSettings An array containing configuration settings.
      * @param object $loggerObj The logger object.
      * @param boolean $debug If true run script in debug mode, which doesn't ingest ETD into Fedora.
      * 
      * @throws Exception if an empty logger object was passed as an argument.
      */
-    public function __construct($configurationArray, $loggerObj, $debug = DEFAULT_DEBUG_VALUE) {
-        $this->configurationFile = $configurationArray["file"];
-        $this->settings = $configurationArray["settings"];
+    public function __construct($configurationFile, $configurationSettings, $loggerObj, $debug = DEFAULT_DEBUG_VALUE) {
+        $this->configurationFile = $configurationFile;
+        $this->settings = $configurationSettings;
         $this->debug = boolval($debug);
         $this->root_url = $this->settings["islandora"]["root_url"];
         $this->path = $this->settings["islandora"]["path"];

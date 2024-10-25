@@ -166,7 +166,7 @@ try {
 require_once 'src/Processproquest.php';
 use \Processproquest as PP;
 try {
-    $process = (new PP\Processproquest($configurationArray, $logger, $debug))
+    $process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
                 ->setFTPConnection($ftpConnection)
                 ->setFedoraConnection($fedoraRepository);
 } catch (Exception $e) {
