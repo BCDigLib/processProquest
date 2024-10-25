@@ -13,7 +13,8 @@
          failOnRisky="true"
          failOnWarning="true"
          displayDetailsOnTestsThatTriggerDeprecations="true"
-         colors="true">
+         colors="true"
+         testdox="true">
     <testsuites>
         <testsuite name="default">
             <directory>tests</directory>
