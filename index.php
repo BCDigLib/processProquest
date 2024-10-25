@@ -184,7 +184,7 @@ try {
 
 // Log into the FTP server.
 try {
-    $process->LogIntoFTPServer();
+    $process->logIntoFTPServer();
 } catch(Exception $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();

@@ -250,7 +250,7 @@ class Processproquest {
      * 
      * @throws Exception if the FTP connection failed.
      */
-    public function LogIntoFTPServer() {
+    public function logIntoFTPServer() {
         $this->logger->info(SECTION_DIVIDER);
         $this->logger->info("Logging into FTP server.");
 
@@ -669,6 +669,8 @@ class Processproquest {
 
     /**
      * Parse script results and compose email body.
+     * 
+     * @codeCoverageIgnore
      */
     public function postProcess() {
         $fn = "postProcess";

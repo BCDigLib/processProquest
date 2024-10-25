@@ -106,7 +106,7 @@ final class ProcessproquestTest extends TestCase {
 
     #[Test]
     public function logIntoFTPServer(): void {
-        echo "\n[*] This test checks the LogIntoFTPServer() method returns successfully with valid credentials.\n";
+        echo "\n[*] This test checks the logIntoFTPServer() method returns successfully with valid credentials.\n";
 
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
@@ -116,16 +116,16 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         
         // Expect a true value.
-        $result = $processObj->LogIntoFTPServer();
+        $result = $processObj->logIntoFTPServer();
         echo "Expected: true\n";
         echo "Received: " . ($result ? "true" : "false") . "\n";
-        $this->assertTrue($result, "Expected LogIntoFTPServer() to return true.");
+        $this->assertTrue($result, "Expected logIntoFTPServer() to return true.");
     }
 
     // Incomplete.
     // This test throws an exception on setFTPConnection().
     public function logIntoFTPServerConfigEmptyServerValue(): void {
-        echo "\n[*] This test checks the LogIntoFTPServer() method returns an exception with an empty server URL value.\n";
+        echo "\n[*] This test checks the logIntoFTPServer() method returns an exception with an empty server URL value.\n";
 
         // Stop here and mark this test as incomplete.
         $this->markTestIncomplete(
@@ -149,7 +149,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(Exception::class);
-        $result = $processObj->LogIntoFTPServer();
+        $result = $processObj->logIntoFTPServer();
     }
 
     /**
