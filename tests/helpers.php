@@ -120,14 +120,11 @@ final class TestHelpers extends TestCase {
         // Create a copy of the default settings array.
         $newSettings = $this->configurationSettings;
 
-        echo "\n--------\nUpdating configuration settings\n";
         foreach ($updatedSettings as $keyParent => $valueArray) {
             foreach ($valueArray as $keyChild => $value) {
-                print "[{$keyParent}]\n{$keyChild} = {$value}\n";
                 $newSettings[$keyParent][$keyChild] = $value;
             }
         }
-        echo "--------\n\n";
 
         return $newSettings;
     }

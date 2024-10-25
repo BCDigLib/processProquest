@@ -5,6 +5,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 
 // Use helpers class.
@@ -45,9 +46,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the setFTPConnection() method')]
     public function setFTPConnection(): void {
-        echo "\n[*] This test checks the setFTPConnection() method.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -67,9 +67,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the setFedoraConnection() method')]
     public function setFedoraConnection(): void {
-        echo "\n[*] This test checks the setFedoraConnection() method.\n";
-
         // Create a mock fedoraConnection object.
         $this->fedoraConnection = $this->helper->createMockFedoraConnection();
 
@@ -89,9 +88,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the setDebug() method')]
     public function setDebug(): void {
-        echo "\n[*] This test checks the setDebug() method.\n";
-
         // Create Processproquest object.
         $processObj = $this->helper->generateProcessproquestObject();
 
@@ -106,9 +104,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the logIntoFTPServer() method returns successfully with valid credentials')]
     public function logIntoFTPServer(): void {
-        echo "\n[*] This test checks the logIntoFTPServer() method returns successfully with valid credentials.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -118,15 +115,13 @@ final class ProcessproquestTest extends TestCase {
         
         // Expect a true value.
         $result = $processObj->logIntoFTPServer();
-        echo "Expected: true\n";
-        echo "Received: " . ($result ? "true" : "false") . "\n";
+
         $this->assertTrue($result, "Expected logIntoFTPServer() to return true.");
     }
 
     #[Test]
+    #[TestDox('Checks the logIntoFTPServer() method throws on error on login failure')]
     public function logIntoFTPServerFailure(): void {
-        echo "\n[*] This test checks the logIntoFTPServer() method throws on error on login failure.\n";
-
         // Create a custom mock ftpConnection object that returns false on login.
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
@@ -144,9 +139,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the logIntoFTPServer() method throws on error when there is no user name provided')]
     public function logIntoFTPServerNoUsername(): void {
-        echo "\n[*] This test checks the logIntoFTPServer() method throws on error when there is no user name provided.\n";
-
         // Replace [ftp] "user" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("user" => ""),
@@ -167,9 +161,8 @@ final class ProcessproquestTest extends TestCase {
 
     // Incomplete.
     // This test throws an exception on setFTPConnection().
+    #[TestDox('Checks the logIntoFTPServer() method returns an exception with an empty server URL value')]
     public function logIntoFTPServerConfigEmptyServerValue(): void {
-        echo "\n[*] This test checks the logIntoFTPServer() method returns an exception with an empty server URL value.\n";
-
         // Stop here and mark this test as incomplete.
         $this->markTestIncomplete(
             'This test is incomplete.',
@@ -198,9 +191,8 @@ final class ProcessproquestTest extends TestCase {
      * TODO: rewrite this to use a mockFTPConnection.
      */
     #[Test]
+    #[TestDox('Checks the scanForETDFiles() method returns an exception with an invalid localdir value')]
     public function scanForETDFilesConfigEmptyLocaldirValue(): void {
-        echo "\n[*] This test checks the scanForETDFiles() method returns an exception with an invalid localdir value.\n";
-
         // Replace [ftp] "server" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
@@ -220,9 +212,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the scanForETDFiles() method returns a list of valid ETD zip files')]
     public function scanForETDFiles(): void {
-        echo "\n[*] This test checks the scanForETDFiles() method returns a list of valid ETD zip files.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -232,20 +223,12 @@ final class ProcessproquestTest extends TestCase {
 
         $fileArray = $processObj->scanForETDFiles();
 
-        echo "\nExpected: ";
-        print_r($this->helper->listOfETDs);
-
-        echo "\nReceived: ";
-        print_r($fileArray);
-        echo "\n";
-
         $this->assertTrue($this->helper->arrays_are_similar($fileArray, $this->listOfETDs), "Expected the two arrays to match.");
     }
 
     #[Test]
+    #[TestDox('Checks the scanForETDFiles() method replaces an empty fetchdirFTP property with a default value')]
     public function scanForETDFilesEmptyFetchdirFTPProperty(): void {
-        echo "\n[*] This test checks the scanForETDFiles() method replaces an empty fetchdirFTP property with a default value.\n";
-
         $expectedValue = "~/";
 
         // Create a mock ftpConnection object.
@@ -263,17 +246,13 @@ final class ProcessproquestTest extends TestCase {
 
         $fileArray = $processObj->scanForETDFiles();
 
-        echo "\nExpected: {$expectedValue}";
-        echo "\nReceived: {$fetchdirFTPProperty->getValue($processObj)}\n";
-
         $this->assertEquals($expectedValue, $fetchdirFTPProperty->getValue($processObj));
 
     }
 
     #[Test]
+    #[TestDox('Checks the scanForETDFiles() method when ProquestFTP->changeDir() returns false')]
     public function scanForETDFilesChangeDirReturnsFalse(): void {
-        echo "\n[*] This test checks the scanForETDFiles() method when ProquestFTP->changeDir() returns false.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
@@ -294,9 +273,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the scanForETDFiles() method returns an exception with this->settings[ftp][localdir] is empty')]
     public function scanForETDFilesRegexNoMatch(): void {
-        echo "\n[*] This test checks the scanForETDFiles() method returns an exception with this->settings['ftp']['localdir'] is empty.\n";
-
         // Replace [ftp] "localdir" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
@@ -316,9 +294,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the scanForETDFiles() method returns an exception when there are no ETDs on the FTP server')]
     public function scanForETDFilesNoETDsFound(): void {
-        echo "\n[*] This test checks the scanForETDFiles() method returns an exception when there are no ETDs on the FTP server.\n";
-
         // Create a mock ftpConnection object with an empty initial array of ETD files.
         $mockFTPConnection = $this->helper->createMockFTPConnection([]);
 
@@ -332,9 +309,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the createFedoraObjects() method returns an array of FedoraRecord object')]
     public function createFedoraObjects(): void {
-        echo "\n[*] This test checks the createFedoraObjects() method returns an array of FedoraRecord object.\n";
-
         // Create array containing a zip filename.
         $zipFileName = "etdadmin_upload_100000.zip";
         $listOfETDFiles = [];
@@ -361,23 +337,16 @@ final class ProcessproquestTest extends TestCase {
 
         // Check the class type for the first object returned by createFedoraObjects()
         $className = get_class($firstCreatedFedoraRecords);
-        echo "\nChecking class name of FedoraRecord object returned:";
-        echo "\nExpected: Processproquest\Record\FedoraRecord";
-        echo "\nReceived: {$className}\n";
         $this->assertEquals($className, "Processproquest\Record\FedoraRecord", "Expected the values 'Processproquest\Record\FedoraRecord' and '{$className}' to match.");
 
         // Check the FedoraRecord object name returned by createFedoraObjects()
         $etdZipFileName = $firstCreatedFedoraRecords->ZIP_FILENAME;
-        echo "\nChecking zip filename of FedoraRecord object returned:";
-        echo "\nExpected: {$zipFileName}";
-        echo "\nReceived: {$etdZipFileName}\n";
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
     #[Test]
+    #[TestDox('Checks the createFedoraObject() method returns a single FedoraRecord object')]
     public function createFedoraObject(): void {
-        echo "\n[*] This test checks the createFedoraObject() method returns a single FedoraRecord object.\n";
-
         // A sample zip filename.
         $zipFileName = "etdadmin_upload_100000.zip";
 
@@ -397,23 +366,16 @@ final class ProcessproquestTest extends TestCase {
 
         // Check the class type for the first object returned by createFedoraObject()
         $className = get_class($firstCreatedFedoraRecord);
-        echo "\nChecking class name of FedoraRecord object returned:";
-        echo "\nExpected: Processproquest\Record\FedoraRecord";
-        echo "\nReceived: {$className}\n";
         $this->assertEquals($className, "Processproquest\Record\FedoraRecord", "Expected the values 'Processproquest\Record\FedoraRecord' and '{$className}' to match.");
 
         // Check the FedoraRecord object name returned by createFedoraObject()
         $etdZipFileName = $firstCreatedFedoraRecord->ZIP_FILENAME;
-        echo "\nChecking zip filename of FedoraRecord object returned:";
-        echo "\nExpected: {$zipFileName}";
-        echo "\nReceived: {$etdZipFileName}\n";
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
     #[Test]
+    #[TestDox('Checks the createFedoraObjects() method returns an exception when there are no ETD zip files to process')]
     public function createFedoraObjectsZero(): void {
-        echo "\n[*] This test checks the createFedoraObjects() method returns an exception when there are no ETD zip files to process.\n";
-
         // Create an array.
         $listOfZeroETDFiles = [];
 
@@ -438,9 +400,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the statusCheck() method containing processing errors')]
     public function statusCheckWithProcessingErrors(): void {
-        echo "\n[*] This test checks the statusCheck() method containing processing errors.\n";
-
         $errorMessage = "This is an error: WXYZ";
 
         // Create Processproquest object.
@@ -455,16 +416,12 @@ final class ProcessproquestTest extends TestCase {
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
 
-        echo "\nExpected substring: '{$errorMessage}'";
-        echo "\nReceived string: '{$message}'\n";
-
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
 
     #[Test]
+    #[TestDox('Checks the statusCheck() method containing ETDs with supplemental files')]
     public function statusCheckWithSupplements(): void {
-        echo "\n[*] This test checks the statusCheck() method containing ETDs with supplemental files.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -474,7 +431,7 @@ final class ProcessproquestTest extends TestCase {
         // Create FedoraRecord object.
         $fedoraRecordObject = new \Processproquest\Record\FedoraRecord(
             "etdadmin_upload_100000",       // ID
-            $this->configurationSettings,                // settings
+            $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
@@ -498,16 +455,12 @@ final class ProcessproquestTest extends TestCase {
 
         $expectedString = '/Has supplements:\s+true/';
 
-        echo "\nRegular expression: '{$expectedString}'";
-        echo "\nReceived string   : '{$message}'\n";
-
         $this->assertMatchesRegularExpression($expectedString, $message, "Expecting the regular expression match '{$expectedString}' in the returned message.");
     }
 
     #[Test]
+    #[TestDox('checks the statusCheck() method containing ETDs with an embargo')]
     public function statusCheckWithEmbargo(): void {
-        echo "\n[*] This test checks the statusCheck() method containing ETDs with an embargo.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -547,18 +500,13 @@ final class ProcessproquestTest extends TestCase {
         $expectedString1 = '/Has embargo:\s+true/';
         $expectedString2 = '/Embargo date:\s+indefinite/';
 
-        echo "\nRegular expression 1: '{$expectedString1}'";
-        echo "\nRegular expression 2: '{$expectedString2}'";
-        echo "\nReceived string     : '{$message}'\n";
-
         $this->assertMatchesRegularExpression($expectedString1, $message, "Expecting the regular expression match '{$expectedString1}' in the returned message.");
         $this->assertMatchesRegularExpression($expectedString2, $message, "Expecting the regular expression match '{$expectedString2}' in the returned message.");
     }
 
     #[Test]
+    #[TestDox('Checks the statusCheck() method containing ETDs with a critical error')]
     public function statusCheckWithCriticalErrors(): void {
-        echo "\n[*] This test checks the statusCheck() method containing ETDs with a critical error.\n";
-
         $errorMessage = "This is a critical error: WXYZ";
 
         // Create a mock ftpConnection object.
@@ -597,16 +545,12 @@ final class ProcessproquestTest extends TestCase {
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
 
-        echo "\nExpected: '{$errorMessage}'";
-        echo "\nReceived: '{$message}'\n";
-
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
     
     #[Test]
+    #[TestDox('Checks the statusCheck() method containing ETDs with a non-critical error')]
     public function statusCheckWithNonCriticalErrors(): void {
-        echo "\n[*] This test checks the statusCheck() method containing ETDs with a non-critical error.\n";
-
         $errorMessage = "This is a non-critical error: WXYZ";
 
         // Create a mock ftpConnection object.
@@ -645,16 +589,12 @@ final class ProcessproquestTest extends TestCase {
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
 
-        echo "\nExpected: '{$errorMessage}'";
-        echo "\nReceived: '{$message}'\n";
-
         $this->assertStringContainsStringIgnoringCase($errorMessage, $message, "Expecting the substring '{$errorMessage}' in the returned message.");
     }
 
     #[Test]
+    #[TestDox('Checks the processFile() method on a FedoraRecord object')]
     public function processFile(): void {
-        echo "\n[*] This test checks the processFile() method on a FedoraRecord object.\n";
-
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
@@ -675,9 +615,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the getAllFedoraRecordObjects() method returns the allFedoraRecordObjects property')]
     public function getAllFedoraRecordObjects(): void {
-        echo "\n[*] This test checks the getAllFedoraRecordObjects() method returns the allFedoraRecordObjects property.\n";
-
         // Create array containing a zip filename.
         $zipFileName = "etdadmin_upload_100000.zip";
         $listOfETDFiles = [];
@@ -701,16 +640,12 @@ final class ProcessproquestTest extends TestCase {
         // Get list of scanned ETD files from getter method.
         $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
 
-        echo "\nExpected count: 1";
-        echo "\nReceived count: " . count($returnedFedoraRecords) . "\n";
-
         $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
     }
 
     #[Test]
+    #[TestDox('Checks the appendAllFedoraRecordObjects() method updates the allFedoraRecordObjects property')]
     public function appendAllFedoraRecordObjects(): void {
-        echo "\n[*] This test checks the appendAllFedoraRecordObjects() method updates the allFedoraRecordObjects property.\n";
-
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
@@ -731,16 +666,12 @@ final class ProcessproquestTest extends TestCase {
         // Get list of scanned ETD files from getter method.
         $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
 
-        echo "\nExpected count: 1";
-        echo "\nReceived count: " . count($returnedFedoraRecords) . "\n";
-
         $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
     }
 
     #[Test]
+    #[TestDox('Checks the appendAllFedoraRecordObjects() method returns false when passed the wrong object type')]
     public function appendAllFedoraRecordObjectsWrongObjectType(): void {
-        echo "\n[*] This test checks the appendAllFedoraRecordObjects() method returns false when passed the wrong object type.\n";
-
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
@@ -762,9 +693,8 @@ final class ProcessproquestTest extends TestCase {
     }
     
     #[Test]
+    #[TestDox('Checks the moveFTPFiles() method returns true')]
     public function moveFTPFiles(): void {
-        echo "\n[*] This test checks the moveFTPFiles() method returns true.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -788,9 +718,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the moveFTPFiles() method returns an error message on failure')]
     public function moveFTPFilesFailOnMove(): void {
-        echo "\n[*] This test checks the moveFTPFiles() method returns an error message on failure.\n";
-
         // Create a mock ftpConnection object that returns false for moveFile().
         $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
             ->disableOriginalConstructor()
@@ -814,19 +743,14 @@ final class ProcessproquestTest extends TestCase {
         $result = $method->invokeArgs($processObj, ["", "", ""]);
 
         // Check that NONCRITICAL_ERRORS was updated.
-        $noncriticalErrors = $mockFedoraRecord->NONCRITICAL_ERRORS;
-
-        echo "\nErrors Recived: ";
-        print_r($noncriticalErrors);
-        echo "\n";
+        $noncriticalErrors = $mockFedoraRecord->NONCRITICAL_ERRORS;;
 
         $this->assertTrue(count($noncriticalErrors) > 0, "Expected at least one noncritical error to be reported.");
     }
 
     #[Test]
+    #[TestDox('Checks the moveFTPFiles() method returns the correct post-process file location')]
     public function moveFTPFilesCorrectFTPFileLocationOnIngest(): void {
-        echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -854,16 +778,12 @@ final class ProcessproquestTest extends TestCase {
         //$faildirFTP = $this->configurationSettings['ftp']['faildir'];
         //$manualdirFTP = $this->configurationSettings['ftp']['manualdir'];
 
-        echo "\nExpected: {$processdirFTP}";
-        echo "\nReceived: {$ftpPostprocessLocation}\n";
-
         $this->assertEquals($processdirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
     }
 
     #[Test]
+    #[TestDox('Checks the moveFTPFiles() method returns the correct post-process file location with supplements')]
     public function moveFTPFilesCorrectFTPFileLocationHasSupplement(): void {
-        echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location with supplements.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -891,16 +811,12 @@ final class ProcessproquestTest extends TestCase {
         //$faildirFTP = $this->configurationSettings['ftp']['faildir'];
         $manualdirFTP = $this->configurationSettings['ftp']['manualdir'];
 
-        echo "\nExpected: {$manualdirFTP}";
-        echo "\nReceived: {$ftpPostprocessLocation}\n";
-
         $this->assertEquals($manualdirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
     }
 
     #[Test]
+    #[TestDox('Checks the moveFTPFiles() method returns the correct post-process file location on failure')]
     public function moveFTPFilesCorrectFTPFileLocationOnFail(): void {
-        echo "\n[*] This test checks the moveFTPFiles() method returns the correct post-process file location on failure.\n";
-
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
@@ -927,9 +843,6 @@ final class ProcessproquestTest extends TestCase {
         //$processdirFTP = $this->configurationSettings['ftp']['processdir'];
         $faildirFTP = $this->configurationSettings['ftp']['faildir'];
         //$manualdirFTP = $this->configurationSettings['ftp']['manualdir'];
-
-        echo "\nExpected: {$faildirFTP}";
-        echo "\nReceived: {$ftpPostprocessLocation}\n";
 
         $this->assertEquals($faildirFTP, $ftpPostprocessLocation, "Expected both paths to be equal.");
     }
