@@ -25,6 +25,7 @@ class FedoraRecord implements RecordTemplate {
     public $fedoraObj = null;
     public $fedoraConnection = null;
     public $ftpConnection = null;
+    public $PID = "";
     public $ETD_SHORTNAME = "";
     public $WORKING_DIR = "";
     public $SUPPLEMENTS = [];
@@ -365,6 +366,7 @@ class FedoraRecord implements RecordTemplate {
         // No need to process ETDs that have supplemental files.
         if ( $this->HAS_SUPPLEMENTS === true ) {
             $this->logger->info("SKIP Processing ETD since it contains supplemental files.");
+            $this->logger->info(LOOP_DIVIDER);
             $this->logger->info("[END] Processing ETD file.");
 
             return false;
@@ -873,7 +875,7 @@ class FedoraRecord implements RecordTemplate {
         // $this->logger->info("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
         $this->logger->info(LOOP_DIVIDER);
         $this->logger->info("[END] Generating datastreams.");
-        $this->logger->info(SECTION_DIVIDER);
+        // $this->logger->info(SECTION_DIVIDER);
 
         return true;
     }
