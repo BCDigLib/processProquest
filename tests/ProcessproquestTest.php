@@ -141,9 +141,6 @@ final class ProcessproquestTest extends TestCase {
         $result = $processObj->logIntoFTPServer();
     }
 
-    /**
-     * TODO: rewrite this to use a mockFTPConnection.
-     */
     #[Test]
     public function logIntoFTPServerNoUsername(): void {
         echo "\n[*] This test checks the logIntoFTPServer() method throws on error when there is no user name provided.\n";
