@@ -44,7 +44,7 @@ final class ProcessproquestTest extends TestCase {
     protected function tearDown(): void {
         $this->helper = null;
         $this->logger = null;
-        Mockery::close();
+        \Mockery::close();
     }
 
     #[Test]
@@ -604,6 +604,131 @@ final class ProcessproquestTest extends TestCase {
         $result = $processObj->processFile($fedoraRecordObject);
 
         $this->assertTrue($result, "Expected processAllFiles() to return true.");
+    }
+
+    #[Test]
+    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on downloadETD()')]
+    public function processFileExceptionOnDownloadETD(): void {
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->helper->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->helper->createMockFTPConnection();
+
+        // Create array containing a mock FedoraRecord object that returns an exception on downloadETD().
+        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
+        $fedoraRecordObject->shouldReceive('downloadETD')->andThrow(new \Exception);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->helper->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+        $result = $processObj->processFile($fedoraRecordObject);
+    }
+
+    #[Test]
+    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on parseETD()')]
+    public function processFileExceptionOnParseETD(): void {
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->helper->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->helper->createMockFTPConnection();
+
+        // Create array containing a mock FedoraRecord object that returns an exception on parseETD().
+        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
+        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('parseETD')->andThrow(new \Exception);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->helper->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+        $result = $processObj->processFile($fedoraRecordObject);
+    }
+
+    #[Test]
+    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on processETD()')]
+    public function processFileExceptionOnProcessETD(): void {
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->helper->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->helper->createMockFTPConnection();
+
+        // Create array containing a mock FedoraRecord object that returns an exception on parseETD().
+        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
+        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('processETD')->andThrow(new \Exception);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->helper->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+        $result = $processObj->processFile($fedoraRecordObject);
+    }
+
+    #[Test]
+    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on generateDatastreams()')]
+    public function processFileExceptionOnGenerateDatastreams(): void {
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->helper->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->helper->createMockFTPConnection();
+
+        // Create array containing a mock FedoraRecord object that returns an exception on generateDatastreams().
+        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
+        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('processETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('generateDatastreams')->andThrow(new \Exception);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->helper->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+        $result = $processObj->processFile($fedoraRecordObject);
+    }
+
+    #[Test]
+    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on ingestETD()')]
+    public function processFileExceptionOnIngestETD(): void {
+        // Create a mock fedoraConnection object.
+        $mockFedoraConnection = $this->helper->createMockFedoraConnection();
+
+        // Create a mock ftpConnection object.
+        $mockFTPConnection = $this->helper->createMockFTPConnection();
+
+        // Create array containing a mock FedoraRecord object that returns an exception on generateDatastreams().
+        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
+        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('processETD')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('generateDatastreams')->andReturn(true);
+        $fedoraRecordObject->shouldReceive('ingestETD')->andThrow(new \Exception);
+
+        // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
+        $processObj = $this->helper->generateProcessproquestObject();
+        $processObj->setFTPConnection($mockFTPConnection);
+        $processObj->setFedoraConnection($mockFedoraConnection);
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+        $result = $processObj->processFile($fedoraRecordObject);
     }
 
     #[Test]
