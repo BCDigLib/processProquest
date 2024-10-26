@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
+use \Mockery;
 
 // Use helpers class.
 require_once(__DIR__ . "/helpers.php");
@@ -43,6 +44,7 @@ final class ProcessproquestTest extends TestCase {
     protected function tearDown(): void {
         $this->helper = null;
         $this->logger = null;
+        Mockery::close();
     }
 
     #[Test]
@@ -122,12 +124,9 @@ final class ProcessproquestTest extends TestCase {
     #[Test]
     #[TestDox('Checks the logIntoFTPServer() method throws on error on login failure')]
     public function logIntoFTPServerFailure(): void {
-        // Create a custom mock ftpConnection object that returns false on login.
-        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['login'])
-            ->getMock();
-        $mockFTPConnection->method('login')->willReturn(false);
+        // Create a custom mock ftpConnection object that returns false on login().
+        $mockFTPConnection = Mockery::mock(\Processproquest\FTP\ProquestFTP::class)->makePartial();
+        $mockFTPConnection->shouldReceive('login')->andReturn(false);
 
         // Create a Processproquest object using a custom mock FTP connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -176,7 +175,6 @@ final class ProcessproquestTest extends TestCase {
 
         // Create a ftpConnection object with updated settings.
         $ftpConnection = $this->createFTPConnection($newSettings);
-        // $mockFTPConnection = $this->helper->createMockFTPConnection();
 
         // Create Processproquest object using the updated FTP connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -253,15 +251,9 @@ final class ProcessproquestTest extends TestCase {
     #[Test]
     #[TestDox('Checks the scanForETDFiles() method when ProquestFTP->changeDir() returns false')]
     public function scanForETDFilesChangeDirReturnsFalse(): void {
-        // Create a mock ftpConnection object.
-        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['login', 'changeDir'])
-            ->getMock();
-
-        $mockFTPConnection->method('login')->willReturn(true);
-        // Change default return value of changeDir to be false.
-        $mockFTPConnection->method('changeDir')->willReturn(false);
+        // Create a custom mock ftpConnection object that returns false for changeDir().
+        $mockFTPConnection = Mockery::mock(\Processproquest\FTP\ProquestFTP::class)->makePartial();
+        $mockFTPConnection->shouldReceive('changeDir')->andReturn(false);
 
         // Create a Processproquest object using a mock FTP connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -712,7 +704,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $result = $method->invoke($processObj, "moveFTPFiles");
+        $result = $method->invoke($processObj);
 
         $this->assertTrue($result, "Expected moveFTPFiles() to return true.");
     }
@@ -720,12 +712,9 @@ final class ProcessproquestTest extends TestCase {
     #[Test]
     #[TestDox('Checks the moveFTPFiles() method returns an error message on failure')]
     public function moveFTPFilesFailOnMove(): void {
-        // Create a mock ftpConnection object that returns false for moveFile().
-        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['moveFile'])
-            ->getMock();
-        $mockFTPConnection->method('moveFile')->willReturn(false);
+        // Create a custom mock ftpConnection object that returns false for moveFile().
+        $mockFTPConnection = Mockery::mock(\Processproquest\FTP\ProquestFTP::class)->makePartial();
+        $mockFTPConnection->shouldReceive('moveFile')->andReturn(false);
 
         // Create a mock FedoraRecord.
         $mockFedoraRecord = $this->helper->createMockFedoraRecord();
@@ -740,7 +729,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $result = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invoke($processObj);
 
         // Check that NONCRITICAL_ERRORS was updated.
         $noncriticalErrors = $mockFedoraRecord->NONCRITICAL_ERRORS;;
@@ -769,7 +758,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $result = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invoke($processObj);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
@@ -802,7 +791,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $result = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invoke($processObj);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
@@ -835,7 +824,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
-        $result = $method->invokeArgs($processObj, ["", "", ""]);
+        $result = $method->invoke($processObj);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
         $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
