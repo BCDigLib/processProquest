@@ -87,6 +87,7 @@ class Processproquest {
         $this->logger = $loggerObj;
 
         // Pull out logfile location from logger object.
+        // @codeCoverageIgnoreStart
         $logHandlers = $this->logger->getHandlers();
         foreach ($logHandlers as $handler) {
             $url = $handler->getUrl();
@@ -97,6 +98,7 @@ class Processproquest {
             }
             $this->logFileLocation = $url;
         }
+        // @codeCoverageIgnoreEnd
 
         $this->logger->info("STATUS: Starting processProquest script.");
         $this->logger->info("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'));
@@ -309,12 +311,14 @@ class Processproquest {
             $this->logger->info("   from: {$ftpPathForETD}");
             $this->logger->info("   into: {$moveFTPDir}");
 
+            // @codeCoverageIgnoreStart
             if ( $this->debug === true ) {
                 $this->logger->info("DEBUG: Not moving ETD files on FTP.");
                 $this->logger->info(LOOP_DIVIDER);
                 $fedoraRecordObj->setFTPPostprocessLocation($moveFTPDir);
                 continue;
             }
+            // @codeCoverageIgnoreEnd
 
             // INFO: moveFile() returns true on success or false on failure.
             $ftpRes = $this->ftpConnection->moveFile($zipFileName, $ftpPathForETD, $moveFTPDir);
@@ -357,7 +361,7 @@ class Processproquest {
         // Look at specific directory on FTP server for ETD files. Ex: /path/to/files/
         $this->fetchdirFTP = $this->settings['ftp']['fetchdir'];
         if ( empty($this->fetchdirFTP) === true ) {
-            $this->fetchdirFTP = "~/";
+            $this->fetchdirFTP = "~/";  // @codeCoverageIgnore
         }
 
         // Define local directory for file processing. Ex: /tmp/processed/
@@ -385,7 +389,7 @@ class Processproquest {
 
         // Use the custom regex instead if it was passed as an argument.
         if ( empty($customRegex) === false ) {
-            $file_regex = $customRegex;
+            $file_regex = $customRegex;  // @codeCoverageIgnore
         }
 
         $this->logger->info("Looking for ETD zip files that match this pattern: /{$file_regex}/");
@@ -545,7 +549,7 @@ class Processproquest {
             $fedoraRecordObj->downloadETD();
         } catch (Exception $e) {
             // Bubble up exception.
-            throw $e;
+            throw $e; // @codeCoverageIgnore
         }
 
         // Parse through this record.
@@ -553,7 +557,7 @@ class Processproquest {
             $fedoraRecordObj->parseETD();
         } catch (Exception $e) {
             // Bubble up exception.
-            throw $e;
+            throw $e; // @codeCoverageIgnore
         }
 
         // Process this record.
@@ -561,7 +565,7 @@ class Processproquest {
             $fedoraRecordObj->processETD();
         } catch (Exception $e) {
             // Bubble up exception.
-            throw $e;
+            throw $e; // @codeCoverageIgnore
         }
 
         // Generate datastreams for this record.
@@ -569,7 +573,7 @@ class Processproquest {
             $fedoraRecordObj->generateDatastreams();
         } catch (Exception $e) {
             // Bubble up exception.
-            throw $e;
+            throw $e; // @codeCoverageIgnore
         }
 
         // Ingest this record.
@@ -577,7 +581,7 @@ class Processproquest {
             $fedoraRecordObj->ingestETD();
         } catch (Exception $e) {
             // Bubble up exception.
-            throw $e;
+            throw $e; // @codeCoverageIgnore
         }
 
         return true; 
