@@ -926,6 +926,8 @@ class FedoraRecord implements RecordTemplate {
 
     /**
      * Manages Fedora datastreams for ingestion.
+     * 
+     * @codeCoverageIgnore
      *
      * @param $datastreamObj A datastream object, usually a file.
      * @param $datastreamName The name of the datastream.
@@ -963,6 +965,8 @@ class FedoraRecord implements RecordTemplate {
      * Process a failed file download task.
      * This is a wrapper for the processRecordError() function.
      * 
+     * @codeCoverageIgnore
+     * 
      * @param string $errorMessage the error message to display.
      */
     private function recordDownloadFailed(string $errorMessage) {
@@ -973,6 +977,8 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Process a failed file parsing task.
      * This is a wrapper for the processRecordError() function.
+     * 
+     * @codeCoverageIgnore
      * 
      * @param string $errorMessage the error message to display.
      */
@@ -985,6 +991,8 @@ class FedoraRecord implements RecordTemplate {
      * Process a failed record ingest task.
      * This is a wrapper for the processRecordError() function.
      * 
+     * @codeCoverageIgnore
+     * 
      * @param string $errorMessage the error message to display.
      */
     private function recordIngestFailed(string $errorMessage) {
@@ -995,6 +1003,8 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Process a failed datastream ingest task.
      * This is a wrapper for the processRecordError() function.
+     * 
+     * @codeCoverageIgnore
      * 
      * @param string $errorMessage the error message to display.
      * @param string $datastreamName the name of the datastream.
@@ -1007,6 +1017,8 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Process a failed task.
      * 
+     * @codeCoverageIgnore
+     * 
      * @param string $errorMessage the error message to display.
      */
     private function processRecordError(string $errorMessage) {
@@ -1018,6 +1030,8 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Recursively scan a directory.
      * From: https://stackoverflow.com/a/46697247
+     * 
+     * @codeCoverageIgnore
      * 
      * @param string $dir The name of the directory to scan.
      * 
@@ -1047,6 +1061,8 @@ class FedoraRecord implements RecordTemplate {
      * Recursively delete a directory.
      * From: https://stackoverflow.com/a/18838141
      * 
+     * @codeCoverageIgnore
+     * 
      * @param string $dir The name of the directory to delete.
      * 
      * @return boolean The status of the rmdir() function.
@@ -1063,6 +1079,8 @@ class FedoraRecord implements RecordTemplate {
 
     /**  
      * Strips out punctuation, spaces, and unicode chars from a string.
+     * 
+     * @codeCoverageIgnore
      * 
      * @return string A normalized string.
      * 
