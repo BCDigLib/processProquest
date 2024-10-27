@@ -26,8 +26,6 @@ final class TestHelpers extends TestCase {
     public function __construct($name) {
         $this->configurationFile = "testConfig.ini";
         $this->configurationSettings = $this->readConfigurationFile($this->configurationFile);
-        //$this->configurationFile = $this->configurationSettings["file"];
-        //$this->settings = $this->configurationSettings["settings"];
         $this->logger = $this->createLogger($this->configurationSettings);
         $this->debug = true;
     }
@@ -139,9 +137,10 @@ final class TestHelpers extends TestCase {
      */
     public function createFTPConnection($configurationSettings) {
         $urlFTP = $configurationSettings['ftp']['server'];
+        $ftpService = new \Processproquest\FTP\FTPServiceAdapter($urlFTP);
 
         // TODO: catch exceptions here?
-        $ftpConnection = new \Processproquest\FTP\ProquestFTP($urlFTP);
+        $ftpConnection = new \Processproquest\FTP\ProquestFTP($ftpService);
 
         return $ftpConnection;
     }
