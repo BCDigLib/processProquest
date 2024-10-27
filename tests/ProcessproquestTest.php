@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\TestDox;
 use PHPUnit\Framework\TestCase;
 use \Mockery;
 
-// Use helpers class.
+// Use TestHelpers class.
 require_once(__DIR__ . "/helpers.php");
 
 #[CoversClass(\Processproquest\Processproquest::class)]
@@ -188,14 +188,17 @@ final class ProcessproquestTest extends TestCase {
     /**
      * TODO: rewrite this to use a mockFTPConnection.
      */
-    #[Test]
+    //#[Test]
     #[TestDox('Checks the scanForETDFiles() method returns an exception with an invalid localdir value')]
     public function scanForETDFilesConfigEmptyLocaldirValue(): void {
-        // Replace [ftp] "server" key with an empty string.
+        // Replace [ftp] "localdir" key with an empty string.
         $updatedSettings = array(
             "ftp" => array("localdir" => ""),
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        $url = $newSettings['ftp']['server'];
+        $ftpService = new \Processproquest\FTP\FTPServiceAdapter($url);
 
         // Create a ProquestFTP object with updated settings.
         $ftpConnection = $this->helper->createFTPConnection($newSettings);

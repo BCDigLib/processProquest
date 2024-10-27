@@ -12,13 +12,17 @@ use \Mockery;
 use phpmock\mockery\PHPMockery;
 use phpmock\phpunit\PHPMock;
 
-// Use helpers class.
+// Use TestHelpers class.
 require_once(__DIR__ . "/helpers.php");
 
 #[CoversClass(\Processproquest\FTP\ProquestFTP::class)]
+#[CoversMethod(\Processproquest\FTP\ProquestFTP::class, "connect")]
+#[CoversMethod(\Processproquest\FTP\ProquestFTP::class, "login")]
+#[CoversMethod(\Processproquest\FTP\ProquestFTP::class, "moveFile")]
+#[CoversMethod(\Processproquest\FTP\ProquestFTP::class, "getFileList")]
+#[CoversMethod(\Processproquest\FTP\ProquestFTP::class, "getFile")]
+#[CoversMethod(\Processproquest\FTP\ProquestFTP::class, "changeDir")]
 final class ProquestFTPTest extends TestCase {
-
-    use PHPMock;
 
     protected function setUp(): void {
         error_reporting(E_ALL & ~E_DEPRECATED);
