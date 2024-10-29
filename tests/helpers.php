@@ -160,7 +160,11 @@ final class TestHelpers extends TestCase {
         $fedoraPassword = $configurationSettings['fedora']['password'];
         $tuqueLocation  = $configurationSettings['packages']['tuque'];
 
-        $fedoraConnection = new \Processproquest\Repository\FedoraRepository($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
+        // Create FedoraRepositoryServiceAdapter object.
+        $repositoryService = new \Processproquest\Repository\FedoraRepositoryServiceAdapter($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
+
+        // Create FedoraRepository using the FedoraRepositoryServiceAdapter object.
+        $fedoraConnection = new \Processproquest\Repository\FedoraRepository($repositoryService);
 
         return $fedoraConnection;
     }
@@ -191,8 +195,8 @@ final class TestHelpers extends TestCase {
     public function createMockFedoraConnection() {
         $genericObject = new \stdClass();
 
-        // Create a custom mock FedoraRepository connection object using the RecordRepositoryInterface interface.
-        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RecordRepositoryInterface::class)->makePartial();
+        // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
+        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);

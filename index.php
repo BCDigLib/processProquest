@@ -147,7 +147,8 @@ $fedoraUsername = $configurationSettings['fedora']['username'];
 $fedoraPassword = $configurationSettings['fedora']['password'];
 $tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
 try {
-    $fedoraRepository = new REPO\FedoraRepository($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
+    $repositoryService = new REPO\FedoraRepositoryServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
+    $fedoraRepository = new REPO\FedoraRepository($repositoryService);
 } catch (Exception $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
