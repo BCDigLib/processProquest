@@ -137,7 +137,9 @@ final class TestHelpers extends TestCase {
      */
     public function createFTPConnection($configurationSettings) {
         $urlFTP = $configurationSettings['ftp']['server'];
-        $ftpService = new \Processproquest\FTP\FTPServiceAdapter($urlFTP);
+
+        // Create a FTPServicePHPAdapter object that uses PHP built-in functions.
+        $ftpService = new \Processproquest\FTP\FTPServicePHPAdapter($urlFTP);
 
         // TODO: catch exceptions here?
         $ftpConnection = new \Processproquest\FTP\ProquestFTP($ftpService);
@@ -164,29 +166,6 @@ final class TestHelpers extends TestCase {
     }
 
     /**
-     * Deprecated. Create a mock ftpConnection object.
-     * 
-     * @deprecated
-     * 
-     * @param array $listofETDs an optional array of ETD file names.
-     * 
-     * @return object a mock ProquestFTP object.
-     */
-    public function createMockFTPConnectionOld(array $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']) {
-        // See https://stackoverflow.com/a/61595920
-        $mockFTPConnection = $this->getMockBuilder(\Processproquest\FTP\ProquestFTP::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['login', 'moveFile', 'getFileList', 'changeDir'])
-            ->getMock();
-        $mockFTPConnection->method('login')->willReturn(true);
-        $mockFTPConnection->method('moveFile')->willReturn(true);
-        $mockFTPConnection->method('changeDir')->willReturn(true);
-        $mockFTPConnection->method('getFileList')->willReturn($listOfETDs);
-
-        return $mockFTPConnection;
-    }
-
-    /**
      * Create a mock ftpConnection object.
      * 
      * @param array $listofETDs an optional array of ETD file names.
@@ -194,76 +173,32 @@ final class TestHelpers extends TestCase {
      * @return object a mock ProquestFTP object.
      */
     public function createMockFTPConnection(array $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']) {
-        $mockFTPConnection = Mockery::mock(\Processproquest\FTP\ProquestFTP::class)->makePartial();
-        $mockFTPConnection->shouldReceive('login')->andReturn(true);
-        $mockFTPConnection->shouldReceive('moveFile')->andReturn(true);
-        $mockFTPConnection->shouldReceive('changeDir')->andReturn(true);
-        $mockFTPConnection->shouldReceive('getFileList')->andReturn($listOfETDs);
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('login')->andReturn(true);
+        $mockProquestFTPConnection->shouldReceive('moveFile')->andReturn(true);
+        $mockProquestFTPConnection->shouldReceive('changeDir')->andReturn(true);
+        $mockProquestFTPConnection->shouldReceive('getFileList')->andReturn($listOfETDs);
 
-        return $mockFTPConnection;
+        return $mockProquestFTPConnection;
     }
 
     /**
-     * Deprecated. Create a mock fedoraConnection object.
-     * 
-     * @deprecated
-     * 
-     * @return object a mock FedoraRepository object.
-     */
-    public function createMockFedoraConnectionOld() {
-        // See https://stackoverflow.com/a/61595920
-        $mockFedoraConnection = $this->getMockBuilder(\Processproquest\Repository\FedoraRepository::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getNextPid', 'constructObject', 'getObject', 'ingestObject'])
-            ->getMock();
-
-        $genericObject = new \stdClass();
-
-        $mockFedoraConnection->method('getNextPid')->willReturn("bc-ir:9999999");
-        $mockFedoraConnection->method('constructObject')->willReturn($genericObject);
-        $mockFedoraConnection->method('getObject')->willReturn($genericObject);
-        $mockFedoraConnection->method('ingestObject')->willReturn($genericObject);
-
-        return $mockFedoraConnection;
-    }
-
-    /**
-     * Create a mock fedoraConnection object.
+     * Create a mock FedoraRepository object.
      * 
      * @return object a mock FedoraRepository object.
      */
     public function createMockFedoraConnection() {
         $genericObject = new \stdClass();
 
-        $mockFedoraConnection = Mockery::mock(\Processproquest\Repository\FedoraRepository::class)->makePartial();
-        $mockFedoraConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
-        $mockFedoraConnection->shouldReceive('constructObject')->andReturn($genericObject);
-        $mockFedoraConnection->shouldReceive('getObject')->andReturn($genericObject);
-        $mockFedoraConnection->shouldReceive('ingestObject')->andReturn($genericObject);
+        // Create a custom mock FedoraRepository connection object using the RecordRepositoryInterface interface.
+        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RecordRepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
+        $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
+        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturn($genericObject);
 
-        return $mockFedoraConnection;
-    }
-
-    /**
-     * Deprecated. Create a mock FedoraRecord object.
-     * 
-     * @deprecated
-     * 
-     * @return object a mock FedoraRecord object.
-     */
-    public function createMockFedoraRecordOld() {
-        $mockFedoraRecord = $this->getMockBuilder(\Processproquest\Record\FedoraRecord::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['downloadETD', 'parseETD', 'processETD', 'generateDatastreams', 'ingestETD'])
-            ->getMock();
-
-        $mockFedoraRecord->method('downloadETD')->willReturn(true);
-        $mockFedoraRecord->method('parseETD')->willReturn(true);
-        $mockFedoraRecord->method('processETD')->willReturn(true);
-        $mockFedoraRecord->method('generateDatastreams')->willReturn(true);
-        $mockFedoraRecord->method('ingestETD')->willReturn(true);
-
-        return $mockFedoraRecord;
+        return $mockFedoraRepositoryConnection;
     }
 
     /**

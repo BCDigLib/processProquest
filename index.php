@@ -124,7 +124,7 @@ $logger->pushHandler($consoleOutput);
 require_once 'src/ProquestFTP.php';
 use \Processproquest\FTP as FTP;
 $urlFTP = $configurationSettings['ftp']['server'];
-$ftpService = new \Processproquest\FTP\FTPServiceAdapter($urlFTP);
+$ftpService = new \Processproquest\FTP\FTPServicePHPAdapter($urlFTP);
 try {
     $ftpConnection = new FTP\ProquestFTP($ftpService);
 } catch (Exception $e) {

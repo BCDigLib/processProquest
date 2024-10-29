@@ -16,7 +16,7 @@ interface FileStorageInterface {
 /**
  * FTP Service interface.
  */
-interface FTPServiceAdapterInterface {
+interface FTPServiceInterface {
     public function ftp_service_getURL();
     public function ftp_service_connect(string $url);
     public function ftp_service_login(string $userName, string $userPassword);
@@ -27,11 +27,11 @@ interface FTPServiceAdapterInterface {
 }
 
 /**
- * Adapter to connect to the PHP built-in ftp functions.
+ * FTPService Adapter to connect to the PHP built-in ftp functions.
  * 
  * @codeCoverageIgnore
  */
-class FTPServiceAdapter implements FTPServiceAdapterInterface {
+class FTPServicePHPAdapter implements FTPServiceInterface {
     public $ftpConnection = null;
     protected $ftpURL = "";
     static $FTP_PORT = 21;

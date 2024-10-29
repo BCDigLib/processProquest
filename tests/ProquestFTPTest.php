@@ -41,7 +41,8 @@ final class ProquestFTPTest extends TestCase {
     }
 
     protected function generateMockFTPService() {
-        $mockFTPService = \Mockery::mock('Processproquest\FTP\FTPServiceAdapterInterface')->makePartial();
+        // Create a mock FTPService object using the FTPServiceInterface interface. 
+        $mockFTPService = \Mockery::mock('Processproquest\FTP\FTPServiceInterface')->makePartial();
         $mockFTPService->shouldReceive('ftp_service_getURL')->andReturn($this->ftpURL);
         $mockFTPService->shouldReceive('ftp_service_connect')->andReturn(true);
         $mockFTPService->shouldReceive('ftp_service_login')->andReturn(true);
@@ -56,8 +57,8 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks for a failure when passed an FTP service object lacking a url string')]
     public function loginWithEmptyURL(): void {
-        // Create a FTPServiceAdapter object with an empty url argument.
-        $ftpService = new \Processproquest\FTP\FTPServiceAdapter("");
+        // Create a FTPServicePHPAdapter object with an empty url argument.
+        $ftpService = new \Processproquest\FTP\FTPServicePHPAdapter("");
 
         // Expect an exception.
         $this->expectException(\Exception::class);
@@ -69,8 +70,9 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks for a thrown exception when the ProquestFTP constructor calls on connect(), which returns false')]
     public function connectFailure(): void {
-        // Create a custom mock FTPServiceAdapterInterface object returns false for ftp_service_connect().
-        $mockFTPService = \Mockery::mock('Processproquest\FTP\FTPServiceAdapterInterface')->makePartial();
+        // Create a custom mock FTPService object using the FTPServiceInterface interface that 
+        // returns false for ftp_service_connect().
+        $mockFTPService = \Mockery::mock('Processproquest\FTP\FTPServiceInterface')->makePartial();
         $mockFTPService->shouldReceive('ftp_service_getURL')->andReturn($this->ftpURL);
         $mockFTPService->shouldReceive('ftp_service_connect')->andReturn(false);
 
@@ -82,7 +84,7 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks the login() method')]
     public function login(): void {
-        // Create a mock FTPServiceAdapterInterface object.
+        // Create a mock FTPService object.
         $mockFTPService = $this->generateMockFTPService();
 
         // Create a ProquestFTP object.
@@ -98,7 +100,7 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks the moveFile() method')]
     public function moveFile(): void {
-        // Create a mock FTPServiceAdapterInterface object.
+        // Create a mock FTPService object.
         $mockFTPService = $this->generateMockFTPService();
 
         // Create a ProquestFTP object.
@@ -115,7 +117,7 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks the getFileList() method')]
     public function getFileList(): void {
-        // Create a mock FTPServiceAdapterInterface object.
+        // Create a mock FTPService object.
         $mockFTPService = $this->generateMockFTPService();
 
         // Create a ProquestFTP object.
@@ -130,7 +132,7 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks the getFile() method')]
     public function getFile(): void {
-        // Create a mock FTPServiceAdapterInterface object.
+        // Create a mock FTPService object.
         $mockFTPService = $this->generateMockFTPService();
 
         // Create a ProquestFTP object.
@@ -146,7 +148,7 @@ final class ProquestFTPTest extends TestCase {
     #[Test]
     #[TestDox('Checks the changeDir() method')]
     public function changeDir(): void {
-        // Create a mock FTPServiceAdapterInterface object.
+        // Create a mock FTPService object.
         $mockFTPService = $this->generateMockFTPService();
 
         // Create a ProquestFTP object.

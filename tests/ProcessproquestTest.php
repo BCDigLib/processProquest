@@ -198,7 +198,7 @@ final class ProcessproquestTest extends TestCase {
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
         $url = $newSettings['ftp']['server'];
-        $ftpService = new \Processproquest\FTP\FTPServiceAdapter($url);
+        $ftpService = new \Processproquest\FTP\FTPServicePHPAdapter($url);
 
         // Create a ProquestFTP object with updated settings.
         $ftpConnection = $this->helper->createFTPConnection($newSettings);
