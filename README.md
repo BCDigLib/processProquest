@@ -84,6 +84,29 @@ PROCESSPROQUEST_DEBUG=true php index.php processProquest.ini
 ```
 > Note: The environmental variable will overwrite the debug value set in the configuration file.
 
+# VS Code debugging
+It is useful to add the following json element to your VS Code workspace configuration. Create a new or edit an existing `./vscode/launch.json` file in this workspace to enable easy debug launching.
+
+See this [VS Code debug configuration file](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) for additional information.
+
+```
+        {
+            "name": "Launch processProquest script",
+            "type": "php",
+            "request": "launch",
+            "program": "${workspaceFolder}/index.php",
+            "cwd": "${workspaceFolder}",
+            "port": 0,
+            "args": ["${workspaceFolder}/processProquest.ini"],
+            "runtimeArgs": [
+                "-dxdebug.start_with_request=yes"
+            ],
+            "env": {
+                "XDEBUG_MODE": "debug,develop",
+                "XDEBUG_CONFIG": "client_port=${port}"
+            }
+        },
+```
 
 # Configuration
 
@@ -146,8 +169,16 @@ Unit tests can be found in the [tests](tests) directory.
 
 PHPUnit should be installed using composer, otherwise install manually.
 
-Run tests using this command
+Run tests using this command:
 
 ```
-./vendor/bin/phpunit tests
+./vendor/bin/phpunit
 ```
+
+To generate PHPUnit HTML reports run the same command with additional arguments:
+
+```
+./vendor/bin/phpunit tests --coverage-html tests/reports
+```
+
+The reports will be available in [tests/reports](tests/reports).
