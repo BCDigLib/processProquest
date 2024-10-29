@@ -159,8 +159,6 @@ class FedoraRepository implements RepositoryInterface {
      */
     public function __construct(object $service) {
         $this->service = $service;
-
-        // TODO: check if this is a valid RepositoryService object.
     }
 
     /**
