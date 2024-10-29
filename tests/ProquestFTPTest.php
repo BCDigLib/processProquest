@@ -40,7 +40,12 @@ final class ProquestFTPTest extends TestCase {
         $this->helper = null;
     }
 
-    protected function generateMockFTPService() {
+    /**
+     * Create a mock FTPService object.
+     * 
+     * @return object a mock FTPService object.
+     */
+    protected function generateMockFTPService(): object {
         // Create a mock FTPService object using the FTPServiceInterface interface. 
         $mockFTPService = \Mockery::mock('Processproquest\FTP\FTPServiceInterface')->makePartial();
         $mockFTPService->shouldReceive('ftp_service_getURL')->andReturn($this->ftpURL);
