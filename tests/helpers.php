@@ -200,7 +200,7 @@ final class TestHelpers extends TestCase {
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);
-        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturn($genericObject);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
 
         return $mockFedoraRepositoryConnection;
     }
