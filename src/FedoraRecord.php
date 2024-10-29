@@ -742,7 +742,7 @@ class FedoraRecord implements RecordTemplate {
          * Original filename is used as label for identification.
          */
         try {
-            $status = $this->datastreamMODS();
+            $status = $this->datastreamARCHIVE();
         } catch (Exception $e) {
             // Bubble up exception.
             throw $e;
