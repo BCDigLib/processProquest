@@ -5,29 +5,29 @@ namespace Processproquest\FTP;
  * FTP connection interface.
  */
 interface FileStorageInterface {
-    public function connect(string $url);
-    public function login(string $userName, string $userPassword);
-    public function moveFile(string $fileName, string $fromDir, string $toDir);
-    public function getFileList(string $dir);
-    public function getFile(string $filePath, string $fileName);
-    public function changeDir(string $dir);
+    public function connect(string $url): bool;
+    public function login(string $userName, string $userPassword): bool;
+    public function moveFile(string $fileName, string $fromDir, string $toDir): bool;
+    public function getFileList(string $dir): array;
+    public function getFile(string $filePath, string $fileName): bool;
+    public function changeDir(string $dir): bool;
 }
 
 /**
  * FTP Service interface.
  */
 interface FTPServiceInterface {
-    public function ftp_service_getURL();
-    public function ftp_service_connect(string $url);
-    public function ftp_service_login(string $userName, string $userPassword);
-    public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir);
-    public function ftp_service_getFileList(string $dir);
-    public function ftp_service_getFile(string $filePath, string $fileName);
-    public function ftp_service_changeDir(string $dir);
+    public function ftp_service_getURL(): string;
+    public function ftp_service_connect(string $url): bool;
+    public function ftp_service_login(string $userName, string $userPassword): bool;
+    public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir): bool;
+    public function ftp_service_getFileList(string $dir): array;
+    public function ftp_service_getFile(string $filePath, string $fileName): bool;
+    public function ftp_service_changeDir(string $dir): bool;
 }
 
 /**
- * FTPService Adapter to connect to the PHP built-in ftp functions.
+ * An FTPService Adapter to connect to the PHP built-in ftp functions.
  * 
  * @codeCoverageIgnore
  */
@@ -45,10 +45,12 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
     public function __construct(string $url){
         $this->ftpURL = $url;
 
+        // Check if the $url argument is empty.
         if (empty($url) === true) {
             return false;
         }
 
+        // Automatically make the connection.
         $this->ftpConnection = $this->ftp_service_connect($this->ftpURL, self::$FTP_PORT, self::$FTP_TIMEOUT_SEC);
     }
 
@@ -57,7 +59,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return string the ftpURL property.
      */
-    public function ftp_service_getURL() {
+    public function ftp_service_getURL(): string {
         return $this->ftpURL;
     }
 
@@ -69,7 +71,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function ftp_service_connect(string $ftpURL) {
+    public function ftp_service_connect(string $ftpURL): bool {
         // INFO: ftp_connect() Returns an FTP\Connection instance on success, or false on failure.
         return ftp_connect($ftpURL, self::$FTP_PORT, self::$FTP_TIMEOUT_SEC);
     }
@@ -83,7 +85,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function ftp_service_login(string $userName, string $userPassword) {
+    public function ftp_service_login(string $userName, string $userPassword): bool {
         // INFO: ftp_login() Returns true on success or false on failure. 
         //       If login fails, PHP will also throw a warning.
         // Suppress warning by using @ error control operator.
@@ -100,7 +102,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir) {
+    public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir): bool {
         $filenameFullFromPath = "{$fromDir}/{$fileName}";
         $filenameFullToPath = "{$toDir}/{$fileName}";
 
@@ -116,7 +118,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return array $allFiles an array of filename or false on error.
      */
-    public function ftp_service_getFileList(string $dir) {
+    public function ftp_service_getFileList(string $dir): array {
         // INFO: ftp_nlist() Returns an array of filenames from the specified 
         //       directory on success or false on error.
         return ftp_nlist($this->ftpConnection, $dir);
@@ -131,7 +133,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function ftp_service_getFile(string $local_filename, string $remote_filename) {
+    public function ftp_service_getFile(string $local_filename, string $remote_filename): bool {
         // INFO: ftp_get() Returns true on success or false on failure.
         return ftp_get($this->ftpConnection, $local_filename, $remote_filename, FTP_BINARY);
     }
@@ -144,7 +146,7 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function ftp_service_changeDir(string $dir) {
+    public function ftp_service_changeDir(string $dir): bool {
         // INFO: ftp_chdir() Returns true on success or false on failure. 
         //       If changing directory fails, PHP will also throw a warning.
         // Suppress warning by using @ error control operator.
@@ -164,12 +166,11 @@ class ProquestFTP implements FileStorageInterface {
     /**
      * Class constructor.
      * 
-     * @param string $url The FTP url.
      * @param object $service An FTP service adapter.
      * 
      * @throws Exception if a connection to the FTP server can't be made.
      */
-    public function __construct($service){
+    public function __construct($service) {
         $this->service = $service;
         $this->ftpURL = $this->service->ftp_service_getURL();
 
@@ -196,7 +197,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function connect(string $url) {
+    public function connect(string $url): bool {
         $result = $this->service->ftp_service_connect($url);
 
         return $result;
@@ -210,7 +211,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function login(string $userName, string $userPassword) {
+    public function login(string $userName, string $userPassword): bool {
         $result = $this->service->ftp_service_login($userName, $userPassword);
 
         return $result;
@@ -225,7 +226,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function moveFile(string $fileName, string $fromDir, string $toDir) {
+    public function moveFile(string $fileName, string $fromDir, string $toDir): bool {
         $result = $this->service->ftp_service_moveFile($fileName, $fromDir, $toDir);
 
         return $result;
@@ -238,7 +239,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @return array $allFiles an array of filename or false on error.
      */
-    public function getFileList(string $dir) {
+    public function getFileList(string $dir): array {
         $allFiles = $this->service->ftp_service_getFileList($dir);
 
         return $allFiles;
@@ -252,7 +253,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function getFile(string $local_filename, string $remote_filename) {
+    public function getFile(string $local_filename, string $remote_filename): bool {
         $result = $this->service->ftp_service_getFile($local_filename, $remote_filename);
 
         return $result;
@@ -265,7 +266,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @return boolean $ret the status.
      */
-    public function changeDir(string $dir) {
+    public function changeDir(string $dir): bool {
         $result = $this->service->ftp_service_changeDir($dir);
 
         return $result;
