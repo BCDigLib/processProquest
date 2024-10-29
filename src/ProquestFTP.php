@@ -5,7 +5,7 @@ namespace Processproquest\FTP;
  * FTP connection interface.
  */
 interface FileStorageInterface {
-    public function connect(string $url): bool;
+    public function connect(string $url): object|bool;
     public function login(string $userName, string $userPassword): bool;
     public function moveFile(string $fileName, string $fromDir, string $toDir): bool;
     public function getFileList(string $dir): array;
@@ -18,7 +18,7 @@ interface FileStorageInterface {
  */
 interface FTPServiceInterface {
     public function ftp_service_getURL(): string;
-    public function ftp_service_connect(string $url): bool;
+    public function ftp_service_connect(string $url): object|bool;
     public function ftp_service_login(string $userName, string $userPassword): bool;
     public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir): bool;
     public function ftp_service_getFileList(string $dir): array;
@@ -69,9 +69,9 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * 
      * @param string $url The FTP server url.
      * 
-     * @return boolean $ret the status.
+     * @return object|bool $ret The returned FTP connection object or false on failure.
      */
-    public function ftp_service_connect(string $ftpURL): bool {
+    public function ftp_service_connect(string $ftpURL): object|bool {
         // INFO: ftp_connect() Returns an FTP\Connection instance on success, or false on failure.
         return ftp_connect($ftpURL, self::$FTP_PORT, self::$FTP_TIMEOUT_SEC);
     }
@@ -195,9 +195,9 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @param string $url The FTP server url.
      * 
-     * @return boolean $ret the status.
+     * @return object|bool $ret The returned FTP connection object or false on failure.
      */
-    public function connect(string $url): bool {
+    public function connect(string $url): object|bool {
         $result = $this->service->ftp_service_connect($url);
 
         return $result;
