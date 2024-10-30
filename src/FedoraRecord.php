@@ -164,9 +164,11 @@ class FedoraRecord implements RecordTemplate {
         
         // INFO: mkdir() Returns true on success or false on failure.
         if ( mkdir($this->WORKING_DIR, 0777, true) === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Failed to create local working directory: {$this->WORKING_DIR}.";
             $this->recordDownloadFailed($errorMessage);
             throw new \Exception($errorMessage);
+            // @codeCoverageIgnoreEnd
         } else {
             $this->logger->info("   • Directory was created.");
         }
