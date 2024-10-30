@@ -1,11 +1,16 @@
 processProquest.ini
 vendor
 logs
+tmp_staging
+tmp_testing
 staging
+testing
 local_ftp
 .vscode
 .phpunit.result.cache
 .phpunit.cache
+tests/files/*
+!tests/files/.keep
 tests/reports/*
 !tests/reports/.keep
 .DS_Store
