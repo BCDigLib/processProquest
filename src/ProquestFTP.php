@@ -9,7 +9,7 @@ interface FileStorageInterface {
     public function login(string $userName, string $userPassword): bool;
     public function moveFile(string $fileName, string $fromDir, string $toDir): bool;
     public function getFileList(string $dir): array;
-    public function getFile(string $filePath, string $fileName): bool;
+    public function getFile(string $local_filename, string $remote_filename): bool;
     public function changeDir(string $dir): bool;
 }
 
@@ -22,7 +22,7 @@ interface FTPServiceInterface {
     public function ftp_service_login(string $userName, string $userPassword): bool;
     public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir): bool;
     public function ftp_service_getFileList(string $dir): array;
-    public function ftp_service_getFile(string $filePath, string $fileName): bool;
+    public function ftp_service_getFile(string $local_filename, string $remote_filename): bool;
     public function ftp_service_changeDir(string $dir): bool;
 }
 
