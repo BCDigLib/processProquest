@@ -64,7 +64,6 @@ class FedoraRecord implements RecordTemplate {
         $this->settings = $settings;
         $this->ETD_SHORTNAME = $id;
         $this->ZIP_FILENAME = $zipFileName;
-        $this->ZIP_FILE_FULLPATH = "{$this->WORKING_DIR}/{$this->ZIP_FILENAME}";
         $this->fedoraConnection = $fedoraConnection;
         $this->ftpConnection = $ftpConnection;
 
@@ -72,6 +71,9 @@ class FedoraRecord implements RecordTemplate {
         $localdirFTP = $this->settings['ftp']['localdir'];
         $workingDir = "{$localdirFTP}{$id}";
         $this->WORKING_DIR = $workingDir;
+
+        // Calculate the zip file's fullpath.
+        $this->ZIP_FILE_FULLPATH = "{$this->WORKING_DIR}/{$this->ZIP_FILENAME}";
         
         // Clone logger object to adjust the %extra% field in the logger object.
         $recordLogger = $logger->withName('FedoraRecord');
@@ -96,6 +98,19 @@ class FedoraRecord implements RecordTemplate {
         $this->executable_pdftotext = $this->settings['packages']['pdftotext'];
         $this->FTP_PATH_FOR_ETD = "{$this->fetchDir}{$zipFileName}";
         $this->FTP_POSTPROCESS_LOCATION = $this->FTP_PATH_FOR_ETD;
+    }
+
+    /**
+     * Getter method to return class properties.
+     * 
+     * @return mixed The requested property, or null if the property doesn't exist.
+     */
+    public function getProperty($property): mixed {
+        if (property_exists($this, $property)) {
+            return $this->$property;
+        }
+
+        return null;
     }
 
     /**
@@ -127,24 +142,19 @@ class FedoraRecord implements RecordTemplate {
         // $this->logger->info(SECTION_DIVIDER);
         $this->logger->info("[BEGIN] Downloading this ETD file.");
 
-        $etdShortName = $this->ETD_SHORTNAME;
-        $etdWorkingDir = $this->WORKING_DIR;
-        $zipFileName = $this->ZIP_FILENAME;
-        $etdZipFileFullPath = $this->ZIP_FILE_FULLPATH;
-
         $this->logger->info(LOOP_DIVIDER);
         $this->logger->info("Local working directory status:");
-        $this->logger->info("   • Directory to create: {$etdWorkingDir}");
+        $this->logger->info("   • Directory to create: {$this->WORKING_DIR}");
 
         // Create the local directory if it doesn't already exists.
         // INFO: file_exists() Returns true if the file or directory specified by filename exists; false otherwise.
-        if ( file_exists($etdWorkingDir) === true ) {
+        if ( file_exists($this->WORKING_DIR) === true ) {
             $this->logger->info("   • Directory already exists.");
 
             // INFO: $this->recurseRmdir() Returns a boolean success value.
-            if ( $this->recurseRmdir($etdWorkingDir) === false ) {
+            if ( $this->recurseRmdir($this->WORKING_DIR) === false ) {
                 // Failed to remove directory.
-                $errorMessage = "Failed to remove local working directory: {$etdWorkingDir}.";
+                $errorMessage = "Failed to remove local working directory: {$this->WORKING_DIR}.";
                 $this->recordDownloadFailed($errorMessage);
                 throw new \Exception($errorMessage);
             } else {
@@ -153,8 +163,8 @@ class FedoraRecord implements RecordTemplate {
         }
         
         // INFO: mkdir() Returns true on success or false on failure.
-        if ( mkdir($etdWorkingDir, 0755, true) === false ) {
-            $errorMessage = "Failed to create local working directory: {$etdWorkingDir}.";
+        if ( mkdir($this->WORKING_DIR, 0777, true) === false ) {
+            $errorMessage = "Failed to create local working directory: {$this->WORKING_DIR}.";
             $this->recordDownloadFailed($errorMessage);
             throw new \Exception($errorMessage);
         } else {
@@ -170,10 +180,10 @@ class FedoraRecord implements RecordTemplate {
          * File is saved locally as a binary file.
          */
         // INFO: getFile() Returns true on success or false on failure.
-        if ( $this->ftpConnection->getFile($etdZipFileFullPath, $zipFileName, FTP_BINARY) === true ) {
+        if ( $this->ftpConnection->getFile($this->ZIP_FILE_FULLPATH, $this->FTP_PATH_FOR_ETD) === true ) {
             $this->logger->info("Downloaded ETD zip file from FTP server.");
         } else {
-            $errorMessage = "Failed to download ETD zip file from FTP server: {$etdZipFileFullPath}.";
+            $errorMessage = "Failed to download ETD zip file from FTP server: {$this->FTP_PATH_FOR_ETD} to working dir: {$this->ZIP_FILE_FULLPATH}";
             $this->recordDownloadFailed($errorMessage);
             throw new \Exception($errorMessage);
         }
