@@ -7,7 +7,8 @@ The following zip files are provided for testing purposes. Unless noted, each zi
 | etdadmin_upload_100000.zip  | no          | no                     |       |
 | etdadmin_upload_200000.zip  | yes         | no                     |       |
 | etdadmin_upload_300000.zip  | no          | yes                    |       |
-
+| etdadmin_upload_400000.zip  | n/a         | n/a                    | empty zip file |
+| not_a_real_zip_file.zip     | n/a         | n/a                    | text file labeled as a zip file |
 
 ## TODO
 
