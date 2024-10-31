@@ -147,7 +147,7 @@ final class FedoraRecordTest extends TestCase {
         //      ingestETD()
 
         // ETD File name.
-        $zipFileName = "etdadmin_upload_100000.zip";
+        $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
         $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
@@ -238,7 +238,8 @@ final class FedoraRecordTest extends TestCase {
         //      ingestETD()
 
         // ETD File name.
-        $zipFileName = "etdadmin_upload_100000.zip";
+        // etdadmin_upload_001_normal.zip is a well formatted zip file.
+        $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
         $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
@@ -283,18 +284,53 @@ final class FedoraRecordTest extends TestCase {
     #[Test]
     #[TestDox('Checks the parseETD() method throws an exception when it attempts to open a bad zip file')]
     public function parseETDBadZipFile(): void {
-        // Process file
-        // $process->processFile($fedoraRecord);
-        //      $fedoraRecordObj->downloadETD();
-        //      parseETD()  <--- this test
-        //          Expand zip file contents into local directory
-        //          Check for supplementary files in each ETD zip file.
-        //      processETD()
-        //      generateDatastreams()
-        //      ingestETD()
-
         // ETD File name.
+        // not_a_real_zip_file.zip is a text file labeled as a zip file.
         $zipFileName = "not_a_real_zip_file.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        $fedoraRecord->downloadETD();
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+        $result = $fedoraRecord->parseETD();
+    }
+
+    #[Test]
+    #[TestDox('Checks the parseETD() method throws an exception when it attempts to open an empty zip file')]
+    public function parseETDEmptyZipFile(): void {
+        // ETD File name.
+        // etdadmin_upload_004_empty.zip is an empty zip file.
+        $zipFileName = "etdadmin_upload_004_empty.zip";
 
         // ETD shortname.
         $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
