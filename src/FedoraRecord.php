@@ -491,7 +491,7 @@ class FedoraRecord implements RecordTemplate {
          * Check to see if there is no OA policy, and there is no embargo.
          * If so, set the embargo permission/date to "indefinite".
          */
-        if ( $openaccess_available === $has_embargo ) {
+        if ( ($openaccess_available === false) && ($has_embargo === false) ) {
             $embargo = 'indefinite';
             $has_embargo = true;
             $this->logger->info("Changing embargo date to 'indefinite'");

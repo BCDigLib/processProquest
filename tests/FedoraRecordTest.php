@@ -748,4 +748,50 @@ final class FedoraRecordTest extends TestCase {
         // We will suppress I/O warnings for this test with the @ operator.
         $result = @$fedoraRecord->processETD();
     }
+
+    #[Test]
+    #[TestDox('Checks the processETD() method has an indefinite embargo date when there is no OA agreement')]
+    public function processETDIndefiniteEmbargo(): void {
+        // etdadmin_upload_008_no_oa.zip doesn't have an OA agreement.
+        $zipFileName = "etdadmin_upload_008_no_oa.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+        $result = $fedoraRecord->processETD();
+
+        $embargoDate = $fedoraRecord->getProperty("EMBARGO_DATE");
+
+        $this->assertEquals("indefinite", $embargoDate, "Expected processETD() to set the EMBARGO_DATE to 'indefiniete'");
+    }
 }
