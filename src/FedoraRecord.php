@@ -290,11 +290,13 @@ class FedoraRecord implements RecordTemplate {
                 try {
                     $checkIfDir = is_dir($this->WORKING_DIR . "/" . $etdFileName);
                 } catch (Exception $e) {
+                    // @codeCoverageIgnoreStart
                     $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
                     $this->logger->info("ERROR: {$errorMessage}");
                     $this->logger->info("trace:\n" . $e->getTraceAsString());
                     // Don't log this error; just continue.
                     continue;
+                    // @codeCoverageIgnoreEnd
                 }
 
                 if ( $checkIfDir === true ) {
