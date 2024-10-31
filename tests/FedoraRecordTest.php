@@ -568,15 +568,22 @@ final class FedoraRecordTest extends TestCase {
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
+        // Additionally:
+        // Replace [script] "debug" key with false.
         $updatedSettings = array(
             "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+            "script" => array("debug" => false),
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
+        // Set getNextPid() to return a known value.
+        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
-        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
         $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
             function($local_filename, $remote_filename) {
                 // Return the copy() function's return value.
@@ -589,7 +596,7 @@ final class FedoraRecordTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockFedoraRepositoryConnection,// mock FedoraRepository object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -600,9 +607,13 @@ final class FedoraRecordTest extends TestCase {
         
         $this->AssertTrue($result, "Expected processETD() to return true");
 
+        // Check that the status has been set to "processed"
         $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
-
         $this->AssertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
+
+        // Check that the returned PID is that same as $this->mockPID
+        $updatedPID = $fedoraRecord->getProperty("PID");
+        $this->AssertEquals($this->mockPID, $updatedPID, "Expected processETD() to set the PID to {$this->mockPID}");
     }
 
     #[Test]
@@ -624,7 +635,6 @@ final class FedoraRecordTest extends TestCase {
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
-        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
         $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
             function($local_filename, $remote_filename) {
                 // Return the copy() function's return value.
@@ -671,7 +681,6 @@ final class FedoraRecordTest extends TestCase {
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
-        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
         $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
             function($local_filename, $remote_filename) {
                 // Return the copy() function's return value.
@@ -721,7 +730,6 @@ final class FedoraRecordTest extends TestCase {
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
-        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
         $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
             function($local_filename, $remote_filename) {
                 // Return the copy() function's return value.
@@ -768,7 +776,6 @@ final class FedoraRecordTest extends TestCase {
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
-        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
         $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
             function($local_filename, $remote_filename) {
                 // Return the copy() function's return value.
