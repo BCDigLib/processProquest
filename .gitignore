@@ -11,6 +11,7 @@ local_ftp
 .phpunit.cache
 tests/files/*
 !tests/files/.keep
+!tests/files/*.zip
 !tests/files/*.md
 tests/reports/*
 !tests/reports/.keep
