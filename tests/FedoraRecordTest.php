@@ -28,6 +28,7 @@ final class FedoraRecordTest extends TestCase {
         $this->configurationSettings = $this->helper->readConfigurationFile($configurationFile);
         $this->nameSpace = "bc-ir";
         $this->nextPIDNumber = "123456789";
+        $this->mockPID = "{$this->nameSpace}:{$this->nextPIDNumber}";
 
         $this->logger = $this->helper->createLogger($this->configurationSettings);
         $this->fedoraConnection = $this->helper->createMockFedoraConnection($this->configurationSettings);
@@ -277,7 +278,7 @@ final class FedoraRecordTest extends TestCase {
 
         $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
 
-        $this->AssertEquals("success", $updatedStatusProperty, "Expected downloadETD() to set the status to 'downloaded'");
+        $this->AssertEquals("success", $updatedStatusProperty, "Expected parseETD() to set the status to 'downloaded'");
     }
 
     #[Test]
@@ -541,5 +542,210 @@ final class FedoraRecordTest extends TestCase {
         // Expect an exception.
         $this->expectException(\Exception::class);
         $result = $fedoraRecord->parseETD();
+    }
+
+    #[Test]
+    #[TestDox('Checks the processETD() method')]
+    public function processETD(): void {
+        // Process file
+        // $process->processFile($fedoraRecord);
+        //      $fedoraRecordObj->downloadETD();
+        //      parseETD()
+        //      processETD()  <--- this test
+        //          This will generate:
+        //          *  - OA permissions.
+        //          *  - Embargo settings.
+        //          *  - MODS metadata.
+        //          *  - PID, title, author values.
+        //      generateDatastreams()
+        //      ingestETD()
+
+        // etdadmin_upload_001_normal.zip is a well formatted zip file.
+        $zipFileName = "etdadmin_upload_001_normal.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+        $result = $fedoraRecord->processETD();
+        
+        $this->AssertTrue($result, "Expected processETD() to return true");
+
+        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+
+        $this->AssertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
+    }
+
+    #[Test]
+    #[TestDox('Checks the processETD() method with supplemental files returns false')]
+    public function processETDWithSupplemental(): void {
+        // etdadmin_upload_003_supplemental.zip is embargoed.
+        $zipFileName = "etdadmin_upload_003_supplemental.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+        $result = $fedoraRecord->processETD();
+        
+        $this->AssertNotTrue($result, "Expected processETD() to return false");
+    }
+
+    #[Test]
+    #[TestDox('Checks the processETD() method throws an exception when missing xslt file')]
+    public function processETDExceptionMissingXSLTFile(): void {
+        // etdadmin_upload_001_normal.zip is a well formatted zip file.
+        $zipFileName = "etdadmin_upload_001_normal.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        // Additionally:
+        // Replace [xslt] "xslt" key with a non-existent file location.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+            "xslt" => array("xslt" => "/opt/BC-Islandora-Implementation/MetadataCrosswalks/Proquest/Proquest_MODS-Foo.xsl"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+
+        // We will suppress I/O warnings for this test with the @ operator.
+        $result = @$fedoraRecord->processETD();
+    }
+
+    #[Test]
+    #[TestDox('Checks the processETD() method throws an exception when missing label file')]
+    public function processETDExceptionMissingLabelFile(): void {
+        // etdadmin_upload_001_normal.zip is a well formatted zip file.
+        $zipFileName = "etdadmin_upload_001_normal.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        // Additionally:
+        // Replace [xslt] "label" key with a non-existent file location.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+            "xslt" => array("label" => "xsl/getLabel-Foo.xsl"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getNextPID')->andReturn($this->mockPID);
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $this->fedoraConnection,        // mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        // Expect an exception.
+        $this->expectException(\Exception::class);
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+
+        // We will suppress I/O warnings for this test with the @ operator.
+        $result = @$fedoraRecord->processETD();
     }
 }

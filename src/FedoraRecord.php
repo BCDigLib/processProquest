@@ -395,7 +395,7 @@ class FedoraRecord implements RecordTemplate {
 
         $proquestxslt->load($this->settings['xslt']['xslt']);
         // INFO: XSLTProcessor::importStylesheet() Returns true on success or false on failure.
-        if ( $xslt->importStyleSheet($proquestxslt)  === true) {
+        if ( $xslt->importStyleSheet($proquestxslt) === true) {
             $this->logger->info("Loaded MODS XSLT stylesheet.");
         } else {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
@@ -451,9 +451,9 @@ class FedoraRecord implements RecordTemplate {
         // Else, check if that node has the value '0'.
         // Else, assume that node has the value '1'.
         if ( $oaElements->length == 0 ) {
-            $this->logger->info("No OA agreement found.");
+            $this->logger->info("No OA agreement found."); // @codeCoverageIgnore
         } elseif ( $oaElements->item(0)->C14N() === '0' ) {
-            $this->logger->info("No OA agreement found.");
+            $this->logger->info("No OA agreement found."); // @codeCoverageIgnore
         } else {
             // This value is '1' if available for Open Access.
             $openaccess = $oaElements->item(0)->C14N();
@@ -591,9 +591,11 @@ class FedoraRecord implements RecordTemplate {
         // INFO: rename() Returns true on success or false on failure.
         $res = rename($this->WORKING_DIR . "/". $this->FILE_ETD , $this->WORKING_DIR . "/" . $normalizedAuthor . ".pdf");
         if ( $res === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Could not rename ETD PDF file.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Update local file path for ETD PDF file.
