@@ -59,7 +59,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
         require_once "{$tuqueLibraryLocation}/FedoraApi.php";
         require_once "{$tuqueLibraryLocation}/FedoraApiSerializer.php";
         require_once "{$tuqueLibraryLocation}/Repository.php";
-        require_once "{$tuqueLibraryLocation}/PPRepositoryException.php";
+        require_once "{$tuqueLibraryLocation}/RepositoryException.php";
         require_once "{$tuqueLibraryLocation}/FedoraRelationships.php";
         require_once "{$tuqueLibraryLocation}/Cache.php";
         require_once "{$tuqueLibraryLocation}/HttpConnection.php";
