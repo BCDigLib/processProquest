@@ -149,6 +149,16 @@ $tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
 try {
     $repositoryService = new REPO\FedoraRepositoryServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
     $fedoraRepository = new REPO\FedoraRepository($repositoryService);
+} catch (PPRepositoryException $e) {
+    echo "PPRepositoryException ERROR: " . $e->getMessage() . "\n";
+    echo "Exiting.\n";
+    // TODO: send email notification.
+    exit(1);
+} catch (PPRepositoryServiceException $e) {
+    echo "PPRepositoryServiceException ERROR: " . $e->getMessage() . "\n";
+    echo "Exiting.\n";
+    // TODO: send email notification.
+    exit(1);
 } catch (Exception $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
