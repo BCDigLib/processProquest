@@ -221,7 +221,7 @@ foreach ($allETDs as $etdRecord) {
         // Create FedoraRecord object and process it.
         $fedoraRecord = $process->createFedoraObject($etdRecord);
         $process->processFile($fedoraRecord);
-    } catch(PP\ProcessingException $e) {
+    } catch(PP\ProcessingException | \Exception $e) {
         $logger->error("ERROR: " . $e->getMessage());
         $logger->error("Error code: 1010");
         $logger->error("Continuing to the next ETD file.");
