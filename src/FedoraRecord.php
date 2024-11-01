@@ -219,7 +219,6 @@ class FedoraRecord implements RecordTemplate {
     public function parseETD() {
         $this->logger->info(SECTION_DIVIDER);
         $this->logger->info("[BEGIN] Parsing this ETD file.");
-        
         $this->logger->info(LOOP_DIVIDER);
 
         $zip = new \ZipArchive;
@@ -246,7 +245,6 @@ class FedoraRecord implements RecordTemplate {
         $expandedETDFiles = array_diff($this->scanAllDir($this->WORKING_DIR), $filesToIgnore);
 
         if ( count($expandedETDFiles) === 0) {
-            // There are no files in this expanded zip file.
             $errorMessage = "There are no files in this expanded zip file.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
@@ -325,6 +323,7 @@ class FedoraRecord implements RecordTemplate {
             if ( $this->HAS_SUPPLEMENTS === true ) {
                 // At this point we can leave this function if the ETD has supplemental files.
                 $this->logger->info("This ETD has supplementary files. No further processing is required. Moving to the next ETD.");
+                $this->logger->info(LOOP_DIVIDER);
                 $this->logger->info("END Gathering ETD file.");
                 $this->STATUS = "skipped";
                 continue;
@@ -344,14 +343,14 @@ class FedoraRecord implements RecordTemplate {
          */
         $this->logger->info("Checking that PDF and XML files were found in this zip file:");
         if ( empty($this->FILE_ETD) === true ) {
-            $errorMessage = "   ❌ The ETD PDF file was not found or set.";
+            $errorMessage = "The ETD PDF file was not found or set.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
         }
         $this->logger->info("   ✓ The ETD PDF file was found.");
 
         if ( empty($this->FILE_METADATA) === true ) {
-            $errorMessage = "   ❌ The ETD XML file was not found or set.";
+            $errorMessage = "The ETD XML file was not found or set.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
         }
@@ -948,6 +947,15 @@ class FedoraRecord implements RecordTemplate {
         $this->logger->info(SECTION_DIVIDER);
         $this->logger->info("[BEGIN] Ingesting this ETD file.");
         $this->logger->info(LOOP_DIVIDER);
+
+        // No need to process ETDs that have supplemental files.
+        if ( $this->HAS_SUPPLEMENTS === true ) {
+            $this->logger->info("SKIP ingesting ETD since it contains supplemental files.");
+            $this->logger->info(LOOP_DIVIDER);
+            $this->logger->info("[END] Ingesting this ETD file.");
+
+            return false;
+        }
         
         // DEBUG: ignore Fedora ingest.
         if ( $this->debug === true ) {
