@@ -31,6 +31,8 @@ define('LOOP_DIVIDER', '----------------------------------------');
 
 date_default_timezone_set("America/New_York");
 
+class ProcessingException extends \Exception {};
+
 /**
  * Batch processes Proquest ETDs.
  *
@@ -263,7 +265,7 @@ class Processproquest {
         if ( (empty($userFTP) === true) || (empty($passwordFTP) === true) ) {
             $errorMessage = "FTP login values are missing. Please check your settings.";
             $this->manageProcessingError($errorMessage);
-            throw new \Exception($errorMessage);
+            throw new ProcessingException($errorMessage);
         }
 
         // Pass login credentials to login method.
@@ -274,7 +276,7 @@ class Processproquest {
         } else {
             $errorMessage = "FTP login failed.";
             $this->manageProcessingError($errorMessage);
-            throw new \Exception($errorMessage);
+            throw new ProcessingException($errorMessage);
         }
     }
 
@@ -369,7 +371,7 @@ class Processproquest {
         if ( empty($localdirFTP) === true ) {
             $errorMessage = "Local working directory not set.";
             $this->manageProcessingError($errorMessage);
-            throw new \Exception($errorMessage);
+            throw new ProcessingException($errorMessage);
         }
 
         // Change FTP directory if $fetchdirFTP is not empty (aka root directory).
@@ -380,7 +382,7 @@ class Processproquest {
             } else {
                 $errorMessage = "Cound not change FTP directory: {$this->fetchdirFTP}";
                 $this->manageProcessingError($errorMessage);
-                throw new \Exception($errorMessage);
+                throw new ProcessingException($errorMessage);
             }
         }
 
@@ -416,7 +418,7 @@ class Processproquest {
             $errorMessage = "Did not find any ETD files on the FTP server.";
             $this->logger->warning("WARNING: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new \Exception($errorMessage);
+            throw new ProcessingException($errorMessage);
         }
 
         $this->logger->info("Found {$countTotalETDs} ETD file(s):");
@@ -478,7 +480,7 @@ class Processproquest {
             $errorMessage = "Did not find any ETD files on the FTP server.";
             $this->logger->warning("WARNING: {$errorMessage}");
             array_push($this->processingErrors, $errorMessage);
-            throw new \Exception($errorMessage);
+            throw new ProcessingException($errorMessage);
         }
 
         // Create FedoraRecord objects.

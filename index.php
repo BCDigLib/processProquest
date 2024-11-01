@@ -167,6 +167,7 @@ try {
 
 require_once 'src/Processproquest.php';
 use \Processproquest as PP;
+// TODO: this no longer throws an exception.
 try {
     $process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
                 ->setFTPConnection($ftpConnection)
@@ -187,7 +188,7 @@ try {
 // Log into the FTP server.
 try {
     $process->logIntoFTPServer();
-} catch(Exception $e) {
+} catch(PP\ProcessingException $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
     $logger->info("Exiting. Error code: 1000");
@@ -197,7 +198,7 @@ try {
 // Scan for ETD files.
 try {
     $allETDs = $process->scanForETDFiles();
-} catch(Exception $e) {
+} catch(PP\ProcessingException $e) {
     $logger->error("ERROR: " . $e->getMessage());
     $process->postProcess();
     $logger->info("Exiting. Error code: 1005");
@@ -210,7 +211,7 @@ foreach ($allETDs as $etdRecord) {
         // Create FedoraRecord object and process it.
         $fedoraRecord = $process->createFedoraObject($etdRecord);
         $process->processFile($fedoraRecord);
-    } catch(Exception $e) {
+    } catch(PP\ProcessingException $e) {
         $logger->error("ERROR: " . $e->getMessage());
         $logger->error("Error code: 1010");
         $logger->error("Continuing to the next ETD file.");
