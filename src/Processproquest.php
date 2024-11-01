@@ -290,6 +290,7 @@ class Processproquest {
         $faildirFTP = $this->settings['ftp']['faildir'];
         $manualdirFTP = $this->settings['ftp']['manualdir'];
 
+        $this->logger->info(SECTION_DIVIDER);
         $this->logger->info("BEGIN Moving processed ETDs into respective post-processing directories.");
         $this->logger->info("Currently in FTP directory: {$this->fetchdirFTP}");
         $this->logger->info(LOOP_DIVIDER);
@@ -308,6 +309,7 @@ class Processproquest {
                 $moveFTPDir = $faildirFTP . $zipFileName;
             }
 
+            $this->logger->info("Processing ETD: {$fedoraRecordObj->ETD_SHORTNAME}");
             $this->logger->info("Was ETD successfully ingested?: " . ($ingested ? "true" : "false"));
             $this->logger->info("Now attempting to move:");
             $this->logger->info("   from: {$ftpPathForETD}");
@@ -340,6 +342,7 @@ class Processproquest {
             }
         }
         $this->logger->info("END Moving processed ETDs into respective post-processing directories.");
+        $this->logger->info(SECTION_DIVIDER);
 
         return true;
     }
@@ -682,9 +685,6 @@ class Processproquest {
     public function postProcess() {
         $fn = "postProcess";
 
-        $this->logger->info(SECTION_DIVIDER);
-        $this->logger->info("BEGIN Running post-process steps.");
-
         // Move files in FTP server only when applicable.
         // INFO processingFailure() Returns a boolean.
         if ( $this->processingFailure === false ) {
@@ -696,9 +696,6 @@ class Processproquest {
 
         // Send email.
         $ret = $this->sendEmail($message);
-
-        $this->logger->info("END Running post-process steps.");
-        $this->logger->info(SECTION_DIVIDER);
     }
 }
 ?>
