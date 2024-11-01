@@ -654,9 +654,11 @@ class FedoraRecord implements RecordTemplate {
         // INFO: DOMDocument::save() Returns the number of bytes written or false if an error occurred.
         $result = $modsDocument->save($this->WORKING_DIR . "/" . $normalizedAuthor . ".xml");
         if ( $result === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Could not create new ETD MODS file.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Update local file path for MODS file.
