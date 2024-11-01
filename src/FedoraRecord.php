@@ -52,6 +52,12 @@ class FedoraRecord implements RecordTemplate {
     public $executable_pdftk = "";
     public $executable_pdftotext = "";
 
+    protected $fedoraLabelXSLTDocument = null;
+    protected $fedoraLabelXSLTProcessor = null;
+    protected $proquestMODSXSLTDocument = null;
+    protected $proquestMODSXSLTProcessor = null;
+    protected $metadataXMLDocument = null;
+
     /**
      * @param string $id a unique ID for this record.
      * @param array $settings script settings.
@@ -387,15 +393,12 @@ class FedoraRecord implements RecordTemplate {
         }
 
         /**
-         * Load Proquest MODS XSLT stylesheet.
+         * Load and import the Proquest MODS XSLT stylesheet.
          * Ex: /path/to/proquest/crosswalk/Proquest_MODS.xsl
          */
-        $xslt = new \xsltProcessor;
-        $proquestxslt = new \DOMDocument();
-
-        $proquestxslt->load($this->settings['xslt']['xslt']);
-        // INFO: XSLTProcessor::importStylesheet() Returns true on success or false on failure.
-        if ( $xslt->importStyleSheet($proquestxslt) === true) {
+        $this->proquestMODSXSLTDocument = new \DOMDocument();
+        // INFO: DOMDocument::load() Returns true on success or false on failure.
+        if ( $this->proquestMODSXSLTDocument->load($this->settings['xslt']['xslt']) === true ) {
             $this->logger->info("Loaded MODS XSLT stylesheet.");
         } else {
             $errorMessage = "Failed to load MODS XSLT stylesheet.";
@@ -404,14 +407,24 @@ class FedoraRecord implements RecordTemplate {
             throw new \Exception($errorMessage);
         }
 
+        $this->proquestMODSXSLTProcessor = new \xsltProcessor;        
+        // INFO: XSLTProcessor::importStylesheet() Returns true on success or false on failure.
+        if ( $this->proquestMODSXSLTProcessor->importStyleSheet($this->proquestMODSXSLTDocument) === true) {
+            $this->logger->info("Imported MODS XSLT stylesheet.");
+        } else {
+            $errorMessage = "Failed to import MODS XSLT stylesheet.";
+            $this->logger->info("ERROR: {$errorMessage}");
+            array_push($this->CRITICAL_ERRORS, $errorMessage);
+            throw new \Exception($errorMessage);
+        }
+
         /**
-         * Load Fedora Label XSLT stylesheet.
+         * Load and import the Fedora Label XSLT stylesheet.
          * Ex: /path/to/proquest/xsl/getLabel.xsl
          */
-        $label = new \xsltProcessor;
-        $labelxslt = new \DOMDocument();
-        $labelxslt->load($this->settings['xslt']['label']);
-        if ( $label->importStyleSheet($labelxslt) === true ) {
+        $this->fedoraLabelXSLTDocument = new \DOMDocument();
+        // INFO: DOMDocument::load() Returns true on success or false on failure.
+        if ($this->fedoraLabelXSLTDocument->load($this->settings['xslt']['label']) === true ) {
             $this->logger->info("Loaded Fedora Label XSLT stylesheet.");
         } else {
             $errorMessage = "Failed to load Fedora Label XSLT stylesheet.";
@@ -420,87 +433,111 @@ class FedoraRecord implements RecordTemplate {
             throw new \Exception($errorMessage);
         }
 
+        $this->fedoraLabelXSLTProcessor = new \xsltProcessor;
+        // INFO: XSLTProcessor::importStylesheet() Returns true on success or false on failure.
+        if ( $this->fedoraLabelXSLTProcessor->importStyleSheet($this->fedoraLabelXSLTDocument) === true ) {
+            $this->logger->info("Imported Fedora Label XSLT stylesheet.");
+        } else {
+            $errorMessage = "Failed to import Fedora Label XSLT stylesheet.";
+            $this->logger->info("ERROR: {$errorMessage}");
+            array_push($this->CRITICAL_ERRORS, $errorMessage);
+            throw new \Exception($errorMessage);
+        }
+
         /**
-         * Given the array of ETD local files, generate additional metadata.
+         * Load ETD MODS file.
          */
-
-        $zipFileName = $this->ZIP_FILENAME;
-        $etdShortName = $this->ETD_SHORTNAME;
-
-        // Create XPath object from the ETD XML file.
-        $metadata = new \DOMDocument();
-        $metadata->load($this->WORKING_DIR . '//' . $this->FILE_METADATA);
-        $xpath = new \DOMXpath($metadata);
+        $this->metadataXMLDocument = new \DOMDocument();
+        // INFO: DOMDocument::load() Returns true on success or false on failure.
+        if ( $this->metadataXMLDocument->load($this->WORKING_DIR . '//' . $this->FILE_METADATA) === true ) {
+            $this->logger->info("Loaded ETD MODS file.");
+        } else {
+            $errorMessage = "Failed to load ETD MODS file.";
+            $this->logger->info("ERROR: {$errorMessage}");
+            array_push($this->CRITICAL_ERRORS, $errorMessage);
+            throw new \Exception($errorMessage);
+        }
+        
+        /**
+         * Create XPath document object for the metadata XML file.
+         * This object is used to locate and extract values from the metadata XML file.
+         */
+        $this->metadataXMLDocumentXPath = new \DOMXpath($this->metadataXMLDocument);
 
         /**
          * Get OA permission.
          * This looks for the existance of an "oa" node in the XPath object.
          * Ex: /DISS_submission/DISS_repository/DISS_acceptance/text()
          */
-        $this->logger->info("Searching for OA agreement...");
+        $this->logger->info("Searching for OA agreement.");
+        $openaccessNodeValue = 0;
+        $openaccessAvailable = false;
 
-        $openaccess = 0;
-        $openaccess_available = false;
         // INFO: DOMXPath::query() Returns a DOMNodeList containing all nodes matching 
         //       the given XPath expression. Any expression which does not return nodes 
         //       will return an empty DOMNodeList. If the expression is malformed or the 
         //       contextNode is invalid, DOMXPath::query() returns false.
-        // INFO: DOMNode::C14N() Returns canonicalized nodes as a string or false on failure.
-        $oaElements = $xpath->query($this->settings['xslt']['oa']);
-        // Check if an open access node was found. 
-        // Else, check if that node has the value '0'.
-        // Else, assume that node has the value '1'.
-        if ( $oaElements->length == 0 ) {
-            $this->logger->info("No OA agreement found."); // @codeCoverageIgnore
-        } elseif ( $oaElements->item(0)->C14N() === '0' ) {
+        $oaElements = $this->metadataXMLDocumentXPath->query($this->settings['xslt']['oa']);
+
+        if ( ($oaElements === false) || ($oaElements->length == 0) ) {
             $this->logger->info("No OA agreement found."); // @codeCoverageIgnore
         } else {
-            // This value is '1' if available for Open Access.
-            $openaccess = $oaElements->item(0)->C14N();
-            $openaccess_available = true;
-            $this->logger->info("Found an OA agreement.");
+            // INFO: DOMNode::C14N() Returns canonicalized nodes as a string or false on failure.
+            $openaccessNodeValue = $oaElements->item(0)->C14N();
+            if ( ($openaccessNodeValue === false) || ($openaccessNodeValue == 0) ) {
+                $openaccessNodeValue = 0;
+                $this->logger->info("No OA agreement found.");
+            } else {
+                $openaccessAvailable = true;
+                $this->logger->info("Found an OA agreement.");
+            }
         }
 
-        $this->OA = $openaccess;
-        $this->OA_AVAILABLE = $openaccess_available;
+        $this->OA = $openaccessNodeValue;
+        $this->OA_AVAILABLE = $openaccessAvailable;
 
         /**
          * Get embargo permission/dates.
          * This looks for the existance of an "embargo" node in the XPath object.
          * Ex: /DISS_submission/DISS_repository/DISS_delayed_release/text()
          */
-        $this->logger->info("Searching for embargo information...");
+        $this->logger->info("Searching for embargo information.");
 
-        $embargo = 0;
+        $embargoDate = 0;
         $has_embargo = false;
-        $this->HAS_EMBARGO = false;
-        $emElements = $xpath->query($this->settings['xslt']['embargo']);
-        if ( $emElements->item(0) ) {
-            $has_embargo = true;
-            // Convert date string into proper PHP date object format.
-            $embargo = $emElements->item(0)->C14N();
-            $this->logger->info("Unformatted embargo date: {$embargo}");
-            $embargo = str_replace(" ","T",$embargo);
-            $embargo = $embargo . "Z";
-            $this->logger->info("Using embargo date of: {$embargo}");
-        } else {
+        // $this->HAS_EMBARGO = false;
+        $emElements = $this->metadataXMLDocumentXPath->query($this->settings['xslt']['embargo']);
+        if ( ($emElements === false ) || ($emElements->length == 0) ) {
             $this->logger->info("There is no embargo on this record.");
+        } else {
+            $embargoDate = $emElements->item(0)->C14N();
+            // Check if $embargoDate is false or an empty string.
+            if ( ($embargoDate === false) || ($embargoDate == "") ) {
+                $this->logger->info("There is no embargo on this record.");  // @codeCoverageIgnore
+            } else {
+                $has_embargo = true;
+                // Convert date string into proper PHP date object format.
+                $this->logger->info("Unformatted embargo date: {$embargoDate}");
+                $embargoDate = str_replace(" ","T", $embargoDate);
+                $embargoDate = $embargoDate . "Z";
+                $this->logger->info("Using embargo date of: {$embargoDate}");
+            }
         }
 
         /**
-         * Check to see if there is no OA policy, and there is no embargo.
+         * Check to see if there is no OA policy, and if there is no embargo.
          * If so, set the embargo permission/date to "indefinite".
          */
-        if ( ($openaccess_available === false) && ($has_embargo === false) ) {
-            $embargo = 'indefinite';
+        if ( ($this->OA_AVAILABLE === false) && ($has_embargo === false) ) {
+            $embargoDate = 'indefinite';
             $has_embargo = true;
             $this->logger->info("Changing embargo date to 'indefinite'");
-            $this->logger->info("Using embargo date of: {$embargo}");
+            $this->logger->info("Using embargo date of: {$embargoDate}");
         }
 
         $this->HAS_EMBARGO = $has_embargo;
-        $this->EMBARGO = $embargo;
-        $this->EMBARGO_DATE = $embargo;
+        $this->EMBARGO = $embargoDate;
+        $this->EMBARGO_DATE = $embargoDate;
 
         /**
          * Fetch next PID from Fedora.
@@ -517,19 +554,20 @@ class FedoraRecord implements RecordTemplate {
         }
 
         $this->PID = $pid;
-
-        $this->logger->info("Fedora PID value for this ETD: {$pid}");
+        $this->logger->info("Fedora PID value for this ETD: {$this->PID}");
 
         /**
          * Insert the PID value into the Proquest MODS XSLT stylesheet.
          * The "handle" value should be set the PID.
          */
         // INFO: XSLTProcessor::setParameter() Returns true on success or false on failure.
-        $res = $xslt->setParameter('mods', 'handle', $pid);
-        if ( $res === false ) {
+        $result = $this->proquestMODSXSLTProcessor->setParameter('mods', 'handle', $pid);
+        if ( $result === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Could not update XSLT stylesheet with PID value.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
         $this->logger->info("Update XSLT stylesheet with PID value.");
 
@@ -539,11 +577,13 @@ class FedoraRecord implements RecordTemplate {
          * Additional metadata will be generated from the MODS file.
          */
         // INFO: XSLTProcessor::transformToDoc() The resulting document or false on error.
-        $mods = $xslt->transformToDoc($metadata);
-        if ( $mods === false ) {
+        $modsDocument = $this->proquestMODSXSLTProcessor->transformToDoc($this->metadataXMLDocument);
+        if ( $modsDocument === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Could not transform ETD MODS XML file.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
         $this->logger->info("Transformed ETD MODS XML file with XSLT stylesheet.");
 
@@ -553,7 +593,7 @@ class FedoraRecord implements RecordTemplate {
          * This uses mods:titleInfo.
          */
         // INFO: XSLTProcessor::transformToXml() The result of the transformation as a string or false on error.
-        $fedoraLabel = $label->transformToXml($mods);
+        $fedoraLabel = $this->fedoraLabelXSLTProcessor->transformToXml($modsDocument);
         if ( $fedoraLabel === false ) {
             $errorMessage = "Could not generate ETD title using Fedora Label XSLT stylesheet.";
             $this->recordParseFailed($errorMessage);
@@ -568,8 +608,15 @@ class FedoraRecord implements RecordTemplate {
          * This looks for the existance of an "author" node in the MODS XPath object.
          * Ex: /mods:mods/mods:name[@type='personal'][@usage='primary']/mods:displayForm/text()
          */
-        $xpathAuthor = new \DOMXpath($mods);
+        // TODO: make this a class property.
+        $xpathAuthor = new \DOMXpath($modsDocument);
         $authorElements = $xpathAuthor->query($this->settings['xslt']['creator']);
+        if ( ($authorElements === false ) || ($authorElements->length == 0) ) {
+            $errorMessage = "Could not find an Author element in this document.";
+            $this->recordParseFailed($errorMessage);
+            throw new \Exception($errorMessage);
+        }
+
         $author = $authorElements->item(0)->C14N();
         $this->logger->info("Generated ETD author: [{$author}]");
 
@@ -589,8 +636,8 @@ class FedoraRecord implements RecordTemplate {
 
         // Rename Proquest PDF using normalized author's name.
         // INFO: rename() Returns true on success or false on failure.
-        $res = rename($this->WORKING_DIR . "/". $this->FILE_ETD , $this->WORKING_DIR . "/" . $normalizedAuthor . ".pdf");
-        if ( $res === false ) {
+        $result = rename($this->WORKING_DIR . "/". $this->FILE_ETD , $this->WORKING_DIR . "/" . $normalizedAuthor . ".pdf");
+        if ( $result === false ) {
             // @codeCoverageIgnoreStart
             $errorMessage = "Could not rename ETD PDF file.";
             $this->recordParseFailed($errorMessage);
@@ -605,8 +652,8 @@ class FedoraRecord implements RecordTemplate {
 
         // Save MODS using normalized author's name.
         // INFO: DOMDocument::save() Returns the number of bytes written or false if an error occurred.
-        $res = $mods->save($this->WORKING_DIR . "/" . $normalizedAuthor . ".xml");
-        if ( $res === false ) {
+        $result = $modsDocument->save($this->WORKING_DIR . "/" . $normalizedAuthor . ".xml");
+        if ( $result === false ) {
             $errorMessage = "Could not create new ETD MODS file.";
             $this->recordParseFailed($errorMessage);
             throw new \Exception($errorMessage);
@@ -622,7 +669,7 @@ class FedoraRecord implements RecordTemplate {
          * Ex: /DISS_submission/DISS_content/DISS_attachment
          */
         // TODO: remove duplicative logic to find supplemental files.
-        // $suppxpath = new DOMXpath($metadata);
+        // $suppxpath = new DOMXpath($this->metadataXMLDocument);
         // $suElements = $suppxpath->query($this->settings['xslt']['supplement']);
 
         $this->STATUS = "processed";
