@@ -16,5 +16,9 @@ The following zip files are provided for testing purposes. Unless noted, each zi
 
 ## TODO
 
-Create test zip files that:
-* has supplemental files that are not located in a subdirectory.
+Create test files:
+* a zip file that has supplemental files that are not located in a subdirectory.
+* a zip file that has an empty but valid XML file.
+* a replacement settings\[xslt]\[xslt] file that is an empty but valid XSL file.
+* a replacement settings\[xslt]\[label] file that is an empty but valid XSL file.
+* a replacement MODS file that is an empty but valid XML file.

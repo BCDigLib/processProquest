@@ -857,4 +857,7 @@ final class FedoraRecordTest extends TestCase {
 
         $this->assertEquals("indefinite", $embargoDate, "Expected processETD() to set the EMBARGO_DATE to 'indefiniete'");
     }
+
+    // TODO: overload $this->FILE_METADATA with empty string to trigger an exception around line 455.
+    // TODO: overload $this->FILE_METADATA with the location of an empty file to trigger an exception around line 598.
 }
