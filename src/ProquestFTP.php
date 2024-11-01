@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 namespace Processproquest\FTP;
 
+class FTPConnectionException extends \Exception {};
+
 /**
  * FTP connection interface.
  */
@@ -177,7 +179,7 @@ class ProquestFTP implements FileStorageInterface {
         if ( (empty($this->ftpURL) === true) ) {
             // Can't connect with an empty URL value.
             $errorMessage = "Can't connect to FTP server: The [ftp] 'url' setting isn't set or is incorrect.";
-            throw new \Exception($errorMessage);
+            throw new FTPConnectionException($errorMessage);
         }
 
         // Connect to the FTP server. 
@@ -186,7 +188,7 @@ class ProquestFTP implements FileStorageInterface {
         if ($this->ftpConnection === false) {
             // Can't connect with an empty URL value.
             $errorMessage = "Can't connect to FTP server: Check your [ftp] settings or see if the FTP server is available.";
-            throw new \Exception($errorMessage);
+            throw new FTPConnectionException($errorMessage);
         }
     }
 

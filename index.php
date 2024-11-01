@@ -124,10 +124,10 @@ $logger->pushHandler($consoleOutput);
 require_once 'src/ProquestFTP.php';
 use \Processproquest\FTP as FTP;
 $urlFTP = $configurationSettings['ftp']['server'];
-$ftpService = new \Processproquest\FTP\FTPServicePHPAdapter($urlFTP);
+$ftpService = new FTP\FTPServicePHPAdapter($urlFTP);
 try {
     $ftpConnection = new FTP\ProquestFTP($ftpService);
-} catch (Exception $e) {
+} catch (FTP\FTPConnectionException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.";
     // TODO: send email notification.
