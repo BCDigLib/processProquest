@@ -66,7 +66,7 @@ final class ProquestFTPTest extends TestCase {
         $ftpService = new \Processproquest\FTP\FTPServicePHPAdapter("");
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\Processproquest\FTP\FTPConnectionException::class);
 
         // Create a ProquestFTP object.
         $proquestFTPObject = new \Processproquest\FTP\ProquestFTP($ftpService);
@@ -82,7 +82,7 @@ final class ProquestFTPTest extends TestCase {
         $mockFTPService->shouldReceive('ftp_service_connect')->andReturn(false);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\Processproquest\FTP\FTPConnectionException::class);
         $proquestFTPObject = new \Processproquest\FTP\ProquestFTP($mockFTPService);
     }
 
