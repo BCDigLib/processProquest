@@ -614,6 +614,10 @@ final class FedoraRecordTest extends TestCase {
         // Check that the returned PID is that same as $this->mockPID
         $updatedPID = $fedoraRecord->getProperty("PID");
         $this->assertEquals($this->mockPID, $updatedPID, "Expected processETD() to set the PID to {$this->mockPID}");
+
+        // TODO: check that HAS_EMBARGO is false.
+        // TODO: check that OA_AVAILABLE is true.
+        // TODO: check that HAS_SUPPLEMENTS is false.
     }
 
     #[Test]
@@ -713,6 +717,8 @@ final class FedoraRecordTest extends TestCase {
         $result = $fedoraRecord->processETD();
         
         $this->AssertNotTrue($result, "Expected processETD() to return false");
+
+        // TODO: check that HAS_SUPPLEMENTS is true.
     }
 
     #[Test]
@@ -858,6 +864,8 @@ final class FedoraRecordTest extends TestCase {
         $this->assertEquals("indefinite", $embargoDate, "Expected processETD() to set the EMBARGO_DATE to 'indefiniete'");
     }
 
-    // TODO: overload $this->FILE_METADATA with empty string to trigger an exception around line 455.
-    // TODO: overload $this->FILE_METADATA with the location of an empty file to trigger an exception around line 598.
+    // TODO: overload $this->FILE_METADATA with empty string to trigger an exception around line 452.
+    // TODO: overload $this->FILE_METADATA with the location of an empty file to trigger an exception around line 596.
+    // TODO: overload $this->settings['xslt']['creator'] with a bad XPath value to force a false value around line 613.
+    // TODO: find how to force XSLTProcessor::importStylesheet() to return false (lines 415, 441)
 }
