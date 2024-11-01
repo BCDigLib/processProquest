@@ -133,7 +133,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->logIntoFTPServer();
     }
 
@@ -154,7 +154,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->logIntoFTPServer();
     }
 
@@ -181,7 +181,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($ftpConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->logIntoFTPServer();
     }
 
@@ -208,7 +208,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($ftpConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->scanForETDFiles();
     }
 
@@ -263,7 +263,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $fileArray = $processObj->scanForETDFiles();
     }
 
@@ -284,7 +284,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $fileArray = $processObj->scanForETDFiles();
     }
 
@@ -299,7 +299,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $fileArray = $processObj->scanForETDFiles();
     }
 
@@ -389,7 +389,7 @@ final class ProcessproquestTest extends TestCase {
         $allFoundETDsProperty = $this->helper->getProtectedProperty('\Processproquest\Processproquest', 'allFoundETDs');
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $allFoundETDsProperty->setValue($processObj, $listOfZeroETDFiles);
         $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
     }
@@ -620,7 +620,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Create array containing a mock FedoraRecord object that returns an exception on downloadETD().
         $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
-        $fedoraRecordObject->shouldReceive('downloadETD')->andThrow(new \Exception);
+        $fedoraRecordObject->shouldReceive('downloadETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -628,7 +628,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->processFile($fedoraRecordObject);
     }
 
@@ -644,7 +644,7 @@ final class ProcessproquestTest extends TestCase {
         // Create array containing a mock FedoraRecord object that returns an exception on parseETD().
         $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
         $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('parseETD')->andThrow(new \Exception);
+        $fedoraRecordObject->shouldReceive('parseETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -652,7 +652,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->processFile($fedoraRecordObject);
     }
 
@@ -669,7 +669,7 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
         $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
         $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('processETD')->andThrow(new \Exception);
+        $fedoraRecordObject->shouldReceive('processETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -677,7 +677,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->processFile($fedoraRecordObject);
     }
 
@@ -695,7 +695,7 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
         $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
         $fedoraRecordObject->shouldReceive('processETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('generateDatastreams')->andThrow(new \Exception);
+        $fedoraRecordObject->shouldReceive('generateDatastreams')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -703,7 +703,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->processFile($fedoraRecordObject);
     }
 
@@ -722,7 +722,7 @@ final class ProcessproquestTest extends TestCase {
         $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
         $fedoraRecordObject->shouldReceive('processETD')->andReturn(true);
         $fedoraRecordObject->shouldReceive('generateDatastreams')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('ingestETD')->andThrow(new \Exception);
+        $fedoraRecordObject->shouldReceive('ingestETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -730,7 +730,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Expect an exception.
-        $this->expectException(\Exception::class);
+        $this->expectException(\ProcessProquest\ProcessingException::class);
         $result = $processObj->processFile($fedoraRecordObject);
     }
 
