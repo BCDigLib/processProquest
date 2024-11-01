@@ -605,15 +605,71 @@ final class FedoraRecordTest extends TestCase {
         $fedoraRecord->parseETD();
         $result = $fedoraRecord->processETD();
         
-        $this->AssertTrue($result, "Expected processETD() to return true");
+        $this->assertTrue($result, "Expected processETD() to return true");
 
         // Check that the status has been set to "processed"
         $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
-        $this->AssertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
+        $this->assertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
 
         // Check that the returned PID is that same as $this->mockPID
         $updatedPID = $fedoraRecord->getProperty("PID");
-        $this->AssertEquals($this->mockPID, $updatedPID, "Expected processETD() to set the PID to {$this->mockPID}");
+        $this->assertEquals($this->mockPID, $updatedPID, "Expected processETD() to set the PID to {$this->mockPID}");
+    }
+
+    #[Test]
+    #[TestDox('Checks the processETD() method with as embargoed record')]
+    public function processETDWithEmbargo(): void {
+        // etdadmin_upload_002_embargoed.zip contains an embargoed record.
+        $zipFileName = "etdadmin_upload_002_embargoed.zip";
+
+        // ETD shortname.
+        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
+        // Set getNextPid() to return a known value.
+        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $mockFedoraRepositoryConnection,// mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+        $result = $fedoraRecord->processETD();
+        
+        $this->assertTrue($result, "Expected processETD() to return true");
+
+        // Check that the status has been set to "processed"
+        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+        $this->assertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
+
+        // Check that this record has a HAS_EMBARGO value of true
+        $hasEmbargo = $fedoraRecord->getProperty("HAS_EMBARGO");
+        $this->assertTrue($hasEmbargo, "Expected this record to have the property HAS_EMBARGO to be true");
     }
 
     #[Test]
