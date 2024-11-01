@@ -721,17 +721,9 @@ class FedoraRecord implements RecordTemplate {
             return false;
         }
 
-        // Instantiated a Fedora object and use the generated PID as its ID.
-        // TODO: not sure this function throws an exception
-        //       https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php
-        try {
-            $this->fedoraObj = $this->fedoraConnection->constructObject($this->PID);
-            $this->logger->info("Instantiated a Fedora object with PID: {$this->PID}");
-        } catch (Exception $e) {
-            $errorMessage = "Could not instantiate a Fedora object with PID '{$this->PID}'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
-            $this->recordIngestFailed($errorMessage);
-            throw new \Exception($errorMessage);
-        }
+        // Instantiate an abstract Fedora object and use the generated PID as its ID.
+        $this->fedoraObj = $this->fedoraConnection->constructObject($this->PID);
+        $this->logger->info("Instantiated a Fedora object with PID: {$this->PID}");
 
         // Assign the Fedora object label the ETD name/label
         $this->fedoraObj->label = $this->LABEL;
@@ -754,7 +746,7 @@ class FedoraRecord implements RecordTemplate {
         try {
             $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID);
             $collectionName = GRADUATE_THESES;
-        } catch (Exception $e) { // RepositoryException
+        } catch (RepositoryException $e) { // RepositoryException
             $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new \Exception($errorMessage);
