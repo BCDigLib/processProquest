@@ -1,6 +1,9 @@
 <?php declare(strict_types=1);
 namespace Processproquest\Repository;
 
+class PPRepositoryException extends \Exception {};
+class PPRepositoryServiceException extends \Exception {};
+
 /**
  * Repository interface.
  */
@@ -42,13 +45,13 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
         // Check that the Tuque library exists.
         if ( (empty($tuqueLibraryLocation) === true) || (is_dir($tuqueLibraryLocation) === false) ) {
             $errorMessage = "Can't locate the Tuque library: Please check that the [packages]->tuque setting is valid.";
-            throw new \Exception($errorMessage);
+            throw new PPRepositoryServiceException($errorMessage);
         }
 
         // Check that we have valid settings.
         if ( (empty($url) === true) || (empty($userName) === true) || (empty($userPassword) === true) ) {
             $errorMessage = "Can't connect to Fedora instance: One or more of the [fedora] settings aren't set or are invalid.";
-            throw new \Exception($errorMessage);
+            throw new PPRepositoryServiceException($errorMessage);
         }
 
         // Load Islandora/Fedora Tuque library.
@@ -56,7 +59,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
         require_once "{$tuqueLibraryLocation}/FedoraApi.php";
         require_once "{$tuqueLibraryLocation}/FedoraApiSerializer.php";
         require_once "{$tuqueLibraryLocation}/Repository.php";
-        require_once "{$tuqueLibraryLocation}/RepositoryException.php";
+        require_once "{$tuqueLibraryLocation}/PPRepositoryException.php";
         require_once "{$tuqueLibraryLocation}/FedoraRelationships.php";
         require_once "{$tuqueLibraryLocation}/Cache.php";
         require_once "{$tuqueLibraryLocation}/HttpConnection.php";
@@ -65,9 +68,9 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
          * Make Fedora repository connection.
          * 
          * INFO: Tuque library exceptions defined here:
-         *       https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
+         *       https://github.com/Islandora/tuque/blob/7.x-1.7/PPRepositoryException.php
          * 
-         * INFO: Instantiating RepositoryConnection() throws a RepositoryException exception on error.
+         * INFO: Instantiating RepositoryConnection() throws a PPRepositoryException exception on error.
          */
         try {
             $this->connection = new \RepositoryConnection($url, $userName, $userPassword);
@@ -76,7 +79,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
             $this->api_m = $this->repository->api->m;
         } catch(Exception $e) {
             $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
-            throw new \Exception($errorMessage);
+            throw new PPRepositoryException($errorMessage);
         }
     }
 
@@ -120,12 +123,12 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      */
     public function repository_service_getObject(string $pid): object {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L309-L323
-        // INFO: getObject() throws a RepositoryException exception on error.
+        // INFO: getObject() throws a PPRepositoryException exception on error.
         try {
             $ret = $this->repository->getObject($pid);
         } catch(Exception $e) {
             $errorMessage = "Couldn't get an object with this pid: {$pid}. " . $e->getMessage();
-            throw new \Exception($errorMessage);
+            throw new PPRepositoryException($errorMessage);
         }
 
         return $ret;

@@ -746,7 +746,7 @@ class FedoraRecord implements RecordTemplate {
         try {
             $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID);
             $collectionName = GRADUATE_THESES;
-        } catch (RepositoryException $e) { // RepositoryException
+        } catch (Exception $e) {
             $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new \Exception($errorMessage);
@@ -758,7 +758,7 @@ class FedoraRecord implements RecordTemplate {
             try {
                 $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                 $this->logger->info("[{$dsid}] Adding to Graduate Theses (Restricted) collection.");
-            } catch (Exception $e) { // RepositoryException
+            } catch (Exception $e) {
                 $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID_EMBARGO . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
                 $this->datastreamIngestFailed($errorMessage, $dsid);
                 throw new \Exception($errorMessage);
