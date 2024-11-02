@@ -73,8 +73,6 @@ class Processproquest {
      * @param array $configurationSettings An array containing configuration settings.
      * @param object $loggerObj The logger object.
      * @param boolean $debug If true run script in debug mode, which doesn't ingest ETD into Fedora.
-     * 
-     * @throws Exception if an empty logger object was passed as an argument.
      */
     public function __construct($configurationFile, $configurationSettings, $loggerObj, $debug = DEFAULT_DEBUG_VALUE) {
         $this->configurationFile = $configurationFile;

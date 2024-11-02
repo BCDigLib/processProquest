@@ -176,17 +176,10 @@ try {
 
 require_once 'src/Processproquest.php';
 use \Processproquest as PP;
-// TODO: this no longer throws an exception.
-try {
-    $process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
-                ->setFTPConnection($ftpConnection)
-                ->setFedoraConnection($fedoraRepository);
-} catch (Exception $e) {
-    echo "ERROR: " . $e->getMessage() . "\n";
-    echo "Exiting.\n";
-    // TODO: send email notification.
-    exit(1);
-}
+
+$process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
+            ->setFTPConnection($ftpConnection)
+            ->setFedoraConnection($fedoraRepository);
 
 /**
  * 
