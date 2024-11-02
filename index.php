@@ -146,20 +146,19 @@ $fedoraUrl = $configurationSettings['fedora']['url'];
 $fedoraUsername = $configurationSettings['fedora']['username'];
 $fedoraPassword = $configurationSettings['fedora']['password'];
 $tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
+
 try {
     $repositoryService = new REPO\FedoraRepositoryServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
+} catch (Exception | PPRepositoryServiceException $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    echo "Exiting.\n";
+    // TODO: send email notification.
+    exit(1);
+}
+
+try {
     $fedoraRepository = new REPO\FedoraRepository($repositoryService);
-} catch (PPRepositoryException $e) {
-    echo "PPRepositoryException ERROR: " . $e->getMessage() . "\n";
-    echo "Exiting.\n";
-    // TODO: send email notification.
-    exit(1);
-} catch (PPRepositoryServiceException $e) {
-    echo "PPRepositoryServiceException ERROR: " . $e->getMessage() . "\n";
-    echo "Exiting.\n";
-    // TODO: send email notification.
-    exit(1);
-} catch (Exception $e) {
+} catch (Exception | PPRepositoryException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
     // TODO: send email notification.
