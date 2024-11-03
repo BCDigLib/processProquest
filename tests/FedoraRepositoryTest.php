@@ -20,6 +20,9 @@ require_once(__DIR__ . "/helpers.php");
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "constructObject")]
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "getObject")]
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "ingestObject")]
+#[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "getDatastream")]
+#[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "ingestDatastream")]
+#[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "constructDatastream")]
 final class FedoraRepositoryTest extends TestCase {
 
     protected function setUp(): void {
@@ -36,12 +39,28 @@ final class FedoraRepositoryTest extends TestCase {
         $this->mockFedoraObject = \Mockery::mock('NewFedoraObject')->makePartial();
 
         // Create a mock NewFedoraDatastream object.
-        $this->mockNewFedoraDatastreamObject = \Mockery::mock('NewFedoraDatastream')->makePartial();
+        $this->mockNewFedoraDatastreamObject = $this->generateMockNewFedoraDatastream();
     }
 
     protected function tearDown(): void {
         \Mockery::close();
         $this->helper = null;
+        $this->mockFedoraObject = null;
+        $this->mockNewFedoraDatastreamObject = null;
+    }
+
+    /**
+     * Create a mock NewFedoraDatastream object.
+     * 
+     * TODO: place this method in helpers.php.
+     * 
+     * @return object A mock NewFedoraDatastream object.
+     */
+    protected function generateMockNewFedoraDatastream() {
+        $mockNewFedoraDatastreamObject = \Mockery::mock('NewFedoraDatastream')->makePartial();
+        $mockNewFedoraDatastreamObject->shouldReceive("setContentFromFile")->andReturn(null);
+
+        return $mockNewFedoraDatastreamObject;
     }
 
     /**

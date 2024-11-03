@@ -201,7 +201,9 @@ final class TestHelpers extends TestCase {
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn(Array());
         $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn(null);
 
         return $mockFedoraRepositoryConnection;
     }

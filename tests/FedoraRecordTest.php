@@ -38,6 +38,23 @@ final class FedoraRecordTest extends TestCase {
     protected function tearDown(): void {
         \Mockery::close();
         $this->helper = null;
+        $this->logger = null;
+        $this->fedoraConnection = null;
+        $this->ftpConnection = null;
+    }
+
+    /**
+     * Create a mock NewFedoraDatastream object.
+     * 
+     * TODO: place this method in helpers.php.
+     * 
+     * @return object A mock NewFedoraDatastream object.
+     */
+    protected function generateMockNewFedoraDatastream() {
+        $mockNewFedoraDatastreamObject = \Mockery::mock('NewFedoraDatastream')->makePartial();
+        $mockNewFedoraDatastreamObject->shouldReceive("setContentFromFile")->andReturn(null);
+
+        return $mockNewFedoraDatastreamObject;
     }
 
     /**
@@ -944,6 +961,9 @@ final class FedoraRecordTest extends TestCase {
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('getObject')->once()->andThrow(new \Processproquest\Repository\PPRepositoryException("FOO"));
+        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn(null);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -995,7 +1015,7 @@ final class FedoraRecordTest extends TestCase {
         // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
         // Set constructObject() to return a generic object.
-        // Set getObject() to throw an exception.
+        // Set getObject() return multiple values.
         $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
@@ -1016,6 +1036,9 @@ final class FedoraRecordTest extends TestCase {
                 }
             }
         );
+        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn(null);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
