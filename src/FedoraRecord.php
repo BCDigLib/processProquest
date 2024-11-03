@@ -157,15 +157,18 @@ class FedoraRecord implements RecordTemplate {
 
         // Create the local directory if it doesn't already exists.
         // INFO: file_exists() Returns true if the file or directory specified by filename exists; false otherwise.
-        if ( file_exists($this->WORKING_DIR) === true ) {
+        // Suppress warning by using @ error control operator.
+        if ( @file_exists($this->WORKING_DIR) === true ) {
             $this->logger->info("   • Directory already exists.");
 
             // INFO: $this->recurseRmdir() Returns a boolean success value.
             if ( $this->recurseRmdir($this->WORKING_DIR) === false ) {
+                // @codeCoverageIgnoreStart
                 // Failed to remove directory.
                 $errorMessage = "Failed to remove local working directory: {$this->WORKING_DIR}.";
                 $this->recordDownloadFailed($errorMessage);
                 throw new RecordProcessingException($errorMessage);
+                // @codeCoverageIgnoreEnd
             } else {
                 $this->logger->info("   • Existing directory was removed.");
             }
@@ -230,7 +233,8 @@ class FedoraRecord implements RecordTemplate {
         // Open and extract zip file to local directory.
         // INFO: zip_open() returns either false or the number of error if filename does not exist 
         //       or in case of other error.
-        $res = $zip->open($this->ZIP_FILE_FULLPATH);
+        // Suppress warning by using @ error control operator.
+        $res = @$zip->open($this->ZIP_FILE_FULLPATH);
         if ($res === TRUE) {
             $zip->extractTo($this->WORKING_DIR);
             $zip->close();
@@ -272,7 +276,8 @@ class FedoraRecord implements RecordTemplate {
              *
              *  The String "0016" is specific to BC.
              */
-            if ( preg_match('/0016/', $etdFileName) ) {
+            // Suppress warning by using @ error control operator.
+            if ( @preg_match('/0016/', $etdFileName) ) {
                 // INFO: substr() Returns the extracted part of string, or an empty string.
                 $fileExtension = strtolower(substr($etdFileName,strlen($etdFileName)-3));
 
@@ -1086,6 +1091,7 @@ class FedoraRecord implements RecordTemplate {
         foreach(scandir($dir) as $filename) {
           if ( $filename[0] === '.' ) continue;
           $filePath = $dir . '/' . $filename;
+          // Suppress warning by using @ error control operator.
           if ( @is_dir($filePath) === true ) {
             $result[] = $filename;
             foreach ($this->scanAllDir($filePath) as $childFilename) {
@@ -1136,7 +1142,8 @@ class FedoraRecord implements RecordTemplate {
         $str = str_replace(" ", "-", $str);
 
         # remove any character that isn't alphanumeric or a dash
-        $str = preg_replace("/[^a-z0-9-]+/i", "", $str);
+        // Suppress warning by using @ error control operator.
+        $str = @preg_replace("/[^a-z0-9-]+/i", "", $str);
 
         return $str;
     }
@@ -1275,6 +1282,8 @@ class FedoraRecord implements RecordTemplate {
         // Use FOP (Formatting Objects Processor) to build PDF splash page.
         // Execute 'fop' command and check return code.
         $command = "{$this->executable_fop} -c {$this->fop_config} -xml {$source} -xsl {$splashxslt} -pdf {$splashtemp}";
+        // TODO: exec() Emits an E_WARNING if exec() is unable to execute the command.
+        //       Throws a ValueError if command is empty or contains null bytes.
         exec($command, $output, $return);
         $this->logger->info("[{$dsid}] Running 'fop' command to build PDF splash page.");
         // FOP returns 0 on success.
@@ -1325,7 +1334,7 @@ class FedoraRecord implements RecordTemplate {
         $this->logger->info("[{$dsid}] WARNING: A splashpage will not be appended to the ingested PDF file. Instead, a clone of the original PDF will be used.");
 
         // INFO: copy() Returns true on success or false on failure.
-        if ( copy($pdf,$concattemp) === false ) {
+        if ( copy($pdf, $concattemp) === false ) {
             $errorMessage = "Could not generate a concatenated PDF document.";
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
@@ -1549,7 +1558,8 @@ class FedoraRecord implements RecordTemplate {
         if ( $this->OA === '0' ) {
             // No OA policy.
             $relsFile = "xsl/permRELS-INT.xml";
-            $relsint = file_get_contents($relsFile);
+            // Suppress warning by using @ error control operator.
+            $relsint = @file_get_contents($relsFile);
 
             // Check if file read failed.
             if ( $relsint === false ) {
@@ -1564,7 +1574,7 @@ class FedoraRecord implements RecordTemplate {
         } else if ( isset($this->EMBARGO) === true ) {
             // Has an OA policy, and an embargo date.
             $relsFile = "xsl/embargoRELS-INT.xml";
-            $relsint = file_get_contents($relsFile);
+            $relsint = @file_get_contents($relsFile);
 
             // Check if file read failed.
             if ( $relsint === false ) {
