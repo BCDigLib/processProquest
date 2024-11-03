@@ -766,7 +766,7 @@ final class FedoraRecordTest extends TestCase {
         $fedoraRecord->downloadETD();
         $fedoraRecord->parseETD();
 
-        // We will suppress I/O warnings for this test with the @ operator.
+        // Suppress warning by using @ error control operator.
         $result = @$fedoraRecord->processETD();
     }
 
@@ -815,7 +815,7 @@ final class FedoraRecordTest extends TestCase {
         $fedoraRecord->downloadETD();
         $fedoraRecord->parseETD();
 
-        // We will suppress I/O warnings for this test with the @ operator.
+        // Suppress warning by using @ error control operator.
         $result = @$fedoraRecord->processETD();
     }
 

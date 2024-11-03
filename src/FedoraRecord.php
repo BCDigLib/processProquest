@@ -172,7 +172,8 @@ class FedoraRecord implements RecordTemplate {
         }
         
         // INFO: mkdir() Returns true on success or false on failure.
-        if ( mkdir($this->WORKING_DIR, 0777, true) === false ) {
+        // Suppress warning by using @ error control operator.
+        if ( @mkdir($this->WORKING_DIR, 0777, true) === false ) {
             // @codeCoverageIgnoreStart
             $errorMessage = "Failed to create local working directory: {$this->WORKING_DIR}.";
             $this->recordDownloadFailed($errorMessage);
@@ -1146,7 +1147,7 @@ class FedoraRecord implements RecordTemplate {
             // is_link() Returns true if the filename exists and is a symbolic link, false otherwise.
             // unlink() Returns true on success or false on failure.
             // rmdir() Returns true on success or false on failure.
-            // Suppress PHP warnings by using the @ operator.
+            // Suppress warning by using @ error control operator.
             ( (@is_dir("$dir/$file") === true) && (@is_link("$dir/$file") === false) ) ? $this->recurseRmdir("$dir/$file") : unlink("$dir/$file");
         }
         return rmdir($dir);
