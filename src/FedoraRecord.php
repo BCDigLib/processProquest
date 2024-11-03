@@ -537,8 +537,10 @@ class FedoraRecord implements RecordTemplate {
          */
         // DEBUG: generate random PID.
         if ( $this->debug === true ) {
+            // @codeCoverageIgnoreStart
             $pid = "bc-ir:" . rand(50000,100000) + 9000000;
             $this->logger->info("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}");
+            // @codeCoverageIgnoreEnd
         } else {
             $pid = $this->fedoraConnection->getNextPid($this->settings['fedora']['namespace'], 1);
             $this->logger->info("Fetched new PID from Fedora: {$pid}");
@@ -898,7 +900,7 @@ class FedoraRecord implements RecordTemplate {
 
         // DEBUG: ignore Fedora ingest.
         if ( $this->debug === true ) {
-            $this->logger->info("DEBUG: Ignore ingesting object into Fedora.");
+            $this->logger->info("DEBUG: Ignore ingesting object into Fedora."); // @codeCoverageIgnore
         } else {
             $this->fedoraConnection->ingestObject($this->fedoraObj);
             $this->logger->info("Ingested Fedora object.");
@@ -944,7 +946,7 @@ class FedoraRecord implements RecordTemplate {
         
         // DEBUG: ignore Fedora ingest.
         if ( $this->debug === true ) {
-            $this->logger->info("DEBUG: Ignore ingesting object into Fedora.");
+            $this->logger->info("DEBUG: Ignore ingesting object into Fedora."); // @codeCoverageIgnore
         } else {
             $this->fedoraConnection->ingestObject($this->fedoraObj);
             $this->logger->info("Ingested Fedora object.");
@@ -977,26 +979,25 @@ class FedoraRecord implements RecordTemplate {
      * @throws RecordIngestException if the datastream ingest failed.
      */
     private function manageIngestDatastream($datastreamObj, $datastreamName) {
+        // DEBUG: ignore ingesting datastream.
         if ( $this->debug === true ) {
             array_push($this->DATASTREAMS_CREATED, $datastreamName);
             $this->logger->info("[{$datastreamName}] DEBUG: Did not ingest datastream.");
+        } else {
+            // Ingest datastream into Fedora object.
+            try {
+                $this->fedoraConnection->ingestDatastream($datastreamObj);
+            } catch (\Processproquest\Repository\PPRepositoryException $e) {
+                $errorMessage = "{$datastreamName} datastream ingest failed: " . $e->getMessage();
+                array_push($this->CRITICAL_ERRORS, $errorMessage);
+                $this->logger->info("ERROR: {$errorMessage}");
+                $this->logger->info("trace:\n" . $e->getTraceAsString());
+                throw new RecordIngestException($errorMessage);
+            }
 
-            return true;
+            array_push($this->DATASTREAMS_CREATED, $datastreamName);
+            $this->logger->info("[{$datastreamName}] Ingested datastream.");
         }
-
-        // Ingest datastream into Fedora object.
-        try {
-            $this->fedoraConnection->ingestDatastream($datastreamObj);
-        } catch (\Processproquest\Repository\PPRepositoryException $e) {
-            $errorMessage = "{$datastreamName} datastream ingest failed: " . $e->getMessage();
-            array_push($this->CRITICAL_ERRORS, $errorMessage);
-            $this->logger->info("ERROR: {$errorMessage}");
-            $this->logger->info("trace:\n" . $e->getTraceAsString());
-            throw new RecordIngestException($errorMessage);
-        }
-
-        array_push($this->DATASTREAMS_CREATED, $datastreamName);
-        $this->logger->info("[{$datastreamName}] Ingested datastream.");
 
         return true;
     }
