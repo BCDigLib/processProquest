@@ -230,16 +230,27 @@ class FedoraRecord implements RecordTemplate {
 
         $zip = new \ZipArchive;
 
-        // Open and extract zip file to local directory.
-        // INFO: zip_open() returns either false or the number of error if filename does not exist 
-        //       or in case of other error.
-        // Suppress warning by using @ error control operator.
-        if ( @$zip->open($this->ZIP_FILE_FULLPATH) === TRUE ) {
-            $zip->extractTo($this->WORKING_DIR);
-            $zip->close();
-            $this->logger->info("Extracting ETD zip file to local working directory.");
-        } else {
-            $errorMessage = "Failed to extract ETD zip file: " . $res;
+        $this->logger->info("Extracting ETD zip file to local working directory.");
+
+        // INFO: ZipArchive::open() Returns true on success, false or [an] error code on error.
+        // TODO: find better way to check if $result is an error message other than check if it is an int value.
+        $result = $zip->open($this->ZIP_FILE_FULLPATH);
+        if ( ($result === false) || (is_int($result) === true) ) {
+            $errorMessage = "Failed to open ETD zip file: " . $result;
+            $this->recordParseFailed($errorMessage);
+            throw new RecordProcessingException($errorMessage);
+        }
+
+        // INFO: ZipArchive::extractTo() Returns true on success or false on failure.
+        if ( $zip->extractTo($this->WORKING_DIR) === false ) {
+            $errorMessage = "Failed to extract ETD zip file.";
+            $this->recordParseFailed($errorMessage);
+            throw new RecordProcessingException($errorMessage);
+        }
+
+        // INFO: ZipArchive::close() Returns true on success or false on failure.
+        if ( $zip->close() === false ) {
+            $errorMessage = "Failed to close ETD zip file.";
             $this->recordParseFailed($errorMessage);
             throw new RecordProcessingException($errorMessage);
         }
@@ -251,7 +262,7 @@ class FedoraRecord implements RecordTemplate {
         //       are not present in any of the other arrays.
         $expandedETDFiles = array_diff($this->scanAllDir($this->WORKING_DIR), $filesToIgnore);
 
-        if ( count($expandedETDFiles) === 0) {
+        if ( count($expandedETDFiles) === 0 ) {
             $errorMessage = "There are no files in this expanded zip file.";
             $this->recordParseFailed($errorMessage);
             throw new RecordProcessingException($errorMessage);
@@ -273,14 +284,18 @@ class FedoraRecord implements RecordTemplate {
              *  - XML
              *  - all else are supplementary files
              *
-             *  The String "0016" is specific to BC.
+             *  The regular expression /0016/ is an identifier specific to BC.
              */
             // Suppress warning by using @ error control operator.
-            if ( @preg_match('/0016/', $etdFileName) ) {
+            // INFO: preg_match() returns 1 if the pattern matches given subject, 
+            //       0 if it does not, or false on failure.
+            if ( @preg_match('/0016/', $etdFileName) == 1 ) {
                 // INFO: substr() Returns the extracted part of string, or an empty string.
                 $fileExtension = strtolower(substr($etdFileName,strlen($etdFileName)-3));
 
                 // Check if this is a PDF file.
+                //INFO: empty() Returns true if var does not exist or has a value that is empty 
+                //      or equal to zero, aka falsey.
                 if ( ($fileExtension === 'pdf') && (empty($this->FILE_ETD) === true) ) {
                     $this->FILE_ETD = $etdFileName;
                     $this->logger->info("      File type: PDF");
