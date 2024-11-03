@@ -112,6 +112,33 @@ final class FedoraRepositoryTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the getObject() method bubbles up an exception')]
+    public function getObjectBubbleException(): void {
+         // Create a mock RepositoryService object using the RepositoryServiceInterface interface.
+        // Set repository_service_ingestDatastream() to return an exception.
+        $mockRepositoryService = \Mockery::mock('Processproquest\Repository\RepositoryServiceInterface')->makePartial();
+        $mockRepositoryService->shouldReceive('repository_service_getNextPid')->andReturnUsing(
+            function($nameSpace){
+                return "{$nameSpace}:{$this->nextPIDNumber}";
+            }
+        );
+        $mockRepositoryService->shouldReceive('repository_service_constructObject')->andReturn($this->mockFedoraObject);
+        $mockRepositoryService->shouldReceive('repository_service_getObject')->once()->andThrow(new \Processproquest\Repository\PPRepositoryServiceException("FOO"));
+        $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
+        $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->andReturn(true);
+
+        // Create a FedoraRepository object.
+        $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
+
+        $pid = "bc-ir:{$this->nextPIDNumber}";
+        $repoObject = $proquestFTPObject->constructObject($pid);
+
+        // Expect an exception. getObject() throws \Processproquest\Repository\PPRepositoryException
+        $this->expectException(\Processproquest\Repository\PPRepositoryException::class);
+        $result = $proquestFTPObject->getObject($pid);
+    }
+
+    #[Test]
     #[TestDox('Checks the ingestObject() method')]
     public function ingestObject(): void {
         // Create a mock RepositoryService object.
@@ -144,6 +171,36 @@ final class FedoraRepositoryTest extends TestCase {
         $result = $proquestFTPObject->ingestDatastream($genericObject);
         
         $this->assertTrue($result, "Expected ingestDatastream() to return true");
+    }
+
+    #[Test]
+    #[TestDox('Checks the ingestDatastream() method bubbles up an exception')]
+    public function ingestDatastreamBubbleException(): void {
+        // Create a mock RepositoryService object using the RepositoryServiceInterface interface.
+        // Set repository_service_ingestDatastream() to return an exception.
+        $mockRepositoryService = \Mockery::mock('Processproquest\Repository\RepositoryServiceInterface')->makePartial();
+        $mockRepositoryService->shouldReceive('repository_service_getNextPid')->andReturnUsing(
+            function($nameSpace){
+                return "{$nameSpace}:{$this->nextPIDNumber}";
+            }
+        );
+        $mockRepositoryService->shouldReceive('repository_service_constructObject')->andReturn($this->mockFedoraObject);
+        $mockRepositoryService->shouldReceive('repository_service_getObject')->andReturn($this->mockFedoraObject);
+        $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
+        $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->once()->andThrow(new \Processproquest\Repository\PPRepositoryServiceException("FOO"));
+
+        // Create a mock Object.
+        $genericObject = new \stdClass();
+
+        // Create a FedoraRepository object.
+        $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
+
+        $pid = "bc-ir:{$this->nextPIDNumber}";
+        //$repoObject = $proquestFTPObject->constructObject($pid);
+
+        // Expect an exception. ingestDatastream() throws \Processproquest\Repository\PPRepositoryException
+        $this->expectException(\Processproquest\Repository\PPRepositoryException::class);
+        $result = $proquestFTPObject->ingestDatastream($genericObject);
     }
     
 }
