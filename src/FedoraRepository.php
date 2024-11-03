@@ -12,6 +12,7 @@ interface RepositoryInterface {
     public function constructObject(string $pid): object;
     public function getObject(string $pid): object;
     public function ingestObject(object $fedoraObj): object;
+    public function getDatastream(string $pid, string $datastreamID, array $params = array()): array;
     public function ingestDatastream(object $dataStream): bool;
 }
 
@@ -23,6 +24,7 @@ interface RepositoryServiceInterface {
     public function repository_service_constructObject(string $pid): object;
     public function repository_service_getObject(string $pid): object;
     public function repository_service_ingestObject(object $fedoraObj): object;
+    public function repository_service_getDatastream(string $pid, string $datastreamID, array $params = array()): array;
     public function repository_service_ingestDatastream(object $dataStream): bool;
 }
 
@@ -151,6 +153,30 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     }
 
     /**
+     * Get a datastream.
+     * 
+     * @param string $pid The pid of the record to load.
+     * @param string $datastreamID Datastream identifier.
+     * @param array $params (optional) An array of additional elements.
+     * 
+     * @return array An array containing information about the datastream.
+     * 
+     * @throws PPRepositoryServiceException if the datastream or record can't be found.
+     */
+    public function repository_service_getDatastream(string $pid, string $datastreamID, array $params = array()): array {
+        // See: https://github.com/Islandora/tuque/blob/1.x/FedoraApi.php#L843-L857
+        // INFO: getDatastream() throws a RepositoryException exception on error.
+        try {
+            $result = $this->repository->getDatastream($pid, $datastreamID, $params);
+        } catch (RepositoryException | Exception $e) {
+            $errorMessage = "Couldn't get a record with this pid: {$pid}. Or a datastream with this id: {$datastreamID}" . $e->getMessage();
+            throw new PPRepositoryServiceException($errorMessage);
+        }
+
+        return $result;
+    }
+
+    /**
      * Ingest a datastream.
      * 
      * @param object $dataStream The datastream to ingest
@@ -161,9 +187,10 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      */
     public function repository_service_ingestDatastream(object $dataStream): bool {
         // See: https://github.com/Islandora/tuque/blob/1.x/Object.php#L561-L575
+        // INFO: ingestDatastream() throws a DatastreamExistsException exception on error.
         try {
             $result = $this->repository->ingestDatastream();
-        } catch (DatastreamExistsException $e) {
+        } catch (DatastreamExistsException | Exception $e) {
             $errorMessage = "Couldn't get an object with this pid: {$pid}. " . $e->getMessage();
             throw new PPRepositoryServiceException($errorMessage);
         }
@@ -219,7 +246,7 @@ class FedoraRepository implements RepositoryInterface {
      * 
      * @return object A repository object.
      * 
-     * @throws PPRepositoryException when catching any bubbled up PPRepositoryServiceException exceptions.
+     * @throws PPRepositoryException if a repository record can't be found by $pid.
      */
     public function getObject(string $pid): object {
         try {
@@ -240,6 +267,27 @@ class FedoraRepository implements RepositoryInterface {
      */
     public function ingestObject(object $fedoraObj): object {
         $result = $this->service->repository_service_ingestObject($fedoraObj);
+
+        return $result;
+    }
+
+    /**
+     * Get a datastream.
+     * 
+     * @param string $pid The pid of the record to load.
+     * @param string $datastreamID Datastream identifier.
+     * @param array $params (optional) An array of additional elements.
+     * 
+     * @return array An array containing information about the datastream.
+     * 
+     * @throws PPRepositoryException if the datastream or record can't be found.
+     */
+    public function getDatastream(string $pid, string $datastreamID, array $params = array()): array {
+        try {
+            $result = $this->service->repository_service_getDatastream($pid, $datastreamID, $params);
+        } catch(PPRepositoryServiceException $e) {
+            throw new PPRepositoryException($e->getMessage());
+        }
 
         return $result;
     }
