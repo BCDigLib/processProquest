@@ -109,7 +109,7 @@ class Processproquest {
      * Setter function to assign an FTP connection object.
      * This uses a fluent interface API design.
      * 
-     * @param object $ftpConnectionObj the FTP connection object.
+     * @param object $ftpConnectionObj The FTP connection object.
      * 
      * @return object $this.
      */
@@ -123,7 +123,7 @@ class Processproquest {
      * Setter function to assign the debug value.
      * This uses a fluent interface API design.
      * 
-     * @param boolean $debug the debug value.
+     * @param boolean $debug The debug value.
      * 
      * @return object $this.
      */
@@ -137,7 +137,7 @@ class Processproquest {
      * Setter function to assign an Fedora connection object.
      * This uses a fluent interface API design.
      * 
-     * @param object $fedoraConnectionObj the Fedora connection object.
+     * @param object $fedoraConnectionObj The Fedora connection object.
      * 
      * @return object $this.
      */
@@ -150,10 +150,10 @@ class Processproquest {
     /**
      * Setter function to append FedoraRecord objects into the allFedoraRecordObjects array.
      * 
-     * @param object $fedoraRecord a FedoraRecord object.
-     * @param boolean $forceAppend ignore class checking and append object regardless.
+     * @param object $fedoraRecord A FedoraRecord object.
+     * @param boolean $forceAppend Ignore class checking and append object regardless.
      * 
-     * @return boolean status value.
+     * @return bool Status value.
      */
     public function appendAllFedoraRecordObjects($fedoraRecord, $forceAppend = false) {
         
@@ -180,7 +180,7 @@ class Processproquest {
     /**
      * Getter function for allFedoraRecordObjects array.
      * 
-     * @return array the allFedoraRecordObjects array.
+     * @return array The allFedoraRecordObjects array.
      */
     public function getAllFedoraRecordObjects() {
         return $this->allFedoraRecordObjects;
@@ -192,7 +192,7 @@ class Processproquest {
      * @codeCoverageIgnore
      *
      * @param string $message The email body to send.
-     * @return boolean Was the email sent successfully.
+     * @return bool Was the email sent successfully.
      */
     private function sendEmail($message) {
         $this->logger->info("Generating an email notification.");
@@ -249,7 +249,7 @@ class Processproquest {
      *
      * Calls on ProquestFTP.php
      *
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws ProcessingException if the FTP connection failed.
      */
@@ -281,7 +281,7 @@ class Processproquest {
     /**
      * Moves files on FTP server at the end of the process.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      */
     private function moveFTPFiles(){
         $processdirFTP = $this->settings['ftp']['processdir'];
@@ -348,9 +348,9 @@ class Processproquest {
     /**
      * Find all ETD zip files from FTP server.
      * 
-     * @param string $customRegex overwrite the regular expression set in the settings file.
+     * @param string $customRegex Overwrite the regular expression set in the settings file.
      * 
-     * @return array an array of all ETD files found on the FTP server matching the regular expression.
+     * @return array An array of all ETD files found on the FTP server matching the regular expression.
      * 
      * @throws ProcessingException if the working directory isn't reachable, or if there are no ETDs found.
      */
@@ -437,9 +437,9 @@ class Processproquest {
     /**
      * Generate a single FedoraRecord object.
      * 
-     * @param string $zipFileName the name of the zip file.
+     * @param string $zipFileName The name of the zip file.
      * 
-     * @return object $recordObj the generated FedoraRecord object.
+     * @return object The generated FedoraRecord object.
      */
     public function createFedoraObject($zipFileName) {
         // Create a FedoraRecord object.
@@ -464,7 +464,7 @@ class Processproquest {
      * Generate a FedoraRecord object for every ETD zip file found.
      * This function calls createFedoraObject() for every ETD zip file found.
      * 
-     * @return array an array of all instantiated FedoraRecord objects.
+     * @return array An array of all instantiated FedoraRecord objects.
      * 
      * @throws ProcessingException if there are no ETDs found.
      */
@@ -509,7 +509,7 @@ class Processproquest {
      * @deprecated
      * @codeCoverageIgnore
      * 
-     * @return array $caughtExceptions Any exceptions caught.
+     * @return array Any exceptions caught.
      */
     public function processAllFiles() {
         $caughtExceptions = [];
@@ -540,9 +540,9 @@ class Processproquest {
      *     c) Generates and ingests various datastreams.
      *     d) Ingests the record.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
-     * @throws Exception on download, parse, process, datastream creation, or ingest errors.
+     * @throws RecordProcessingException on download, parse, process, datastream creation, or ingest errors.
      */
     public function processFile($fedoraRecordObj) {
         // Generate Record objects for further processing.
@@ -598,7 +598,7 @@ class Processproquest {
      * 
      * @codeCoverageIgnore
      * 
-     * @param string $errorMessage the error message to display.
+     * @param string $errorMessage The error message to display.
      */
     private function manageProcessingError($errorMessage) {
         array_push($this->processingErrors, $errorMessage);
@@ -609,7 +609,7 @@ class Processproquest {
     /**
      * Generate a simple status update message.
      * 
-     * @return string $message a summary message of all processed ETDs.
+     * @return string A summary message of all processed ETDs.
      */
     public function statusCheck(){
         $this->logger->info("Generating status message for email message.");

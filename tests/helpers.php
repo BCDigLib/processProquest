@@ -33,9 +33,9 @@ final class TestHelpers extends TestCase {
     /**
      * Create a logger object.
      * 
-     * @param array $configurationSettings the settings to use.
+     * @param array $configurationSettings The settings to use.
      * 
-     * @return object the logger object.
+     * @return object The logger object.
      */
     public function createLogger($customConfigurationSettings){
         // Set up log file location and name.
@@ -86,9 +86,9 @@ final class TestHelpers extends TestCase {
     /**
      * Read the values from a configuration file.
      * 
-     * @param string $configurationFileLocation the location of a configuration file to load.
+     * @param string $configurationFileLocation The location of a configuration file to load.
      * 
-     * @return array the configuration file contents.
+     * @return array The configuration file contents.
      */
     public function readConfigurationFile($configurationFileLocation) {
         // Read in configuration settings.
@@ -105,9 +105,9 @@ final class TestHelpers extends TestCase {
      * Overwrite the configuration settings array with new value(s).
      * This makes and edits and returns a copy of the default settings array.
      * 
-     * @param array $updatedSettings the updated setting values.
+     * @param array $updatedSettings The updated setting values.
      * 
-     * @return array a settings array copy that includes the new values.
+     * @return array A settings array copy that includes the new values.
      */
     public function alterConfigurationSettings($updatedSettings) {
         // $updatedSettings is a nested array in the form 
@@ -131,9 +131,9 @@ final class TestHelpers extends TestCase {
     /**
      * Create an ftpConnection object.
      * 
-     * @param array $configurationSettings the settings to use.
+     * @param array $configurationSettings The settings to use.
      * 
-     * @return object a ProquestFTP object.
+     * @return object A ProquestFTP object.
      */
     public function createFTPConnection($configurationSettings) {
         $urlFTP = $configurationSettings['ftp']['server'];
@@ -150,9 +150,9 @@ final class TestHelpers extends TestCase {
     /**
      * Create a fedoraConnection object.
      * 
-     * @param array $configurationSettings the settings to use.
+     * @param array $configurationSettings The settings to use.
      * 
-     * @return object a FedoraRepository object.
+     * @return object A FedoraRepository object.
      */
     public function createFedoraConnection($configurationSettings) {
         $fedoraURL      = $configurationSettings['fedora']['url'];
@@ -172,9 +172,9 @@ final class TestHelpers extends TestCase {
     /**
      * Create a mock ftpConnection object.
      * 
-     * @param array $listofETDs an optional array of ETD file names.
+     * @param array $listofETDs An optional array of ETD file names.
      * 
-     * @return object a mock ProquestFTP object.
+     * @return object A mock ProquestFTP object.
      */
     public function createMockFTPConnection(array $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']) {
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
@@ -190,7 +190,7 @@ final class TestHelpers extends TestCase {
     /**
      * Create a mock FedoraRepository object.
      * 
-     * @return object a mock FedoraRepository object.
+     * @return object A mock FedoraRepository object.
      */
     public function createMockFedoraConnection() {
         $genericObject = new \stdClass();
@@ -209,7 +209,7 @@ final class TestHelpers extends TestCase {
     /**
      * Create a mock FedoraRecord object.
      * 
-     * @return object a mock FedoraRecord object.
+     * @return object A mock FedoraRecord object.
      */
     public function createMockFedoraRecord() {
         $mockFedoraRecord = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
@@ -227,7 +227,7 @@ final class TestHelpers extends TestCase {
      * 
      * @param array $customSettings Optional array of settings.
      * 
-     * @return object a Processproquest object.
+     * @return object A Processproquest object.
      */
     public function generateProcessproquestObject($customSettings = []) {
         if (empty($customSettings)) {
@@ -246,10 +246,10 @@ final class TestHelpers extends TestCase {
     /**
      * Uses reflection to access protected or private class properties.
      * 
-     * @param string $className the name of the class.
-     * @param string $property the name of the property to access.
+     * @param string $className The name of the class.
+     * @param string $property The name of the property to access.
      * 
-     * @return object $property the reflected class object.
+     * @return object The reflected class object.
      */
     public static function getProtectedProperty($className, $property) {
         // See https://www.yellowduck.be/posts/test-private-and-protected-properties-using-phpunit
@@ -264,10 +264,10 @@ final class TestHelpers extends TestCase {
     /**
      * Uses reflection to access protected or private class methods.
      * 
-     * @param string $className the name of the class.
-     * @param string $methodName the name of the method to access.
+     * @param string $className The name of the class.
+     * @param string $methodName The name of the method to access.
      * 
-     * @return object $method the reflected class method.
+     * @return object The reflected class method.
      */
     public static function getProtectedMethod($className, $methodName) {
         $reflectedClass = new \ReflectionClass($className);

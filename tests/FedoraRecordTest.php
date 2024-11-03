@@ -46,7 +46,7 @@ final class FedoraRecordTest extends TestCase {
      * @param string $zipFileName The file name of a ETD zip file.
      * @param array $customSettings Optional array of settings.
      * 
-     * @return object a FedoraRecord object.
+     * @return object A FedoraRecord object.
      */
     protected function createFedoraRecordObject($zipFileName, $customSettings = []) {
         if (empty($customSettings)) {

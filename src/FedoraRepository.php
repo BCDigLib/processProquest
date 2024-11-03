@@ -36,10 +36,10 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Class constructor.
      * 
-     * @param string $tuqueLibraryLocation the location of the Tuque library.
-     * @param string $url the repository url.
-     * @param string $userName the repository user name.
-     * @param string $userPassword the repository user password.
+     * @param string $tuqueLibraryLocation The location of the Tuque library.
+     * @param string $url The repository url.
+     * @param string $userName The repository user name.
+     * @param string $userPassword The repository user password.
      * 
      * @throws PPRepositoryServiceException if a connection to the Fedora repository can't be made.
      */
@@ -88,9 +88,9 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Fetch the next PID from the repository.
      * 
-     * @param string $nameSpace the namespace prefix.
+     * @param string $nameSpace The namespace prefix.
      * 
-     * @return string a PID string.
+     * @return string A PID string.
      */
     public function repository_service_getNextPid(string $nameSpace): string {
         // See: https://github.com/Islandora/tuque/blob/1.x/FedoraApi.php#L952-L963
@@ -103,9 +103,9 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Construct a repository object with a given PID.
      * 
-     * @param string $pid a PID string to initialize a repository object.
+     * @param string $pid A PID string to initialize a repository object.
      * 
-     * @return object a repository object.
+     * @return object A repository object.
      */
     public function repository_service_constructObject(string $pid): object {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L174-L186
@@ -117,9 +117,9 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Retrieve an object using a PID string.
      * 
-     * @param string $pid a PID string to lookup.
+     * @param string $pid A PID string to lookup.
      * 
-     * @return object a repository object.
+     * @return object A repository object.
      * 
      * @throws PPRepositoryServiceException if a repository record can't be found by $pid.
      */
@@ -139,9 +139,9 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Ingest a repository object.
      * 
-     * @param object $fedoraObj a fully formed Fedora DAM object.
+     * @param object $fedoraObj A fully formed Fedora DAM object.
      * 
-     * @return object the ingested object. 
+     * @return object The ingested object. 
      */
     public function repository_service_ingestObject(object $fedoraObj): object {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L282-L302
@@ -189,9 +189,9 @@ class FedoraRepository implements RepositoryInterface {
     /**
      * Fetch the next PID from the repository.
      * 
-     * @param string $nameSpace the namespace prefix.
+     * @param string $nameSpace The namespace prefix.
      * 
-     * @return string a PID string.
+     * @return string A PID string.
      */
     public function getNextPid(string $nameSpace): string {
         $result = $this->service->repository_service_getNextPid($nameSpace);
@@ -202,9 +202,9 @@ class FedoraRepository implements RepositoryInterface {
     /**
      * Construct a repository object with a given PID.
      * 
-     * @param string $pid a PID string to initialize a repository object.
+     * @param string $pid A PID string to initialize a repository object.
      * 
-     * @return object a repository object.
+     * @return object A repository object.
      */
     public function constructObject(string $pid): object {
         $result = $this->service->repository_service_constructObject($pid);
@@ -215,11 +215,11 @@ class FedoraRepository implements RepositoryInterface {
     /**
      * Retrieve an object using a PID string.
      * 
-     * @param string $pid a PID string to lookup.
+     * @param string $pid A PID string to lookup.
      * 
-     * @return object a repository object.
+     * @return object A repository object.
      * 
-     * @throws PPRepositoryException Pass along any caught Exceptions.
+     * @throws PPRepositoryException when catching any bubbled up PPRepositoryServiceException exceptions.
      */
     public function getObject(string $pid): object {
         try {
@@ -234,9 +234,9 @@ class FedoraRepository implements RepositoryInterface {
     /**
      * Ingest a repository object.
      * 
-     * @param object $fedoraObj a fully formed Fedora DAM object.
+     * @param object $fedoraObj A fully formed Fedora DAM object.
      * 
-     * @return object the ingested object. 
+     * @return object The ingested object. 
      */
     public function ingestObject(object $fedoraObj): object {
         $result = $this->service->repository_service_ingestObject($fedoraObj);

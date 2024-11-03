@@ -44,7 +44,7 @@ final class FedoraRepositoryTest extends TestCase {
     /**
      * Create a mock RepositoryService object.
      * 
-     * @return object a mock RepositoryService object.
+     * @return object A mock RepositoryService object.
      */
     protected function generateMockRepositoryService(): object {
         // Create a mock Object.

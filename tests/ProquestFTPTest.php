@@ -43,7 +43,7 @@ final class ProquestFTPTest extends TestCase {
     /**
      * Create a mock FTPService object.
      * 
-     * @return object a mock FTPService object.
+     * @return object A mock FTPService object.
      */
     protected function generateMockFTPService(): object {
         // Create a mock FTPService object using the FTPServiceInterface interface. 

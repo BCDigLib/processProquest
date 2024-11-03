@@ -62,11 +62,11 @@ class FedoraRecord implements RecordTemplate {
     protected $metadataXMLDocument = null;
 
     /**
-     * @param string $id a unique ID for this record.
-     * @param array $settings script settings.
-     * @param string $zipFileName the name of the ETD zip file.
-     * @param object $fedoraConnection the fedoraConnection object.
-     * @param object $logger the logger object.
+     * @param string $id A unique ID for this record.
+     * @param array $settings Script settings.
+     * @param string $zipFileName The name of the ETD zip file.
+     * @param object $fedoraConnection The fedoraConnection object.
+     * @param object $logger The logger object.
      */
     public function __construct(string $id, array $settings, string $zipFileName, object $fedoraConnection, object $ftpConnection, object $logger) {
         $this->id = $id;
@@ -125,7 +125,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Update this object's status.
      * 
-     * @param string $newStatus the new status.
+     * @param string $newStatus The new status.
      */
     public function setStatus(string $newStatus) {
         $this->STATUS = $newStatus;
@@ -134,7 +134,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Update this object's FTP_POSTPROCESS_LOCATION value.
      * 
-     * @param string $location the new FTP_POSTPROCESS_LOCATION.
+     * @param string $location The new FTP_POSTPROCESS_LOCATION.
      */
     public function setFTPPostprocessLocation(string $location) {
         $this->FTP_POSTPROCESS_LOCATION = $location;
@@ -143,7 +143,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Download ETD zip file.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordProcessingException download error.
      */
@@ -215,7 +215,7 @@ class FedoraRecord implements RecordTemplate {
      *
      * On any download error the function recordParseFailed() is called to manage error handling.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordProcessingException on parsing and ingest errors.
      */
@@ -377,7 +377,7 @@ class FedoraRecord implements RecordTemplate {
      *  - MODS metadata.
      *  - PID, title, author values.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordProcessingException when processing XSLT or XML files can't be loaded or edited.
      */
@@ -699,7 +699,7 @@ class FedoraRecord implements RecordTemplate {
      * - XACML          (access control policy)
      * - RELS-INT       (internal relationship)
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if any datastream fails to ingest.
      * @throws RecordProcessingException if the Fedora record can't be loaded. 
@@ -945,7 +945,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Ingest a Fedora record.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordProcessingException if the Fedora record failed to ingest.
      */
@@ -1004,7 +1004,7 @@ class FedoraRecord implements RecordTemplate {
      * @param $datastreamObj A datastream object, usually a file.
      * @param $datastreamName The name of the datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1039,7 +1039,7 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @codeCoverageIgnore
      * 
-     * @param string $errorMessage the error message to display.
+     * @param string $errorMessage The error message to display.
      */
     private function recordDownloadFailed(string $errorMessage) {
         $completeErrorMessage = "ERROR: {$errorMessage}";
@@ -1052,7 +1052,7 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @codeCoverageIgnore
      * 
-     * @param string $errorMessage the error message to display.
+     * @param string $errorMessage The error message to display.
      */
     private function recordParseFailed(string $errorMessage) {
         $completeErrorMessage = "ERROR: {$errorMessage}";
@@ -1065,7 +1065,7 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @codeCoverageIgnore
      * 
-     * @param string $errorMessage the error message to display.
+     * @param string $errorMessage The error message to display.
      */
     private function recordIngestFailed(string $errorMessage) {
         $completeErrorMessage = "ERROR: {$errorMessage}";
@@ -1078,8 +1078,8 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @codeCoverageIgnore
      * 
-     * @param string $errorMessage the error message to display.
-     * @param string $datastreamName the name of the datastream.
+     * @param string $errorMessage The error message to display.
+     * @param string $datastreamName The name of the datastream.
      */
     private function datastreamIngestFailed(string $errorMessage, string $datastreamName) {
         $completeErrorMessage = "[{$datastreamName}] ERROR: {$errorMessage}";
@@ -1091,7 +1091,7 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @codeCoverageIgnore
      * 
-     * @param string $errorMessage the error message to display.
+     * @param string $errorMessage The error message to display.
      */
     private function processRecordError(string $errorMessage) {
         array_push($this->CRITICAL_ERRORS, $errorMessage);
@@ -1137,7 +1137,7 @@ class FedoraRecord implements RecordTemplate {
      * 
      * @param string $dir The name of the directory to delete.
      * 
-     * @return boolean The status of the rmdir() function.
+     * @return bool The status of the rmdir() function.
      */
     private function recurseRmdir($dir) {
         $files = array_diff(scandir($dir), array('.','..'));
@@ -1175,7 +1175,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the MODS datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1209,7 +1209,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the ARCHIVE datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1247,7 +1247,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the ARCHIVE-PDF datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1285,7 +1285,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the PDF datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1391,7 +1391,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the FULL_TEXT datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1467,7 +1467,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the TN datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1516,7 +1516,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the PREVIEW datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
@@ -1565,7 +1565,7 @@ class FedoraRecord implements RecordTemplate {
     /**
      * Create the RELS-INT datastream.
      * 
-     * @return boolean Success value.
+     * @return bool Success value.
      * 
      * @throws RecordIngestException if the datastream ingest failed.
      */
