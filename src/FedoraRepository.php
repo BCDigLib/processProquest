@@ -12,7 +12,7 @@ interface RepositoryInterface {
     public function constructObject(string $pid): object;
     public function getObject(string $pid): object;
     public function ingestObject(object $fedoraObj): object;
-    public function getDatastream(string $pid, string $datastreamID, array $params = array()): array;
+    public function getDatastream(string $pid): object|bool;
     public function ingestDatastream(object $dataStream): bool;
     public function constructDatastream(string $id, string $control_group = "M"): object;
 }
@@ -25,7 +25,7 @@ interface RepositoryServiceInterface {
     public function repository_service_constructObject(string $pid): object;
     public function repository_service_getObject(string $pid): object;
     public function repository_service_ingestObject(object $fedoraObj): object;
-    public function repository_service_getDatastream(string $pid, string $datastreamID, array $params = array()): array;
+    public function repository_service_getDatastream(string $pid): object|bool;
     public function repository_service_ingestDatastream(object $dataStream): bool;
     public function repository_service_constructDatastream(string $id, string $control_group = "M"): object;
 }
@@ -157,23 +157,14 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Get a datastream.
      * 
-     * @param string $pid The pid of the record to load.
-     * @param string $datastreamID Datastream identifier.
-     * @param array $params (optional) An array of additional elements.
+     * @param string $pid The id of the datastream to retrieve.
      * 
-     * @return array An array containing information about the datastream.
-     * 
-     * @throws PPRepositoryServiceException if the datastream or record can't be found.
+     * @return object|bool Returns FALSE if the datastream could not be found. Otherwise it return
+     *                     an instantiated Datastream object. (FedoraDatastream)
      */
-    public function repository_service_getDatastream(string $pid, string $datastreamID, array $params = array()): array {
-        // See: https://github.com/Islandora/tuque/blob/1.x/FedoraApi.php#L843-L857
-        // INFO: getDatastream() throws a RepositoryException exception on error.
-        try {
-            $result = $this->repository->getDatastream($pid, $datastreamID, $params);
-        } catch (RepositoryException | Exception $e) {
-            $errorMessage = "Couldn't get a record with this pid: {$pid}. Or a datastream with this id: {$datastreamID}" . $e->getMessage();
-            throw new PPRepositoryServiceException($errorMessage);
-        }
+    public function repository_service_getDatastream(string $pid): object|bool {
+        // See: https://github.com/Islandora/tuque/blob/1.x/Object.php#L593-L600
+        $result = $this->repository->getDatastream($pid);
 
         return $result;
     }
@@ -291,20 +282,13 @@ class FedoraRepository implements RepositoryInterface {
     /**
      * Get a datastream.
      * 
-     * @param string $pid The pid of the record to load.
-     * @param string $datastreamID Datastream identifier.
-     * @param array $params (optional) An array of additional elements.
+     * @param string $pid The id of the datastream to retrieve.
      * 
-     * @return array An array containing information about the datastream.
-     * 
-     * @throws PPRepositoryException if the datastream or record can't be found.
+     * @return object|bool Returns FALSE if the datastream could not be found. Otherwise it return
+     *                     an instantiated Datastream object.
      */
-    public function getDatastream(string $pid, string $datastreamID, array $params = array()): array {
-        try {
-            $result = $this->service->repository_service_getDatastream($pid, $datastreamID, $params);
-        } catch(PPRepositoryServiceException $e) {
-            throw new PPRepositoryException($e->getMessage());
-        }
+    public function getDatastream(string $pid): object|bool {
+        $result = $this->service->repository_service_getDatastream($pid);
 
         return $result;
     }
