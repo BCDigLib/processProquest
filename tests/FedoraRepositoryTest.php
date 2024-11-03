@@ -34,6 +34,9 @@ final class FedoraRepositoryTest extends TestCase {
 
         // Create a mock NewFedoraObject object.
         $this->mockFedoraObject = \Mockery::mock('NewFedoraObject')->makePartial();
+
+        // Create a mock NewFedoraDatastream object.
+        $this->mockNewFedoraDatastreamObject = \Mockery::mock('NewFedoraDatastream')->makePartial();
     }
 
     protected function tearDown(): void {
@@ -62,6 +65,7 @@ final class FedoraRepositoryTest extends TestCase {
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
         $mockRepositoryService->shouldReceive('repository_service_getDatastream')->andReturn(Array());
         $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->andReturn(true);
+        $mockRepositoryService->shouldReceive('repository_service_constructDatastream')->andReturn($this->mockNewFedoraDatastreamObject);
 
         return $mockRepositoryService;
     }
@@ -128,6 +132,7 @@ final class FedoraRepositoryTest extends TestCase {
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
         $mockRepositoryService->shouldReceive('repository_service_getDatastream')->andReturn(Array());
         $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->andReturn(true);
+        $mockRepositoryService->shouldReceive('repository_service_constructDatastream')->andReturn($this->mockNewFedoraDatastreamObject);
 
         // Create a FedoraRepository object.
         $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
@@ -192,6 +197,7 @@ final class FedoraRepositoryTest extends TestCase {
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
         $mockRepositoryService->shouldReceive('repository_service_getDatastream')->once()->andThrow(new \Processproquest\Repository\PPRepositoryServiceException("FOO"));
         $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->andReturn(true);
+        $mockRepositoryService->shouldReceive('repository_service_constructDatastream')->andReturn($this->mockNewFedoraDatastreamObject);
 
         // Create a mock Object.
         $genericObject = new \stdClass();
@@ -243,6 +249,7 @@ final class FedoraRepositoryTest extends TestCase {
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
         $mockRepositoryService->shouldReceive('repository_service_getObject')->andReturn(Array());
         $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->once()->andThrow(new \Processproquest\Repository\PPRepositoryServiceException("FOO"));
+        $mockRepositoryService->shouldReceive('repository_service_constructDatastream')->andReturn($this->mockNewFedoraDatastreamObject);
 
         // Create a mock Object.
         $genericObject = new \stdClass();
@@ -256,6 +263,25 @@ final class FedoraRepositoryTest extends TestCase {
         // Expect an exception. ingestDatastream() throws \Processproquest\Repository\PPRepositoryException
         $this->expectException(\Processproquest\Repository\PPRepositoryException::class);
         $result = $proquestFTPObject->ingestDatastream($genericObject);
+    }
+
+    #[Test]
+    #[TestDox('Checks the constructDatastream() method')]
+    public function constructDatastream(): void {
+        // Create a mock RepositoryService object.
+        $mockRepositoryService = $this->generateMockRepositoryService();
+
+        // Create a mock Object.
+        $genericObject = new \stdClass();
+
+        // Create a FedoraRepository object.
+        $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
+
+        $id = "ARCHIVE";
+        #control_group = "M";
+        $result = $proquestFTPObject->constructDatastream($id);
+        
+        $this->assertIsObject($result, "Expected constructDatastream() to return an object");
     }
     
 }

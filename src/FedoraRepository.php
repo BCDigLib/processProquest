@@ -14,6 +14,7 @@ interface RepositoryInterface {
     public function ingestObject(object $fedoraObj): object;
     public function getDatastream(string $pid, string $datastreamID, array $params = array()): array;
     public function ingestDatastream(object $dataStream): bool;
+    public function constructDatastream(string $id, string $control_group = "M"): object;
 }
 
 /**
@@ -26,6 +27,7 @@ interface RepositoryServiceInterface {
     public function repository_service_ingestObject(object $fedoraObj): object;
     public function repository_service_getDatastream(string $pid, string $datastreamID, array $params = array()): array;
     public function repository_service_ingestDatastream(object $dataStream): bool;
+    public function repository_service_constructDatastream(string $id, string $control_group = "M"): object;
 }
 
 /**
@@ -197,6 +199,21 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
         
         return $result;
     }
+
+    /**
+     * Construct a datastream.
+     * 
+     * @param string $id The identifier of the new datastream.
+     * @param string $control_group The control group the new datastream will be created in.
+     * 
+     * @return object an instantiated Datastream object.
+     */
+    public function repository_service_constructDatastream(string $id, string $control_group = "M"): object {
+        // See: https://github.com/Islandora/tuque/blob/1.x/Object.php#L448-L450
+        $result = $this->repository->constructDatastream($id, $control_group);
+
+        return $result;
+    }
 }
 
 /**
@@ -307,6 +324,20 @@ class FedoraRepository implements RepositoryInterface {
         } catch(PPRepositoryServiceException $e) {
             throw new PPRepositoryException($e->getMessage());
         }
+
+        return $result;
+    }
+
+    /**
+     * Construct a datastream.
+     * 
+     * @param string $id The identifier of the new datastream.
+     * @param string $control_group The control group the new datastream will be created in.
+     * 
+     * @return object an instantiated Datastream object.
+     */
+    public function constructDatastream(string $id, string $control_group = "M"): object {
+        $result = $this->service->repository_service_constructDatastream($id, $control_group);
 
         return $result;
     }
