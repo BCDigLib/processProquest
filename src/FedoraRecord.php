@@ -295,20 +295,7 @@ class FedoraRecord implements RecordTemplate {
                  * Metadata will contain boolean key for permission in DISS_file_descr element.
                  * [0] element should always be folder.
                  */
-                // TODO: is_dir() doesn't throw an exception.
-                try {
-                    $checkIfDir = @is_dir($this->WORKING_DIR . "/" . $etdFileName);
-                } catch (Exception $e) {
-                    // @codeCoverageIgnoreStart
-                    $errorMessage = "Couldn't check if file is a directory: " . $e->getMessage();
-                    $this->logger->info("ERROR: {$errorMessage}");
-                    $this->logger->info("trace:\n" . $e->getTraceAsString());
-                    // Don't log this error; just continue.
-                    continue;
-                    // @codeCoverageIgnoreEnd
-                }
-
-                if ( $checkIfDir === true ) {
+                if ( @is_dir($this->WORKING_DIR . "/" . $etdFileName) === true ) {
                     $this->logger->info("      This is a directory. Next parsed file may be a supplemental file.");
                     // array_push($this->ZIP_CONTENTS_DIRS, $etdFileName);
                     continue;
@@ -910,20 +897,11 @@ class FedoraRecord implements RecordTemplate {
          */
 
         // DEBUG: ignore Fedora ingest.
-        $res = true;
         if ( $this->debug === true ) {
             $this->logger->info("DEBUG: Ignore ingesting object into Fedora.");
         } else {
-            try {
-                // TODO: this method doesn't throw an exception.
-                $res = $this->fedoraConnection->ingestObject($this->fedoraObj);
-                $this->logger->info("START ingestion of Fedora object...");
-            } catch (Exception $e) {
-                $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
-                $this->recordIngestFailed($errorMessage);
-                throw new RecordProcessingException($errorMessage);
-                $this->logger->info("END ingestion of Fedora object...");
-            }
+            $this->fedoraConnection->ingestObject($this->fedoraObj);
+            $this->logger->info("Ingested Fedora object.");
         }
 
         $this->STATUS = "ingested";
@@ -968,19 +946,8 @@ class FedoraRecord implements RecordTemplate {
         if ( $this->debug === true ) {
             $this->logger->info("DEBUG: Ignore ingesting object into Fedora.");
         } else {
-            try {
-                // TODO: ingestObject() doesn't throw an exception.
-                $this->fedoraConnection->ingestObject($this->fedoraObj);
-                $this->logger->info("START ingestion of Fedora object...");
-
-                // Make sure we give this ingest process enough time to complete.
-                usleep(30000); // 30 milliseconds
-            } catch (Exception $e) {
-                $errorMessage = "Could not ingest Fedora object. " . $e->getMessage();
-                $this->recordIngestFailed($errorMessage);
-                throw new RecordProcessingException($errorMessage);
-                $this->logger->info("END ingestion of Fedora object...");
-            }
+            $this->fedoraConnection->ingestObject($this->fedoraObj);
+            $this->logger->info("Ingested Fedora object.");
         }
 
         $this->STATUS = "ingested";
