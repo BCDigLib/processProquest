@@ -39,7 +39,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      * @param string $userName the repository user name.
      * @param string $userPassword the repository user password.
      * 
-     * @throws Exception if a connection to the Fedora repository can't be made.
+     * @throws PPRepositoryServiceException if a connection to the Fedora repository can't be made.
      */
     public function __construct(string $tuqueLibraryLocation, string $url, string $userName, string $userPassword) {
         // Check that the Tuque library exists.
@@ -68,18 +68,18 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
          * Make Fedora repository connection.
          * 
          * INFO: Tuque library exceptions defined here:
-         *       https://github.com/Islandora/tuque/blob/7.x-1.7/PPRepositoryException.php
+         *       https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
          * 
-         * INFO: Instantiating RepositoryConnection() throws a PPRepositoryException exception on error.
+         * INFO: Instantiating RepositoryConnection() throws a RepositoryException exception on error.
          */
         try {
             $this->connection = new \RepositoryConnection($url, $userName, $userPassword);
             $this->api = new \FedoraApi($this->connection);
             $this->repository = new \FedoraRepository($this->api, new \simpleCache());
             $this->api_m = $this->repository->api->m;
-        } catch(Exception $e) {
+        } catch (RepositoryException | Exception $e) {
             $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
-            throw new PPRepositoryException($errorMessage);
+            throw new PPRepositoryServiceException($errorMessage);
         }
     }
 
@@ -119,16 +119,16 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      * 
      * @return object a repository object.
      * 
-     * @throws Exception if a repository record can't be found by $pid.
+     * @throws PPRepositoryServiceException if a repository record can't be found by $pid.
      */
     public function repository_service_getObject(string $pid): object {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L309-L323
-        // INFO: getObject() throws a PPRepositoryException exception on error.
+        // INFO: getObject() throws a RepositoryException exception on error.
         try {
             $ret = $this->repository->getObject($pid);
-        } catch(Exception $e) {
+        } catch (RepositoryException | Exception $e) {
             $errorMessage = "Couldn't get an object with this pid: {$pid}. " . $e->getMessage();
-            throw new PPRepositoryException($errorMessage);
+            throw new PPRepositoryServiceException($errorMessage);
         }
 
         return $ret;
@@ -158,7 +158,6 @@ class FedoraRepository implements RepositoryInterface {
      * Class constructor.
      * 
      * @param object $service The RepositoryService object.
-     * 
      */
     public function __construct(object $service) {
         $this->service = $service;
@@ -196,9 +195,15 @@ class FedoraRepository implements RepositoryInterface {
      * @param string $pid a PID string to lookup.
      * 
      * @return object a repository object.
+     * 
+     * @throws PPRepositoryException Pass along any caught Exceptions.
      */
     public function getObject(string $pid): object {
-        $result = $this->service->repository_service_getObject($pid);
+        try {
+            $result = $this->service->repository_service_getObject($pid);
+        } catch(PPRepositoryServiceException $e) {
+            throw new PPRepositoryException($e);
+        }
 
         return $result;
     }

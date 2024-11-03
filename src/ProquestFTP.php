@@ -170,7 +170,7 @@ class ProquestFTP implements FileStorageInterface {
      * 
      * @param object $service An FTP service adapter.
      * 
-     * @throws Exception if a connection to the FTP server can't be made.
+     * @throws FTPConnectionException if a connection to the FTP server can't be made.
      */
     public function __construct($service) {
         $this->service = $service;

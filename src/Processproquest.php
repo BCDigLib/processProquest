@@ -251,7 +251,7 @@ class Processproquest {
      *
      * @return boolean Success value.
      * 
-     * @throws Exception if the FTP connection failed.
+     * @throws ProcessingException if the FTP connection failed.
      */
     public function logIntoFTPServer() {
         $this->logger->info(SECTION_DIVIDER);
@@ -352,7 +352,7 @@ class Processproquest {
      * 
      * @return array an array of all ETD files found on the FTP server matching the regular expression.
      * 
-     * @throws Exception if the working directory isn't reachable, or if there are no ETDs found.
+     * @throws ProcessingException if the working directory isn't reachable, or if there are no ETDs found.
      */
     public function scanForETDFiles(string $customRegex = "") {
         $fn = "fetchFilesFromFTP";
@@ -466,7 +466,7 @@ class Processproquest {
      * 
      * @return array an array of all instantiated FedoraRecord objects.
      * 
-     * @throws Exception if there are no ETDs found.
+     * @throws ProcessingException if there are no ETDs found.
      */
     public function createFedoraObjects() {
         $etdZipFiles = $this->allFoundETDs;
@@ -518,7 +518,7 @@ class Processproquest {
             // Call processFile() method to process each ETD.
             try {
                 $this->processFile($fedoraRecordObj);
-            } catch (Exception $e) {
+            } catch (ProcessingException $e) {
                 // Capture any exception and pass them back to calling method.
                 $thisException = [
                     "record" => $fedoraRecordObj,
@@ -550,7 +550,7 @@ class Processproquest {
         // Download ETD zip file from FTP server.
         try {
             $fedoraRecordObj->downloadETD();
-        } catch (Exception $e) {
+        } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
         }
@@ -558,7 +558,7 @@ class Processproquest {
         // Parse through this record.
         try {
             $fedoraRecordObj->parseETD();
-        } catch (Exception $e) {
+        } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
         }
@@ -566,7 +566,7 @@ class Processproquest {
         // Process this record.
         try {
             $fedoraRecordObj->processETD();
-        } catch (Exception $e) {
+        } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
         }
@@ -574,7 +574,10 @@ class Processproquest {
         // Generate datastreams for this record.
         try {
             $fedoraRecordObj->generateDatastreams();
-        } catch (Exception $e) {
+        } catch (\Processproquest\Record\RecordProcessingException $e) {
+            // Bubble up exception.
+            throw $e; // @codeCoverageIgnore
+        } catch (\Processproquest\Record\RecordIngestException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
         }
@@ -582,8 +585,8 @@ class Processproquest {
         // Ingest this record.
         try {
             $fedoraRecordObj->ingestETD();
-        } catch (Exception $e) {
-            // Bubble up exception.
+        } catch (\Processproquest\Record\RecordProcessingException $e) {
+            // Bubble up ProcessingException.
             throw $e; // @codeCoverageIgnore
         }
 
