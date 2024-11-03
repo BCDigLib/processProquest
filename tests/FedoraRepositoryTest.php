@@ -105,7 +105,7 @@ final class FedoraRepositoryTest extends TestCase {
         $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
 
         $pid = "bc-ir:{$this->nextPIDNumber}";
-        $repoObject = $proquestFTPObject->constructObject($pid);
+        //$repoObject = $proquestFTPObject->constructObject($pid);
         $result = $proquestFTPObject->getObject($pid);
         
         $this->assertIsObject($result, "Expected getObject() to return an object");
@@ -131,7 +131,7 @@ final class FedoraRepositoryTest extends TestCase {
         $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
 
         $pid = "bc-ir:{$this->nextPIDNumber}";
-        $repoObject = $proquestFTPObject->constructObject($pid);
+        // $repoObject = $proquestFTPObject->constructObject($pid);
 
         // Expect an exception. getObject() throws \Processproquest\Repository\PPRepositoryException
         $this->expectException(\Processproquest\Repository\PPRepositoryException::class);
@@ -167,7 +167,7 @@ final class FedoraRepositoryTest extends TestCase {
         $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
 
         $pid = "bc-ir:{$this->nextPIDNumber}";
-        $repoObject = $proquestFTPObject->constructObject($pid);
+        // $repoObject = $proquestFTPObject->constructObject($pid);
         $result = $proquestFTPObject->ingestDatastream($genericObject);
         
         $this->assertTrue($result, "Expected ingestDatastream() to return true");
@@ -196,7 +196,7 @@ final class FedoraRepositoryTest extends TestCase {
         $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
 
         $pid = "bc-ir:{$this->nextPIDNumber}";
-        //$repoObject = $proquestFTPObject->constructObject($pid);
+        // $repoObject = $proquestFTPObject->constructObject($pid);
 
         // Expect an exception. ingestDatastream() throws \Processproquest\Repository\PPRepositoryException
         $this->expectException(\Processproquest\Repository\PPRepositoryException::class);
