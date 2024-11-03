@@ -234,8 +234,7 @@ class FedoraRecord implements RecordTemplate {
         // INFO: zip_open() returns either false or the number of error if filename does not exist 
         //       or in case of other error.
         // Suppress warning by using @ error control operator.
-        $res = @$zip->open($this->ZIP_FILE_FULLPATH);
-        if ($res === TRUE) {
+        if ( @$zip->open($this->ZIP_FILE_FULLPATH) === TRUE ) {
             $zip->extractTo($this->WORKING_DIR);
             $zip->close();
             $this->logger->info("Extracting ETD zip file to local working directory.");

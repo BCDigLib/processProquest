@@ -206,38 +206,38 @@ class Processproquest {
         if ( empty($email_to) === true ) {
             $errorMessage = "Email to: field is empty.";
             $this->logger->error("ERROR: {$errorMessage}");
+
             return false;
         }
 
         if ( empty($email_subject) === true ) {
             $errorMessage = "Email subject: field is empty.";
             $this->logger->error("ERROR: {$errorMessage}");
+
             return false;
         }
 
         if ( empty($email_message) === true ) {
             $errorMessage = "Email body: field is empty.";
             $this->logger->error("ERROR: {$errorMessage}");
+
             return false;
         }
 
         $this->logger->info("Attempting to send out the following email:\n\tto:[" . $email_to . "]\n\tbody:[" . $email_message . "]");
 
         // DEBUG: don't send email.
-        $res = true;
         if ( $this->debug === true ) {
             $this->logger->info("DEBUG: Not sending email notification.");
 
             return true;
-        } else {
-            // INFO: mail() Returns true if the mail was successfully accepted for delivery, false otherwise.
-            $res = mail($email_to, $email_subject, $email_message);
-        }
+        } 
 
-        // Check mail success.
-        if ( $res === false ) {
+        // INFO: mail() Returns true if the mail was successfully accepted for delivery, false otherwise.
+        if ( mail($email_to, $email_subject, $email_message) === false ) {
             $errorMessage = "Email not sent.";
             $this->logger->error("ERROR: {$errorMessage}");
+            
             return false;
         }
 
