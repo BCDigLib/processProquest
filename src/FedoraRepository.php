@@ -12,6 +12,7 @@ interface RepositoryInterface {
     public function constructObject(string $pid): object;
     public function getObject(string $pid): object;
     public function ingestObject(object $fedoraObj): object;
+    public function ingestDatastream(object $dataStream): bool|object;
 }
 
 /**
@@ -22,6 +23,7 @@ interface RepositoryServiceInterface {
     public function repository_service_constructObject(string $pid): object;
     public function repository_service_getObject(string $pid): object;
     public function repository_service_ingestObject(object $fedoraObj): object;
+    public function repository_service_ingestDatastream(object $dataStream): bool|object;
 }
 
 /**
@@ -147,6 +149,27 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
 
         return $ret;
     }
+
+    /**
+     * Ingest a datastream.
+     * 
+     * @param $dataStream The datastream to ingest
+     * 
+     * @return bool Return true on success.
+     * 
+     * @throws PPRepositoryServiceException if the datastream already exists.
+     */
+    public function repository_service_ingestDatastream($dataStream): bool|object {
+        // See: https://github.com/Islandora/tuque/blob/1.x/Object.php#L561-L575
+        try {
+            $result = $this->repository->ingestDatastream();
+        } catch (DatastreamExistsException $e) {
+            $errorMessage = "Couldn't get an object with this pid: {$pid}. " . $e->getMessage();
+            throw new PPRepositoryServiceException($errorMessage);
+        }
+        
+        return $result;
+    }
 }
 
 /**
@@ -217,6 +240,25 @@ class FedoraRepository implements RepositoryInterface {
      */
     public function ingestObject(object $fedoraObj): object {
         $result = $this->service->repository_service_ingestObject($fedoraObj);
+
+        return $result;
+    }
+
+    /**
+     * Ingest a datastream.
+     * 
+     * @param $dataStream The datastream to ingest
+     * 
+     * @return bool Return true on success.
+     * 
+     * @throws PPRepositoryException if the datastream already exists.
+     */
+    public function ingestDatastream($dataStream): bool|object {
+        try {
+            $result = $this->service->repository_service_ingestDatastream($dataStream);
+        } catch(PPRepositoryServiceException $e) {
+            throw new PPRepositoryException($e);
+        }
 
         return $result;
     }
