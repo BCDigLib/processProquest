@@ -192,6 +192,7 @@ class Processproquest {
      * @codeCoverageIgnore
      *
      * @param string $message The email body to send.
+     * 
      * @return bool Was the email sent successfully.
      */
     private function sendEmail($message) {
@@ -226,6 +227,7 @@ class Processproquest {
         $res = true;
         if ( $this->debug === true ) {
             $this->logger->info("DEBUG: Not sending email notification.");
+
             return true;
         } else {
             // INFO: mail() Returns true if the mail was successfully accepted for delivery, false otherwise.
