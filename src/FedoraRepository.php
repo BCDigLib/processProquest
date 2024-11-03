@@ -153,13 +153,13 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     /**
      * Ingest a datastream.
      * 
-     * @param $dataStream The datastream to ingest
+     * @param object $dataStream The datastream to ingest
      * 
      * @return bool Return true on success.
      * 
      * @throws PPRepositoryServiceException if the datastream already exists.
      */
-    public function repository_service_ingestDatastream($dataStream): bool {
+    public function repository_service_ingestDatastream(object $dataStream): bool {
         // See: https://github.com/Islandora/tuque/blob/1.x/Object.php#L561-L575
         try {
             $result = $this->repository->ingestDatastream();
@@ -225,7 +225,7 @@ class FedoraRepository implements RepositoryInterface {
         try {
             $result = $this->service->repository_service_getObject($pid);
         } catch(PPRepositoryServiceException $e) {
-            throw new PPRepositoryException($e);
+            throw new PPRepositoryException($e->getMessage());
         }
 
         return $result;
@@ -247,17 +247,17 @@ class FedoraRepository implements RepositoryInterface {
     /**
      * Ingest a datastream.
      * 
-     * @param $dataStream The datastream to ingest
+     * @param object $dataStream The datastream to ingest
      * 
      * @return bool Return true on success.
      * 
      * @throws PPRepositoryException if the datastream already exists.
      */
-    public function ingestDatastream($dataStream): bool {
+    public function ingestDatastream(object $dataStream): bool {
         try {
             $result = $this->service->repository_service_ingestDatastream($dataStream);
         } catch(PPRepositoryServiceException $e) {
-            throw new PPRepositoryException($e);
+            throw new PPRepositoryException($e->getMessage());
         }
 
         return $result;
