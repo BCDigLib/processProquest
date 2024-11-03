@@ -60,6 +60,7 @@ final class FedoraRepositoryTest extends TestCase {
         $mockRepositoryService->shouldReceive('repository_service_constructObject')->andReturn($this->mockFedoraObject);
         $mockRepositoryService->shouldReceive('repository_service_getObject')->andReturn($this->mockFedoraObject);
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
+        $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->andReturn(true);
 
         return $mockRepositoryService;
     }
@@ -124,6 +125,25 @@ final class FedoraRepositoryTest extends TestCase {
         $result = $proquestFTPObject->ingestObject($repoObject);
         
         $this->assertIsObject($result, "Expected ingestObject() to return an object");
+    }
+
+    #[Test]
+    #[TestDox('Checks the ingestDatastream() method')]
+    public function ingestDatastream(): void {
+        // Create a mock RepositoryService object.
+        $mockRepositoryService = $this->generateMockRepositoryService();
+
+        // Create a mock Object.
+        $genericObject = new \stdClass();
+
+        // Create a FedoraRepository object.
+        $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
+
+        $pid = "bc-ir:{$this->nextPIDNumber}";
+        $repoObject = $proquestFTPObject->constructObject($pid);
+        $result = $proquestFTPObject->ingestDatastream($genericObject);
+        
+        $this->assertTrue($result, "Expected ingestDatastream() to return true");
     }
     
 }

@@ -12,7 +12,7 @@ interface RepositoryInterface {
     public function constructObject(string $pid): object;
     public function getObject(string $pid): object;
     public function ingestObject(object $fedoraObj): object;
-    public function ingestDatastream(object $dataStream): bool|object;
+    public function ingestDatastream(object $dataStream): bool;
 }
 
 /**
@@ -23,7 +23,7 @@ interface RepositoryServiceInterface {
     public function repository_service_constructObject(string $pid): object;
     public function repository_service_getObject(string $pid): object;
     public function repository_service_ingestObject(object $fedoraObj): object;
-    public function repository_service_ingestDatastream(object $dataStream): bool|object;
+    public function repository_service_ingestDatastream(object $dataStream): bool;
 }
 
 /**
@@ -159,7 +159,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      * 
      * @throws PPRepositoryServiceException if the datastream already exists.
      */
-    public function repository_service_ingestDatastream($dataStream): bool|object {
+    public function repository_service_ingestDatastream($dataStream): bool {
         // See: https://github.com/Islandora/tuque/blob/1.x/Object.php#L561-L575
         try {
             $result = $this->repository->ingestDatastream();
@@ -253,7 +253,7 @@ class FedoraRepository implements RepositoryInterface {
      * 
      * @throws PPRepositoryException if the datastream already exists.
      */
-    public function ingestDatastream($dataStream): bool|object {
+    public function ingestDatastream($dataStream): bool {
         try {
             $result = $this->service->repository_service_ingestDatastream($dataStream);
         } catch(PPRepositoryServiceException $e) {
