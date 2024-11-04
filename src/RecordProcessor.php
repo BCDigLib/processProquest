@@ -5,9 +5,9 @@ class RecordProcessingException extends \Exception {};
 class RecordIngestException extends \Exception {};
 
 /**
- * Record template.
+ * RecordProcessor interface.
  */
-interface RecordTemplate {
+interface RecordProcessorInterface {
     public function downloadETD();
     public function parseETD();
     public function processETD();
@@ -16,7 +16,7 @@ interface RecordTemplate {
 }
 
 // TODO: set properties to protected and create a generalized getter function.
-class FedoraRecord implements RecordTemplate {
+class FedoraRecordProcessor implements RecordProcessorInterface {
     public $id = "";
     public $settings = [];
     public $debug = "false";

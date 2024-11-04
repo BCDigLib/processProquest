@@ -15,9 +15,9 @@ use phpmock\phpunit\PHPMock;
 // Use TestHelpers class.
 require_once(__DIR__ . "/helpers.php");
 
-#[CoversClass(\Processproquest\Record\FedoraRecord::class)]
-#[CoversMethod(\Processproquest\Record\FedoraRecord::class, "setStatus")]
-final class FedoraRecordTest extends TestCase {
+#[CoversClass(\Processproquest\Record\FedoraRecordProcessor::class)]
+#[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "setStatus")]
+final class FedoraRecordProcessorTest extends TestCase {
 
     protected function setUp(): void {
         error_reporting(E_ALL & ~E_DEPRECATED);
@@ -73,7 +73,7 @@ final class FedoraRecordTest extends TestCase {
             $customSettings = $this->configurationSettings;
         }
         // Create a FedoraRecord object.
-        $fr = new \Processproquest\Record\FedoraRecord(
+        $fr = new \Processproquest\Record\FedoraRecordProcessor(
                         $zipFileName,               // ETD short name
                         $customSettings,            // settings array
                         $zipFileName,               // name of ETD zip file
@@ -191,7 +191,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -231,7 +231,7 @@ final class FedoraRecordTest extends TestCase {
         $mockProquestFTPConnection->shouldReceive('getFile')->andReturn(false);
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -282,7 +282,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -328,7 +328,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -375,7 +375,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -418,7 +418,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -462,7 +462,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -505,7 +505,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -548,7 +548,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -612,7 +612,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -672,7 +672,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -723,7 +723,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -771,7 +771,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -820,7 +820,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -866,7 +866,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -921,7 +921,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -977,7 +977,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -1050,7 +1050,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -1115,7 +1115,7 @@ final class FedoraRecordTest extends TestCase {
         );
 
         // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file

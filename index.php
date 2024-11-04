@@ -211,7 +211,7 @@ try {
 foreach ($allETDs as $etdRecord) {
     try {
         // Create FedoraRecord object and process it.
-        $fedoraRecord = $process->createFedoraObject($etdRecord);
+        $fedoraRecord = $process->createFedoraRecordProcessorObject($etdRecord);
         $process->processFile($fedoraRecord);
     } catch(PP\ProcessingException | \Exception $e) {
         $logger->error("ERROR: " . $e->getMessage());

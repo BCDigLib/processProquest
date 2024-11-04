@@ -13,7 +13,7 @@ namespace Processproquest;
  * Custom FTP connection handler.
  */
 require_once 'src/ProquestFTP.php';
-require_once 'src/FedoraRecord.php';
+require_once 'src/RecordProcessor.php';
 use \Processproquest\Record as FR;
 
 /*
@@ -165,9 +165,9 @@ class Processproquest {
             return true;
         }
 
-        // Check class type and reject if this is not a FedoraRecord object.
+        // Check class type and reject if this is not a FedoraRecordProcessor object.
         $className = get_class($fedoraRecord);
-        if (strcmp($className, "Processproquest\Record\FedoraRecord") == 0) {
+        if (strcmp($className, "Processproquest\Record\FedoraRecordProcessor") == 0) {
             // Push FedoraRecord object onto the allFedoraRecordObjects array.
             array_push($this->allFedoraRecordObjects, $fedoraRecord);
 
@@ -437,16 +437,16 @@ class Processproquest {
     }
 
     /**
-     * Generate a single FedoraRecord object.
+     * Generate a single FedoraRecordProcessor object.
      * 
      * @param string $zipFileName The name of the zip file.
      * 
-     * @return object The generated FedoraRecord object.
+     * @return object The generated FedoraRecordProcessor object.
      */
-    public function createFedoraObject($zipFileName) {
-        // Create a FedoraRecord object.
+    public function createFedoraRecordProcessorObject($zipFileName) {
+        // Create a FedoraRecordProcessor object.
         $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
-        $recordObj = new FR\FedoraRecord(
+        $recordObj = new FR\FedoraRecordProcessor(
                             $etdShortName, 
                             $this->settings, 
                             $zipFileName, 
@@ -463,14 +463,14 @@ class Processproquest {
     }
 
     /**
-     * Generate a FedoraRecord object for every ETD zip file found.
-     * This function calls createFedoraObject() for every ETD zip file found.
+     * Generate a FedoraRecordProcessor object for every ETD zip file found.
+     * This function calls createFedoraRecordProcessorObject() for every ETD zip file found.
      * 
-     * @return array An array of all instantiated FedoraRecord objects.
+     * @return array An array of all instantiated FedoraRecordProcessor objects.
      * 
      * @throws ProcessingException if there are no ETDs found.
      */
-    public function createFedoraObjects() {
+    public function createFedoraRecordProcessorObjects() {
         $etdZipFiles = $this->allFoundETDs;
         $countTotalETDs = count($etdZipFiles);
 
@@ -486,11 +486,11 @@ class Processproquest {
             throw new ProcessingException($errorMessage);
         }
 
-        // Create FedoraRecord objects.
+        // Create FedoraRecordProcessor objects.
         $this->logger->info("Generating the following Fedora records from ETD file(s):");
         foreach ($etdZipFiles as $zipFileName) {
-            // Generate a single FedoraRecord object.
-            $recordObj = $this->createFedoraObject($zipFileName);
+            // Generate a single FedoraRecordProcessor object.
+            $recordObj = $this->createFedoraRecordProcessorObject($zipFileName);
             //array_push($this->allFedoraRecordObjects, $recordObj);
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $this->logger->info("   • {$etdShortName}");

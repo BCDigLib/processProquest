@@ -226,7 +226,7 @@ final class TestHelpers extends TestCase {
      * @return object A mock FedoraRecord object.
      */
     public function createMockFedoraRecord() {
-        $mockFedoraRecord = Mockery::mock(\Processproquest\Record\FedoraRecord::class)->makePartial();
+        $mockFedoraRecord = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
         $mockFedoraRecord->shouldReceive('downloadETD')->andReturn(true);
         $mockFedoraRecord->shouldReceive('parseETD')->andReturn(true);
         $mockFedoraRecord->shouldReceive('processETD')->andReturn(true);
