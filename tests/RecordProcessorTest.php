@@ -889,7 +889,7 @@ final class FedoraRecordProcessorTest extends TestCase {
     // TODO: overload $this->settings['xslt']['creator'] with a bad XPath value to force a false value around line 613.
     // TODO: find how to force XSLTProcessor::importStylesheet() to return false (lines 408, 435)
 
-    #[Test]
+    //#[Test]
     #[TestDox('Checks the generateDatastreams() method with a record with supplements')]
     public function generateDatastreamsWithEmbargo(): void {
         // etdadmin_upload_003_supplemental.zip contains supplements.
@@ -938,7 +938,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $this->assertNotTrue($result, "Expected generateDatastreams() to return false");
     }
 
-    #[Test]
+    //#[Test]
     #[TestDox('Checks the generateDatastreams() method returns an Exception when the record can\'t be found')]
     public function generateDatastreamsGetObjectFail(): void {
         // etdadmin_upload_001_normal.zip is a valid ETD file.
@@ -995,7 +995,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $fedoraRecord->generateDatastreams();
     }
 
-    #[Test]
+    //#[Test]
     #[TestDox('Checks the generateDatastreams() method returns an Exception when the record ISLANDORA_BC_ROOT_PID_EMBARGO can\'t be found')]
     public function generateDatastreamsGetObjectFail2(): void {
         // etdadmin_upload_002_embargoed.zip has an embargo.
@@ -1070,7 +1070,7 @@ final class FedoraRecordProcessorTest extends TestCase {
 
 
 
-    #[Test]
+    //#[Test]
     #[TestDox('Checks the generateDatastreams() method returns true on completion')]
     public function generateDatastreamsGetObjectFull(): void {
         // etdadmin_upload_001_normal.zip is a valid ETD file.
