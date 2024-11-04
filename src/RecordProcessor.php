@@ -1004,9 +1004,9 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
             array_push($this->DATASTREAMS_CREATED, $datastreamName);
             $this->logger->info("[{$datastreamName}] DEBUG: Did not ingest datastream.");
         } else {
-            // Ingest datastream into Fedora object.
+            // Ingest datastream into AbstractFedoraObject object.
             try {
-                $this->fedoraConnection->ingestDatastream($datastreamObj);
+                $this->fedoraObj->ingestDatastream($datastreamObj);
             } catch (\Processproquest\Repository\RepositoryWrapperException $e) {
                 $errorMessage = "{$datastreamName} datastream ingest failed: " . $e->getMessage();
                 array_push($this->CRITICAL_ERRORS, $errorMessage);
