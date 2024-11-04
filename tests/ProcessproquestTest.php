@@ -21,8 +21,8 @@ require_once(__DIR__ . "/helpers.php");
 #[CoversMethod(\Processproquest\Processproquest::class, "setDebug")]
 #[CoversMethod(\Processproquest\Processproquest::class, "LogIntoFTPServer")]
 #[CoversMethod(\Processproquest\Processproquest::class, "scanForETDFiles")]
-#[CoversMethod(\Processproquest\Processproquest::class, "createFedoraObjects")]
-#[CoversMethod(\Processproquest\Processproquest::class, "createFedoraObject")]
+#[CoversMethod(\Processproquest\Processproquest::class, "createFedoraRecordProcessorObjects")]
+#[CoversMethod(\Processproquest\Processproquest::class, "createFedoraRecordProcessorObject")]
 #[CoversMethod(\Processproquest\Processproquest::class, "statusCheck")]
 #[CoversMethod(\Processproquest\Processproquest::class, "processAllFiles")]
 #[CoversMethod(\Processproquest\Processproquest::class, "appendAllFedoraRecordObjects")]
@@ -304,8 +304,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
-    #[TestDox('Checks the createFedoraObjects() method returns an array of FedoraRecord object')]
-    public function createFedoraObjects(): void {
+    #[TestDox('Checks the createFedoraRecordProcessorObjects() method returns an array of FedoraRecord object')]
+    public function createFedoraRecordProcessorObjects(): void {
         // Create array containing a zip filename.
         $zipFileName = "etdadmin_upload_100000.zip";
         $listOfETDFiles = [];
@@ -327,14 +327,14 @@ final class ProcessproquestTest extends TestCase {
 
         // Set the allFoundETDs property.
         $allFoundETDsProperty->setValue($processObj, $listOfETDFiles);
-        $createdFedoraRecords = $processObj->createFedoraObjects();
+        $createdFedoraRecords = $processObj->createFedoraRecordProcessorObjects();
         $firstCreatedFedoraRecords = $createdFedoraRecords[0];
 
-        // Check the class type for the first object returned by createFedoraObjects()
+        // Check the class type for the first object returned by createFedoraRecordProcessorObjects()
         $className = get_class($firstCreatedFedoraRecords);
         $this->assertEquals($className, "Processproquest\Record\FedoraRecordProcessor", "Expected the values 'Processproquest\Record\FedoraRecordProcessor' and '{$className}' to match.");
 
-        // Check the FedoraRecordProcessor object name returned by createFedoraObjects()
+        // Check the FedoraRecordProcessor object name returned by createFedoraRecordProcessorObjects()
         $etdZipFileName = $firstCreatedFedoraRecords->ZIP_FILENAME;
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
@@ -356,21 +356,21 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        $createdFedoraRecord = $processObj->createFedoraObject($zipFileName);
+        $createdFedoraRecord = $processObj->createFedoraRecordProcessorObject($zipFileName);
         $firstCreatedFedoraRecord = $createdFedoraRecord;
 
-        // Check the class type for the first object returned by createFedoraObject()
+        // Check the class type for the first object returned by createFedoraRecordProcessorObject()
         $className = get_class($firstCreatedFedoraRecord);
         $this->assertEquals($className, "Processproquest\Record\FedoraRecordProcessor", "Expected the values 'Processproquest\Record\FedoraRecordProcessor' and '{$className}' to match.");
 
-        // Check the FedoraRecord object name returned by createFedoraObject()
+        // Check the FedoraRecord object name returned by createFedoraRecordProcessorObject()
         $etdZipFileName = $firstCreatedFedoraRecord->ZIP_FILENAME;
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
     #[Test]
-    #[TestDox('Checks the createFedoraObjects() method returns an exception when there are no ETD zip files to process')]
-    public function createFedoraObjectsZero(): void {
+    #[TestDox('Checks the createFedoraRecordProcessorObjects() method returns an exception when there are no ETD zip files to process')]
+    public function createFedoraRecordProcessorObjectsZero(): void {
         // Create an array.
         $listOfZeroETDFiles = [];
 
@@ -391,7 +391,7 @@ final class ProcessproquestTest extends TestCase {
         // Expect an exception.
         $this->expectException(\ProcessProquest\ProcessingException::class);
         $allFoundETDsProperty->setValue($processObj, $listOfZeroETDFiles);
-        $listOfFedoraRecordObjects = $processObj->createFedoraObjects();
+        $listOfFedoraRecordObjects = $processObj->createFedoraRecordProcessorObjects();
     }
 
     #[Test]
@@ -753,9 +753,9 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        // Get list of scanned ETD files returned by scanForETDFiles() and createFedoraObjects().
+        // Get list of scanned ETD files returned by scanForETDFiles() and createFedoraRecordProcessorObjects().
         $processObj->scanForETDFiles();
-        $createdFedoraRecords = $processObj->createFedoraObjects();
+        $createdFedoraRecords = $processObj->createFedoraRecordProcessorObjects();
 
         // Get list of scanned ETD files from getter method.
         $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
