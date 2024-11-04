@@ -49,7 +49,7 @@ class Processproquest {
     public $debug;                          // Debug bool
     protected $fedoraConnection = null;     // FedoraRepository object
     protected $ftpConnection = null;        // ProquestFTP object
-    protected $allFedoraRecordObjects = []; // List of all FedoraRecord objects
+    protected $allFedoraRecordProcessorObjects = []; // List of all FedoraRecordProcessorObject objects
     protected $logFile = "";                // Log file name
     protected $processingErrors = [];       // Keep track of processing errors
     protected $processingFailure = false;   // Track if there's been a critical error
@@ -148,28 +148,28 @@ class Processproquest {
     }
 
     /**
-     * Setter function to append FedoraRecord objects into the allFedoraRecordObjects array.
+     * Setter function to append FedoraRecordProcessor objects into the allFedoraRecordProcessorObjects array.
      * 
-     * @param object $fedoraRecord A FedoraRecord object.
+     * @param object $fedoraRecordProcessor A FedoraRecordProcessor object.
      * @param boolean $forceAppend Ignore class checking and append object regardless.
      * 
      * @return bool Status value.
      */
-    public function appendAllFedoraRecordObjects($fedoraRecord, $forceAppend = false) {
+    public function appendallFedoraRecordProcessorObjects($fedoraRecordProcessorObject, $forceAppend = false) {
         
         // Don't check class type of passed object.
         if ($forceAppend === true) {
-            // Push FedoraRecord object onto the allFedoraRecordObjects array.
-            array_push($this->allFedoraRecordObjects, $fedoraRecord);
+            // Push FedoraRecordProcessor object onto the allFedoraRecordProcessorObjects array.
+            array_push($this->allFedoraRecordProcessorObjects, $fedoraRecordProcessorObject);
 
             return true;
         }
 
         // Check class type and reject if this is not a FedoraRecordProcessor object.
-        $className = get_class($fedoraRecord);
+        $className = get_class($fedoraRecordProcessorObject);
         if (strcmp($className, "Processproquest\Record\FedoraRecordProcessor") == 0) {
-            // Push FedoraRecord object onto the allFedoraRecordObjects array.
-            array_push($this->allFedoraRecordObjects, $fedoraRecord);
+            // Push FedoraRecordProcessor object onto the allFedoraRecordProcessorObjects array.
+            array_push($this->allFedoraRecordProcessorObjects, $fedoraRecordProcessorObject);
 
             return true;
         } 
@@ -178,12 +178,12 @@ class Processproquest {
     }
 
     /**
-     * Getter function for allFedoraRecordObjects array.
+     * Getter function for allFedoraRecordProcessorObjects array.
      * 
-     * @return array The allFedoraRecordObjects array.
+     * @return array The allFedoraRecordProcessorObjects array.
      */
-    public function getAllFedoraRecordObjects() {
-        return $this->allFedoraRecordObjects;
+    public function getallFedoraRecordProcessorObjects() {
+        return $this->allFedoraRecordProcessorObjects;
     }
 
     /**
@@ -295,7 +295,7 @@ class Processproquest {
         $this->logger->info("Currently in FTP directory: {$this->fetchdirFTP}");
         $this->logger->info(LOOP_DIVIDER);
 
-        foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
+        foreach ($this->allFedoraRecordProcessorObjects as $fedoraRecordObj) {
             $ingested = $fedoraRecordObj->INGESTED; // boolean
             $hasSupplements = $fedoraRecordObj->HAS_SUPPLEMENTS; // boolean
             $zipFileName = $fedoraRecordObj->ZIP_FILENAME;
@@ -457,7 +457,7 @@ class Processproquest {
         $recordObj->setStatus("scanned");
 
         // Append this record to out collection.
-        array_push($this->allFedoraRecordObjects, $recordObj);
+        array_push($this->allFedoraRecordProcessorObjects, $recordObj);
 
         return $recordObj;
     }
@@ -491,7 +491,7 @@ class Processproquest {
         foreach ($etdZipFiles as $zipFileName) {
             // Generate a single FedoraRecordProcessor object.
             $recordObj = $this->createFedoraRecordProcessorObject($zipFileName);
-            //array_push($this->allFedoraRecordObjects, $recordObj);
+            //array_push($this->allFedoraRecordProcessorObjects, $recordObj);
             $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
             $this->logger->info("   • {$etdShortName}");
         }
@@ -500,7 +500,7 @@ class Processproquest {
         $this->logger->info("[END] Generate Fedora objects.");
         $this->logger->info(SECTION_DIVIDER);
 
-        return $this->allFedoraRecordObjects;
+        return $this->allFedoraRecordProcessorObjects;
     }
 
     /**
@@ -516,7 +516,7 @@ class Processproquest {
     public function processAllFiles() {
         $caughtExceptions = [];
 
-        foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {            
+        foreach ($this->allFedoraRecordProcessorObjects as $fedoraRecordObj) {            
             // Call processFile() method to process each ETD.
             try {
                 $this->processFile($fedoraRecordObj);
@@ -536,22 +536,24 @@ class Processproquest {
     /**
      * This function completes a few tasks.
      *   1) Download an ETD file onto the working directory.
-     *   2) Creates a FedoraRecord object.
+     *   2) Processes a FedoraRecordProcessor object.
      *     a) Parses the ETD file and checks for supplementary files.
      *     b) Processes the ETD file and collects metadata.
      *     c) Generates and ingests various datastreams.
      *     d) Ingests the record.
      * 
+     * @param object $fedoraRecordProcessor The FedoraRecordProcessor object.
+     * 
      * @return bool Success value.
      * 
      * @throws RecordProcessingException on download, parse, process, datastream creation, or ingest errors.
      */
-    public function processFile($fedoraRecordObj) {
+    public function processFile($fedoraRecordProcessor) {
         // Generate Record objects for further processing.
 
         // Download ETD zip file from FTP server.
         try {
-            $fedoraRecordObj->downloadETD();
+            $fedoraRecordProcessor->downloadETD();
         } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
@@ -559,7 +561,7 @@ class Processproquest {
 
         // Parse through this record.
         try {
-            $fedoraRecordObj->parseETD();
+            $fedoraRecordProcessor->parseETD();
         } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
@@ -567,7 +569,7 @@ class Processproquest {
 
         // Process this record.
         try {
-            $fedoraRecordObj->processETD();
+            $fedoraRecordProcessor->processETD();
         } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
@@ -575,7 +577,7 @@ class Processproquest {
 
         // Generate datastreams for this record.
         try {
-            $fedoraRecordObj->generateDatastreams();
+            $fedoraRecordProcessor->generateDatastreams();
         } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
@@ -586,7 +588,7 @@ class Processproquest {
 
         // Ingest this record.
         try {
-            $fedoraRecordObj->ingestETD();
+            $fedoraRecordProcessor->ingestETD();
         } catch (\Processproquest\Record\RecordProcessingException $e) {
             // Bubble up ProcessingException.
             throw $e; // @codeCoverageIgnore
@@ -627,9 +629,9 @@ class Processproquest {
             }
         } else {
             $i = 0;
-            $countETDs = count($this->allFedoraRecordObjects);
+            $countETDs = count($this->allFedoraRecordProcessorObjects);
             $message .= "There were {$countETDs} ETD(s) processed.\n"; 
-            foreach ($this->allFedoraRecordObjects as $fedoraRecordObj) {
+            foreach ($this->allFedoraRecordProcessorObjects as $fedoraRecordObj) {
                 $i++;
                 $criticalErrorsCount = count($fedoraRecordObj->CRITICAL_ERRORS);
                 $noncriticalErrorsCount = count($fedoraRecordObj->NONCRITICAL_ERRORS);

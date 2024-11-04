@@ -25,7 +25,7 @@ require_once(__DIR__ . "/helpers.php");
 #[CoversMethod(\Processproquest\Processproquest::class, "createFedoraRecordProcessorObject")]
 #[CoversMethod(\Processproquest\Processproquest::class, "statusCheck")]
 #[CoversMethod(\Processproquest\Processproquest::class, "processAllFiles")]
-#[CoversMethod(\Processproquest\Processproquest::class, "appendAllFedoraRecordObjects")]
+#[CoversMethod(\Processproquest\Processproquest::class, "appendallFedoraRecordProcessorObjects")]
 #[CoversMethod(\Processproquest\Processproquest::class, "moveFTPFiles")]
 final class ProcessproquestTest extends TestCase {
 
@@ -304,7 +304,7 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
-    #[TestDox('Checks the createFedoraRecordProcessorObjects() method returns an array of FedoraRecord object')]
+    #[TestDox('Checks the createFedoraRecordProcessorObjects() method returns an array of FedoraRecordProcessor objects')]
     public function createFedoraRecordProcessorObjects(): void {
         // Create array containing a zip filename.
         $zipFileName = "etdadmin_upload_100000.zip";
@@ -340,8 +340,8 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
-    #[TestDox('Checks the createFedoraObject() method returns a single FedoraRecordProcessor object')]
-    public function createFedoraObject(): void {
+    #[TestDox('Checks the createFedoraRecordProcessorObject() method returns a single FedoraRecordProcessor object')]
+    public function createFedoraRecordProcessorObject(): void {
         // A sample zip filename.
         $zipFileName = "etdadmin_upload_100000.zip";
 
@@ -356,15 +356,15 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        $createdFedoraRecord = $processObj->createFedoraRecordProcessorObject($zipFileName);
-        $firstCreatedFedoraRecord = $createdFedoraRecord;
+        $createdFedoraRecordProcessor = $processObj->createFedoraRecordProcessorObject($zipFileName);
+        $firstCreatedFedoraRecordProcessor = $createdFedoraRecordProcessor;
 
         // Check the class type for the first object returned by createFedoraRecordProcessorObject()
-        $className = get_class($firstCreatedFedoraRecord);
+        $className = get_class($firstCreatedFedoraRecordProcessor);
         $this->assertEquals($className, "Processproquest\Record\FedoraRecordProcessor", "Expected the values 'Processproquest\Record\FedoraRecordProcessor' and '{$className}' to match.");
 
-        // Check the FedoraRecord object name returned by createFedoraRecordProcessorObject()
-        $etdZipFileName = $firstCreatedFedoraRecord->ZIP_FILENAME;
+        // Check the FedoraRecordProcessor object name returned by createFedoraRecordProcessorObject()
+        $etdZipFileName = $firstCreatedFedoraRecordProcessor->ZIP_FILENAME;
         $this->assertEquals($zipFileName, $etdZipFileName, "Expected the values '{$zipFileName}' and '{$etdZipFileName}' to match.");
     }
 
@@ -423,8 +423,8 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
-        // Create FedoraRecord object.
-        $fedoraRecordObject = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create custom FedoraRecordProcessor object.
+        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
             $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
@@ -433,17 +433,17 @@ final class ProcessproquestTest extends TestCase {
             $this->logger                   // logger object
         );
 
-        $fedoraRecordObject->STATUS = "ingested";
-        $fedoraRecordObject->HAS_SUPPLEMENTS = true;
-        $fedoraRecordObject->OA_AVAILABLE = true;
-        $fedoraRecordObject->HAS_EMBARGO = false;
-        $fedoraRecordObject->PID = "bc-ir:9999999";
+        $fedoraRecordProcessorObject->STATUS = "ingested";
+        $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = true;
+        $fedoraRecordProcessorObject->OA_AVAILABLE = true;
+        $fedoraRecordProcessorObject->HAS_EMBARGO = false;
+        $fedoraRecordProcessorObject->PID = "bc-ir:9999999";
 
         // Create Processproquest object.
         $processObj = $this->helper->generateProcessproquestObject();
 
-        // Append mock FedoraRecord object.
-        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
+        // Append FedoraRecordProcessor object to internal array.
+        $processObj->appendallFedoraRecordProcessorObjects($fedoraRecordProcessorObject);
 
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
@@ -462,8 +462,8 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
-        // Create FedoraRecord object.
-        $fedoraRecordObject = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create custom FedoraRecordProcessor object.
+        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
             $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
@@ -472,21 +472,21 @@ final class ProcessproquestTest extends TestCase {
             $this->logger                   // logger object
         );
 
-        $fedoraRecordObject->STATUS = "ingested";
-        $fedoraRecordObject->HAS_SUPPLEMENTS = false;
-        $fedoraRecordObject->OA_AVAILABLE = true;
-        $fedoraRecordObject->HAS_EMBARGO = true;
-        $fedoraRecordObject->EMBARGO_DATE = "indefinite";
-        $fedoraRecordObject->PID = "bc-ir:9999999";
-        $fedoraRecordObject->AUTHOR = "Foo";
-        $fedoraRecordObject->RECORD_URL = "https://foo.bar";
-        $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
+        $fedoraRecordProcessorObject->STATUS = "ingested";
+        $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = false;
+        $fedoraRecordProcessorObject->OA_AVAILABLE = true;
+        $fedoraRecordProcessorObject->HAS_EMBARGO = true;
+        $fedoraRecordProcessorObject->EMBARGO_DATE = "indefinite";
+        $fedoraRecordProcessorObject->PID = "bc-ir:9999999";
+        $fedoraRecordProcessorObject->AUTHOR = "Foo";
+        $fedoraRecordProcessorObject->RECORD_URL = "https://foo.bar";
+        $fedoraRecordProcessorObject->LABEL = "etdadmin_upload_100000";
 
         // Create Processproquest object.
         $processObj = $this->helper->generateProcessproquestObject();
 
-        // Append mock FedoraRecord object.
-        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
+        // Append custom FedoraRecordProcessor object.
+        $processObj->appendallFedoraRecordProcessorObjects($fedoraRecordProcessorObject);
 
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
@@ -510,8 +510,8 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
-        // Create FedoraRecord object.
-        $fedoraRecordObject = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create FedoraRecordProcessor object.
+        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
             $this->configurationSettings,                // settings
             "etdadmin_upload_100000.zip",   // zip file name
@@ -520,22 +520,22 @@ final class ProcessproquestTest extends TestCase {
             $this->logger                   // logger object
         );
 
-        $fedoraRecordObject->STATUS = "ingested";
-        $fedoraRecordObject->HAS_SUPPLEMENTS = false;
-        $fedoraRecordObject->OA_AVAILABLE = true;
-        $fedoraRecordObject->HAS_EMBARGO = true;
-        $fedoraRecordObject->EMBARGO_DATE = "indefinite";
-        $fedoraRecordObject->PID = "bc-ir:9999999";
-        $fedoraRecordObject->AUTHOR = "Foo";
-        $fedoraRecordObject->RECORD_URL = "https://foo.bar";
-        $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
-        $fedoraRecordObject->CRITICAL_ERRORS = [$errorMessage];
+        $fedoraRecordProcessorObject->STATUS = "ingested";
+        $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = false;
+        $fedoraRecordProcessorObject->OA_AVAILABLE = true;
+        $fedoraRecordProcessorObject->HAS_EMBARGO = true;
+        $fedoraRecordProcessorObject->EMBARGO_DATE = "indefinite";
+        $fedoraRecordProcessorObject->PID = "bc-ir:9999999";
+        $fedoraRecordProcessorObject->AUTHOR = "Foo";
+        $fedoraRecordProcessorObject->RECORD_URL = "https://foo.bar";
+        $fedoraRecordProcessorObject->LABEL = "etdadmin_upload_100000";
+        $fedoraRecordProcessorObject->CRITICAL_ERRORS = [$errorMessage];
 
         // Create Processproquest object.
         $processObj = $this->helper->generateProcessproquestObject();
 
-        // Append mock FedoraRecord object.
-        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
+        // Append custom FedoraRecordProcessor object to internal array.
+        $processObj->appendallFedoraRecordProcessorObjects($fedoraRecordProcessorObject);
 
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
@@ -554,8 +554,8 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
-        // Create FedoraRecord object.
-        $fedoraRecordObject = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create custom FedoraRecordProcessor object.
+        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
             $this->configurationSettings,                // settings
             "etdadmin_upload_100000.zip",   // zip file name
@@ -564,22 +564,22 @@ final class ProcessproquestTest extends TestCase {
             $this->logger                   // logger object
         );
 
-        $fedoraRecordObject->STATUS = "ingested";
-        $fedoraRecordObject->HAS_SUPPLEMENTS = false;
-        $fedoraRecordObject->OA_AVAILABLE = true;
-        $fedoraRecordObject->HAS_EMBARGO = true;
-        $fedoraRecordObject->EMBARGO_DATE = "indefinite";
-        $fedoraRecordObject->PID = "bc-ir:9999999";
-        $fedoraRecordObject->AUTHOR = "Foo";
-        $fedoraRecordObject->RECORD_URL = "https://foo.bar";
-        $fedoraRecordObject->LABEL = "etdadmin_upload_100000";
-        $fedoraRecordObject->NONCRITICAL_ERRORS = [$errorMessage];
+        $fedoraRecordProcessorObject->STATUS = "ingested";
+        $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = false;
+        $fedoraRecordProcessorObject->OA_AVAILABLE = true;
+        $fedoraRecordProcessorObject->HAS_EMBARGO = true;
+        $fedoraRecordProcessorObject->EMBARGO_DATE = "indefinite";
+        $fedoraRecordProcessorObject->PID = "bc-ir:9999999";
+        $fedoraRecordProcessorObject->AUTHOR = "Foo";
+        $fedoraRecordProcessorObject->RECORD_URL = "https://foo.bar";
+        $fedoraRecordProcessorObject->LABEL = "etdadmin_upload_100000";
+        $fedoraRecordProcessorObject->NONCRITICAL_ERRORS = [$errorMessage];
 
         // Create Processproquest object.
         $processObj = $this->helper->generateProcessproquestObject();
 
-        // Append mock FedoraRecord object.
-        $processObj->appendAllFedoraRecordObjects($fedoraRecordObject);
+        // Append custom FedoraRecordProcessor object to internal array.
+        $processObj->appendallFedoraRecordProcessorObjects($fedoraRecordProcessorObject);
 
         // Get output of statusCheck() method.
         $message = $processObj->statusCheck();
@@ -588,7 +588,7 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
-    #[TestDox('Checks the processFile() method on a FedoraRecord object')]
+    #[TestDox('Checks the processFile() method on a FedoraRecordProcessor object')]
     public function processFile(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
@@ -596,21 +596,21 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create array containing a mock FedoraRecord object.
-        $fedoraRecordObject = $this->helper->createMockFedoraRecord();
+        // Create array containing a mock FedoraRecordProcessor object.
+        $fedoraRecordProcessorObject = $this->helper->createMockFedoraRecordProcessor();
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        $result = $processObj->processFile($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordProcessorObject);
 
         $this->assertTrue($result, "Expected processAllFiles() to return true.");
     }
 
     #[Test]
-    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on downloadETD()')]
+    #[TestDox('Checks the processFile() method on a FedoraRecordProcessor object to throw an exception on downloadETD()')]
     public function processFileExceptionOnDownloadETD(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
@@ -618,9 +618,9 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create array containing a mock FedoraRecord object that returns an exception on downloadETD().
-        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
-        $fedoraRecordObject->shouldReceive('downloadETD')->andThrow(new \ProcessProquest\ProcessingException);
+        // Create array containing a mock FedoraRecordProcessor object that returns an exception on downloadETD().
+        $fedoraRecordProcessorObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
+        $fedoraRecordProcessorObject->shouldReceive('downloadETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -629,11 +629,11 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(\ProcessProquest\ProcessingException::class);
-        $result = $processObj->processFile($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordProcessorObject);
     }
 
     #[Test]
-    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on parseETD()')]
+    #[TestDox('Checks the processFile() method on a FedoraRecordProcessor object to throw an exception on parseETD()')]
     public function processFileExceptionOnParseETD(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
@@ -641,10 +641,10 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create array containing a mock FedoraRecord object that returns an exception on parseETD().
-        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
-        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('parseETD')->andThrow(new \ProcessProquest\ProcessingException);
+        // Create array containing a mock FedoraRecordProcessor object that returns an exception on parseETD().
+        $fedoraRecordProcessorObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
+        $fedoraRecordProcessorObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('parseETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -653,11 +653,11 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(\ProcessProquest\ProcessingException::class);
-        $result = $processObj->processFile($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordProcessorObject);
     }
 
     #[Test]
-    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on processETD()')]
+    #[TestDox('Checks the processFile() method on a FedoraRecordProcessor object to throw an exception on processETD()')]
     public function processFileExceptionOnProcessETD(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
@@ -665,11 +665,11 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create array containing a mock FedoraRecord object that returns an exception on parseETD().
-        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
-        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('processETD')->andThrow(new \ProcessProquest\ProcessingException);
+        // Create array containing a mock FedoraRecordProcessor object that returns an exception on parseETD().
+        $fedoraRecordProcessorObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
+        $fedoraRecordProcessorObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('parseETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('processETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -678,11 +678,11 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(\ProcessProquest\ProcessingException::class);
-        $result = $processObj->processFile($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordProcessorObject);
     }
 
     #[Test]
-    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on generateDatastreams()')]
+    #[TestDox('Checks the processFile() method on a FedoraRecordProcessor object to throw an exception on generateDatastreams()')]
     public function processFileExceptionOnGenerateDatastreams(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
@@ -690,12 +690,12 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create array containing a mock FedoraRecord object that returns an exception on generateDatastreams().
-        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
-        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('processETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('generateDatastreams')->andThrow(new \ProcessProquest\ProcessingException);
+        // Create array containing a mock FedoraRecordProcessor object that returns an exception on generateDatastreams().
+        $fedoraRecordProcessorObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
+        $fedoraRecordProcessorObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('parseETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('processETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('generateDatastreams')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -704,11 +704,11 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(\ProcessProquest\ProcessingException::class);
-        $result = $processObj->processFile($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordProcessorObject);
     }
 
     #[Test]
-    #[TestDox('Checks the processFile() method on a FedoraRecord object to throw an exception on ingestETD()')]
+    #[TestDox('Checks the processFile() method on a FedoraRecordProcessor object to throw an exception on ingestETD()')]
     public function processFileExceptionOnIngestETD(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
@@ -716,13 +716,13 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create array containing a mock FedoraRecord object that returns an exception on generateDatastreams().
-        $fedoraRecordObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
-        $fedoraRecordObject->shouldReceive('downloadETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('parseETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('processETD')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('generateDatastreams')->andReturn(true);
-        $fedoraRecordObject->shouldReceive('ingestETD')->andThrow(new \ProcessProquest\ProcessingException);
+        // Create array containing a mock FedoraRecordProcessor object that returns an exception on generateDatastreams().
+        $fedoraRecordProcessorObject = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
+        $fedoraRecordProcessorObject->shouldReceive('downloadETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('parseETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('processETD')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('generateDatastreams')->andReturn(true);
+        $fedoraRecordProcessorObject->shouldReceive('ingestETD')->andThrow(new \ProcessProquest\ProcessingException);
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
@@ -731,7 +731,7 @@ final class ProcessproquestTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(\ProcessProquest\ProcessingException::class);
-        $result = $processObj->processFile($fedoraRecordObject);
+        $result = $processObj->processFile($fedoraRecordProcessorObject);
     }
 
     #[Test]
@@ -758,14 +758,14 @@ final class ProcessproquestTest extends TestCase {
         $createdFedoraRecords = $processObj->createFedoraRecordProcessorObjects();
 
         // Get list of scanned ETD files from getter method.
-        $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
+        $returnedFedoraRecords = $processObj->getAllFedoraRecordProcessorObjects();
 
-        $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
+        $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecordProcessor object to be returned.");
     }
 
     #[Test]
-    #[TestDox('Checks the appendAllFedoraRecordObjects() method updates the allFedoraRecordObjects property')]
-    public function appendAllFedoraRecordObjects(): void {
+    #[TestDox('Checks the appendallFedoraRecordProcessorObjects() method updates the allFedoraRecordObjects property')]
+    public function appendallFedoraRecordProcessorObjects(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
@@ -773,25 +773,25 @@ final class ProcessproquestTest extends TestCase {
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
         // Create a mock FedoraRecord.
-        $mockFedoraRecord = $this->helper->createMockFedoraRecord();
+        $mockFedoraRecordProcessor = $this->helper->createMockFedoraRecordProcessor();
 
         // Create a Processproquest object using a mock FTP connection, and mock Fedora connection.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setFedoraConnection($mockFedoraConnection);
 
-        // Append a FedoraRecord object using the setter method.
-        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+        // Append a FedoraRecordProcessor object using the setter method.
+        $processObj->appendallFedoraRecordProcessorObjects($mockFedoraRecordProcessor, true);
 
         // Get list of scanned ETD files from getter method.
-        $returnedFedoraRecords = $processObj->getAllFedoraRecordObjects();
+        $returnedFedoraRecords = $processObj->getAllFedoraRecordProcessorObjects();
 
-        $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecord object to be returned.");
+        $this->assertEquals(count($returnedFedoraRecords), 1, "Expected one FedoraRecordProcessor object to be returned.");
     }
 
     #[Test]
-    #[TestDox('Checks the appendAllFedoraRecordObjects() method returns false when passed the wrong object type')]
-    public function appendAllFedoraRecordObjectsWrongObjectType(): void {
+    #[TestDox('Checks the appendallFedoraRecordProcessorObjects() method returns false when passed the wrong object type')]
+    public function appendallFedoraRecordProcessorObjectsWrongObjectType(): void {
         // Create a mock fedoraConnection object.
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
@@ -807,7 +807,7 @@ final class ProcessproquestTest extends TestCase {
         $processObj->setFedoraConnection($mockFedoraConnection);
 
         // Append the wrong object type using the setter method.
-        $returnValue = $processObj->appendAllFedoraRecordObjects($wrongObjectType);
+        $returnValue = $processObj->appendallFedoraRecordProcessorObjects($wrongObjectType);
 
         $this->assertNotTrue($returnValue, "Expecting a false value.");
     }
@@ -818,17 +818,17 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create a mock FedoraRecord.
-        $mockFedoraRecord = $this->helper->createMockFedoraRecord();
-        $mockFedoraRecord->INGESTED = true;
+        // Create a mock FedoraRecordProcessor.
+        $mockFedoraRecordProcessor = $this->helper->createMockFedoraRecordProcessor();
+        $mockFedoraRecordProcessor->INGESTED = true;
 
         // Create a Processproquest object using a mock FTP connection, and set debug to false.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setDebug(false);
 
-        // Append a FedoraRecord object using the setter method.
-        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+        // Append a FedoraRecordProcessor object using the setter method.
+        $processObj->appendallFedoraRecordProcessorObjects($mockFedoraRecordProcessor, true);
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
@@ -844,23 +844,23 @@ final class ProcessproquestTest extends TestCase {
         $mockFTPConnection = Mockery::mock(\Processproquest\FTP\ProquestFTP::class)->makePartial();
         $mockFTPConnection->shouldReceive('moveFile')->andReturn(false);
 
-        // Create a mock FedoraRecord.
-        $mockFedoraRecord = $this->helper->createMockFedoraRecord();
+        // Create a mock FedoraRecordProcessor.
+        $mockFedoraRecordProcessor = $this->helper->createMockFedoraRecordProcessor();
 
         // Create a Processproquest object using a mock FTP connection, and set debug to false.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setDebug(false);
 
-        // Append a FedoraRecord object using the setter method.
-        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+        // Append a FedoraRecordProcessor object using the setter method.
+        $processObj->appendallFedoraRecordProcessorObjects($mockFedoraRecordProcessor, true);
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
         $result = $method->invoke($processObj);
 
         // Check that NONCRITICAL_ERRORS was updated.
-        $noncriticalErrors = $mockFedoraRecord->NONCRITICAL_ERRORS;;
+        $noncriticalErrors = $mockFedoraRecordProcessor->NONCRITICAL_ERRORS;;
 
         $this->assertTrue(count($noncriticalErrors) > 0, "Expected at least one noncritical error to be reported.");
     }
@@ -871,25 +871,25 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create a mock FedoraRecord.
-        $mockFedoraRecord = $this->helper->createMockFedoraRecord();
-        $mockFedoraRecord->INGESTED = true;
-        $mockFedoraRecord->HAS_SUPPLEMENTS = false;
+        // Create a mock FedoraRecordProcessor.
+        $mockFedoraRecordProcessor = $this->helper->createMockFedoraRecordProcessor();
+        $mockFedoraRecordProcessor->INGESTED = true;
+        $mockFedoraRecordProcessor->HAS_SUPPLEMENTS = false;
 
         // Create a Processproquest object using a mock FTP connection, and set debug to false.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setDebug(false);
 
-        // Append a FedoraRecord object using the setter method.
-        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+        // Append a FedoraRecordProcessor object using the setter method.
+        $processObj->appendallFedoraRecordProcessorObjects($mockFedoraRecordProcessor, true);
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
         $result = $method->invoke($processObj);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
-        $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
+        $ftpPostprocessLocation = $mockFedoraRecordProcessor->FTP_POSTPROCESS_LOCATION;
 
         $processdirFTP = $this->configurationSettings['ftp']['processdir'];
         //$faildirFTP = $this->configurationSettings['ftp']['faildir'];
@@ -904,25 +904,25 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create a mock FedoraRecord.
-        $mockFedoraRecord = $this->helper->createMockFedoraRecord();
-        $mockFedoraRecord->INGESTED = false;
-        $mockFedoraRecord->HAS_SUPPLEMENTS = true;
+        // Create a mock FedoraRecordProcessor.
+        $mockFedoraRecordProcessor = $this->helper->createMockFedoraRecordProcessor();
+        $mockFedoraRecordProcessor->INGESTED = false;
+        $mockFedoraRecordProcessor->HAS_SUPPLEMENTS = true;
 
         // Create a Processproquest object using a mock FTP connection, and set debug to false.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setDebug(false);
 
-        // Append a FedoraRecord object using the setter method.
-        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+        // Append a FedoraRecordProcessor object using the setter method.
+        $processObj->appendallFedoraRecordProcessorObjects($mockFedoraRecordProcessor, true);
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
         $result = $method->invoke($processObj);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
-        $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
+        $ftpPostprocessLocation = $mockFedoraRecordProcessor->FTP_POSTPROCESS_LOCATION;
 
         //$processdirFTP = $this->configurationSettings['ftp']['processdir'];
         //$faildirFTP = $this->configurationSettings['ftp']['faildir'];
@@ -937,25 +937,25 @@ final class ProcessproquestTest extends TestCase {
         // Create a mock ftpConnection object.
         $mockFTPConnection = $this->helper->createMockFTPConnection();
 
-        // Create a mock FedoraRecord.
-        $mockFedoraRecord = $this->helper->createMockFedoraRecord();
-        $mockFedoraRecord->INGESTED = false;
-        $mockFedoraRecord->HAS_SUPPLEMENTS = false;
+        // Create a mock FedoraRecordProcessor.
+        $mockFedoraRecordProcessor = $this->helper->createMockFedoraRecordProcessor();
+        $mockFedoraRecordProcessor->INGESTED = false;
+        $mockFedoraRecordProcessor->HAS_SUPPLEMENTS = false;
 
         // Create a Processproquest object using a mock FTP connection, and set debug to false.
         $processObj = $this->helper->generateProcessproquestObject();
         $processObj->setFTPConnection($mockFTPConnection);
         $processObj->setDebug(false);
 
-        // Append a FedoraRecord object using the setter method.
-        $processObj->appendAllFedoraRecordObjects($mockFedoraRecord, true);
+        // Append a FedoraRecordProcessor object using the setter method.
+        $processObj->appendallFedoraRecordProcessorObjects($mockFedoraRecordProcessor, true);
 
         // Use reflection to call on private method moveFTPFiles().
         $method = $this->helper->getProtectedMethod("Processproquest\Processproquest", "moveFTPFiles");
         $result = $method->invoke($processObj);
 
         // Check that FTP_POSTPROCESS_LOCATION was updated correctly.
-        $ftpPostprocessLocation = $mockFedoraRecord->FTP_POSTPROCESS_LOCATION;
+        $ftpPostprocessLocation = $mockFedoraRecordProcessor->FTP_POSTPROCESS_LOCATION;
 
         //$processdirFTP = $this->configurationSettings['ftp']['processdir'];
         $faildirFTP = $this->configurationSettings['ftp']['faildir'];

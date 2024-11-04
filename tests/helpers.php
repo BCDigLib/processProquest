@@ -221,19 +221,19 @@ final class TestHelpers extends TestCase {
     }
 
     /**
-     * Create a mock FedoraRecord object.
+     * Create a mock FedoraRecordProcessor object.
      * 
-     * @return object A mock FedoraRecord object.
+     * @return object A mock FedoraRecordProcessor object.
      */
-    public function createMockFedoraRecord() {
-        $mockFedoraRecord = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
-        $mockFedoraRecord->shouldReceive('downloadETD')->andReturn(true);
-        $mockFedoraRecord->shouldReceive('parseETD')->andReturn(true);
-        $mockFedoraRecord->shouldReceive('processETD')->andReturn(true);
-        $mockFedoraRecord->shouldReceive('generateDatastreams')->andReturn(true);
-        $mockFedoraRecord->shouldReceive('ingestETD')->andReturn(true);
+    public function createMockFedoraRecordProcessor() {
+        $mockFedoraRecordProcessor = Mockery::mock(\Processproquest\Record\FedoraRecordProcessor::class)->makePartial();
+        $mockFedoraRecordProcessor->shouldReceive('downloadETD')->andReturn(true);
+        $mockFedoraRecordProcessor->shouldReceive('parseETD')->andReturn(true);
+        $mockFedoraRecordProcessor->shouldReceive('processETD')->andReturn(true);
+        $mockFedoraRecordProcessor->shouldReceive('generateDatastreams')->andReturn(true);
+        $mockFedoraRecordProcessor->shouldReceive('ingestETD')->andReturn(true);
 
-        return $mockFedoraRecord;
+        return $mockFedoraRecordProcessor;
     }
 
     /**

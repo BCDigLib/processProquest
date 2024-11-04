@@ -61,18 +61,18 @@ final class FedoraRecordProcessorTest extends TestCase {
     }
 
     /**
-     * Create a generic FedoraRecord object.
+     * Create a generic FedoraRecordProcessor object.
      * 
      * @param string $zipFileName The file name of a ETD zip file.
      * @param array $customSettings Optional array of settings.
      * 
-     * @return object A FedoraRecord object.
+     * @return object A FedoraRecordProcessor object.
      */
-    protected function createFedoraRecordObject($zipFileName, $customSettings = []) {
+    protected function createFedoraRecordProcessorObject($zipFileName, $customSettings = []) {
         if (empty($customSettings)) {
             $customSettings = $this->configurationSettings;
         }
-        // Create a FedoraRecord object.
+        // Create a FedoraRecordProcessor object.
         $fr = new \Processproquest\Record\FedoraRecordProcessor(
                         $zipFileName,               // ETD short name
                         $customSettings,            // settings array
@@ -88,18 +88,18 @@ final class FedoraRecordProcessorTest extends TestCase {
     #[Test]
     #[TestDox('Checks the getProperty() method')]
     public function getProperty(): void {
-        // Create a FedoraRecord object.
-        $fedoraRecord = $this->createFedoraRecordObject("foo.zip");
+        // Create a FedoraRecordProcessor object.
+        $fedoraRecordProcessor = $this->createFedoraRecordProcessorObject("foo.zip");
 
         // Get the current status value.
-        $status = $fedoraRecord->getProperty("STATUS");
+        $status = $fedoraRecordProcessor->getProperty("STATUS");
 
         // Update status value.
         $newStatusValue = "hello";
-        $fedoraRecord->setStatus("hello");
+        $fedoraRecordProcessor->setStatus("hello");
 
         // Get the updated status value.
-        $result = $fedoraRecord->getProperty("STATUS");
+        $result = $fedoraRecordProcessor->getProperty("STATUS");
         
         $this->assertEquals($newStatusValue, $result, "Expected getProperty() to set the value of STATUS to be {$newStatusValue}");
     }
@@ -107,11 +107,11 @@ final class FedoraRecordProcessorTest extends TestCase {
     #[Test]
     #[TestDox('Checks the getProperty() method for a non-existent property')]
     public function getPropertyNonExistentProperty(): void {
-        // Create a FedoraRecord object.
-        $fedoraRecord = $this->createFedoraRecordObject("foo.zip");
+        // Create a FedoraRecordProcessor object.
+        $fedoraRecordProcessor = $this->createFedoraRecordProcessorObject("foo.zip");
 
         // Get the value of a non-existent property.
-        $result = $fedoraRecord->getProperty("FOOBAR");
+        $result = $fedoraRecordProcessor->getProperty("FOOBAR");
         
         $this->assertNull($result, "Expected getProperty() to return null on a non-existent property");
     }
@@ -119,18 +119,18 @@ final class FedoraRecordProcessorTest extends TestCase {
     #[Test]
     #[TestDox('Checks the setStatus() method')]
     public function setStatus(): void {
-        // Create a FedoraRecord object.
-        $fedoraRecord = $this->createFedoraRecordObject("foo.zip");
+        // Create a FedoraRecordProcessor object.
+        $fedoraRecordProcessor = $this->createFedoraRecordProcessorObject("foo.zip");
 
         // Get the current status value.
-        $status = $fedoraRecord->getProperty("STATUS");
+        $status = $fedoraRecordProcessor->getProperty("STATUS");
 
         // Update status value.
         $newStatusValue = "hello";
-        $fedoraRecord->setStatus("hello");
+        $fedoraRecordProcessor->setStatus("hello");
 
         // Get the updated status value.
-        $result = $fedoraRecord->getProperty("STATUS");
+        $result = $fedoraRecordProcessor->getProperty("STATUS");
         
         $this->assertEquals($newStatusValue, $result, "Expected setStatus() to set the value of STATUS to be {$newStatusValue}");
     }
@@ -138,18 +138,18 @@ final class FedoraRecordProcessorTest extends TestCase {
     #[Test]
     #[TestDox('Checks the setFTPPostprocessLocation() method')]
     public function setFTPPostprocessLocation(): void {
-        // Create a FedoraRecord object.
-        $fedoraRecord = $this->createFedoraRecordObject("foo.zip");
+        // Create a FedoraRecordProcessor object.
+        $fedoraRecordProcessor = $this->createFedoraRecordProcessorObject("foo.zip");
 
         // Get the current FTP_POSTPROCESS_LOCATION value.
-        $status = $fedoraRecord->getProperty("FTP_POSTPROCESS_LOCATION");
+        $status = $fedoraRecordProcessor->getProperty("FTP_POSTPROCESS_LOCATION");
 
         // Update FTP_POSTPROCESS_LOCATION value.
         $newValue = "hello";
-        $fedoraRecord->setFTPPostprocessLocation("hello");
+        $fedoraRecordProcessor->setFTPPostprocessLocation("hello");
 
         // Get the updated FTP_POSTPROCESS_LOCATION value.
-        $result = $fedoraRecord->getProperty("FTP_POSTPROCESS_LOCATION");
+        $result = $fedoraRecordProcessor->getProperty("FTP_POSTPROCESS_LOCATION");
         
         $this->assertEquals($newValue, $result, "Expected setFTPPostprocessLocation() to set the value of FTP_POSTPROCESS_LOCATION to be {$newValue}");
     }
@@ -190,8 +190,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -200,11 +200,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $result = $fedoraRecord->downloadETD();
+        $result = $fedoraRecordProcessor->downloadETD();
         
         $this->AssertTrue($result, "Expected downloadETD() to return true");
 
-        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+        $updatedStatusProperty = $fedoraRecordProcessor->getProperty("STATUS");
 
         $this->AssertEquals("downloaded", $updatedStatusProperty, "Expected downloadETD() to set the status to 'downloaded'");
     }
@@ -230,8 +230,8 @@ final class FedoraRecordProcessorTest extends TestCase {
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
         $mockProquestFTPConnection->shouldReceive('getFile')->andReturn(false);
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -242,7 +242,7 @@ final class FedoraRecordProcessorTest extends TestCase {
 
         // Expect an exception.
         $this->expectException(\Exception::class);
-        $result = $fedoraRecord->downloadETD();
+        $result = $fedoraRecordProcessor->downloadETD();
     }
 
     #[Test]
@@ -281,8 +281,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -291,12 +291,12 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $result = $fedoraRecord->parseETD();
+        $fedoraRecordProcessor->downloadETD();
+        $result = $fedoraRecordProcessor->parseETD();
         
         $this->AssertTrue($result, "Expected parseETD() to return true");
 
-        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+        $updatedStatusProperty = $fedoraRecordProcessor->getProperty("STATUS");
 
         $this->AssertEquals("success", $updatedStatusProperty, "Expected parseETD() to set the status to 'downloaded'");
     }
@@ -327,8 +327,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -337,13 +337,13 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $result = $fedoraRecord->parseETD();
+        $fedoraRecordProcessor->downloadETD();
+        $result = $fedoraRecordProcessor->parseETD();
         
         // This method should return false when it encounters a zip file with supplemental files.
         $this->AssertNotTrue($result, "Expected parseETD() to return false");
 
-        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+        $updatedStatusProperty = $fedoraRecordProcessor->getProperty("STATUS");
 
         $this->AssertEquals("skipped", $updatedStatusProperty, "Expected parseETD() to set the status to 'skipped'");
     }
@@ -374,8 +374,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -384,11 +384,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
+        $fedoraRecordProcessor->downloadETD();
 
         // Expect an exception.
         $this->expectException(\Processproquest\Record\RecordProcessingException::class);
-        $result = $fedoraRecord->parseETD();
+        $result = $fedoraRecordProcessor->parseETD();
     }
 
     #[Test]
@@ -417,8 +417,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -427,11 +427,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
+        $fedoraRecordProcessor->downloadETD();
 
         // Expect an exception.
         $this->expectException(\Exception::class);
-        $result = $fedoraRecord->parseETD();
+        $result = $fedoraRecordProcessor->parseETD();
     }
 
     #[Test]
@@ -461,8 +461,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -471,11 +471,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
+        $fedoraRecordProcessor->downloadETD();
 
         // Expect an exception.
         $this->expectException(\Exception::class);
-        $result = $fedoraRecord->parseETD();
+        $result = $fedoraRecordProcessor->parseETD();
     }
 
     #[Test]
@@ -504,8 +504,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -514,11 +514,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
+        $fedoraRecordProcessor->downloadETD();
 
         // Expect an exception.
         $this->expectException(\Exception::class);
-        $result = $fedoraRecord->parseETD();
+        $result = $fedoraRecordProcessor->parseETD();
     }
 
     #[Test]
@@ -547,8 +547,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -557,11 +557,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
+        $fedoraRecordProcessor->downloadETD();
 
         // Expect an exception.
         $this->expectException(\Exception::class);
-        $result = $fedoraRecord->parseETD();
+        $result = $fedoraRecordProcessor->parseETD();
     }
 
     #[Test]
@@ -611,8 +611,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -621,18 +621,18 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $result = $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $result = $fedoraRecordProcessor->processETD();
         
         $this->assertTrue($result, "Expected processETD() to return true");
 
         // Check that the status has been set to "processed"
-        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+        $updatedStatusProperty = $fedoraRecordProcessor->getProperty("STATUS");
         $this->assertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
 
         // Check that the returned PID is that same as $this->mockPID
-        $updatedPID = $fedoraRecord->getProperty("PID");
+        $updatedPID = $fedoraRecordProcessor->getProperty("PID");
         $this->assertEquals($this->mockPID, $updatedPID, "Expected processETD() to set the PID to {$this->mockPID}");
 
         // TODO: check that HAS_EMBARGO is false.
@@ -671,8 +671,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -681,18 +681,18 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $result = $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $result = $fedoraRecordProcessor->processETD();
         
         $this->assertTrue($result, "Expected processETD() to return true");
 
         // Check that the status has been set to "processed"
-        $updatedStatusProperty = $fedoraRecord->getProperty("STATUS");
+        $updatedStatusProperty = $fedoraRecordProcessor->getProperty("STATUS");
         $this->assertEquals("processed", $updatedStatusProperty, "Expected processETD() to set the status to 'processed'");
 
         // Check that this record has a HAS_EMBARGO value of true
-        $hasEmbargo = $fedoraRecord->getProperty("HAS_EMBARGO");
+        $hasEmbargo = $fedoraRecordProcessor->getProperty("HAS_EMBARGO");
         $this->assertTrue($hasEmbargo, "Expected this record to have the property HAS_EMBARGO to be true");
     }
 
@@ -722,8 +722,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -732,9 +732,9 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $result = $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $result = $fedoraRecordProcessor->processETD();
         
         $this->AssertNotTrue($result, "Expected processETD() to return false");
 
@@ -770,8 +770,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -783,11 +783,11 @@ final class FedoraRecordProcessorTest extends TestCase {
         // Expect an exception.
         $this->expectException(\Exception::class);
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
 
         // Suppress warning by using @ error control operator.
-        $result = @$fedoraRecord->processETD();
+        $result = @$fedoraRecordProcessor->processETD();
     }
 
     #[Test]
@@ -819,8 +819,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -832,11 +832,11 @@ final class FedoraRecordProcessorTest extends TestCase {
         // Expect an exception.
         $this->expectException(\Exception::class);
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
 
         // Suppress warning by using @ error control operator.
-        $result = @$fedoraRecord->processETD();
+        $result = @$fedoraRecordProcessor->processETD();
     }
 
     #[Test]
@@ -865,8 +865,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -875,11 +875,11 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $result = $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $result = $fedoraRecordProcessor->processETD();
 
-        $embargoDate = $fedoraRecord->getProperty("EMBARGO_DATE");
+        $embargoDate = $fedoraRecordProcessor->getProperty("EMBARGO_DATE");
 
         $this->assertEquals("indefinite", $embargoDate, "Expected processETD() to set the EMBARGO_DATE to 'indefiniete'");
     }
@@ -920,8 +920,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -930,10 +930,10 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $fedoraRecord->processETD();
-        $result = $fedoraRecord->generateDatastreams();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $fedoraRecordProcessor->processETD();
+        $result = $fedoraRecordProcessor->generateDatastreams();
         
         $this->assertNotTrue($result, "Expected generateDatastreams() to return false");
     }
@@ -976,8 +976,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -986,13 +986,13 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $fedoraRecordProcessor->processETD();
 
         // Expect an exception.
         $this->expectException(\Processproquest\Record\RecordProcessingException::class);
-        $fedoraRecord->generateDatastreams();
+        $fedoraRecordProcessor->generateDatastreams();
     }
 
     //#[Test]
@@ -1049,8 +1049,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -1059,13 +1059,13 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $fedoraRecordProcessor->processETD();
 
         // Expect an exception on the second call to getObject()
         $this->expectException(\Processproquest\Record\RecordProcessingException::class);
-        $fedoraRecord->generateDatastreams();
+        $fedoraRecordProcessor->generateDatastreams();
     }
 
 
@@ -1096,7 +1096,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($this->helper->createMockFedoraRecord());
+        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($this->helper->createMockFedoraRecordProcessor());
         $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
         $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
         $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
@@ -1114,8 +1114,8 @@ final class FedoraRecordProcessorTest extends TestCase {
             }
         );
 
-        // Create a custom FedoraRecord object.
-        $fedoraRecord = new \Processproquest\Record\FedoraRecordProcessor(
+        // Create a custom FedoraRecordProcessor object.
+        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
@@ -1124,13 +1124,13 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $this->logger                   // logger object
                             );
 
-        $fedoraRecord->downloadETD();
-        $fedoraRecord->parseETD();
-        $fedoraRecord->processETD();
+        $fedoraRecordProcessor->downloadETD();
+        $fedoraRecordProcessor->parseETD();
+        $fedoraRecordProcessor->processETD();
 
         // Expect an exception on the second call to getObject()
         //$this->expectException(\Processproquest\Record\RecordProcessingException::class);
-        $result = $fedoraRecord->generateDatastreams();
+        $result = $fedoraRecordProcessor->generateDatastreams();
 
         $this->assertTrue($result, "Expected generateDatastreams() to return true");
     }
