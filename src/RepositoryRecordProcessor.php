@@ -1,41 +1,33 @@
 <?php declare(strict_types=1);
 namespace Processproquest\Repository;
 
-class RepositoryProcessorException extends \Exception {};
-class RepositoryProcessorServiceException extends \Exception {};
+class RepositoryRecordProcessorException extends \Exception {};
+class RepositoryRecordProcessorServiceException extends \Exception {};
 
 /**
- * Repository processor interface.
+ * Repository record processor interface.
  */
-interface RepositoryProcessorInterface {
-    public function getNextPid(string $nameSpace): string;
-    public function constructObject(string $pid, bool $create_uuid = FALSE): object;
-    public function ingestObject(object $fedoraObj): object;
-    public function getObject(string $pid): object;
+interface RepositoryRecordProcessorInterface {
     public function constructDatastream(string $id, string $control_group = "M"): object;
     public function ingestDatastream(object $dataStream): mixed;
     public function getDatastream(string $datastreamID): object|bool;
 }
 
 /**
- * Repository processore service interface.
+ * Repository record processor service interface.
  */
-interface RepositoryProcessorServiceInterface {
-    public function repository_service_getNextPid(string $nameSpace): string;
-    public function repository_service_constructObject(string $pid, bool $create_uuid = FALSE): object;
-    public function repository_service_ingestObject(object $fedoraObj): object;
-    public function repository_service_getObject(string $pid): object;
+interface RepositoryRecordProcessorServiceInterface {
     public function repository_service_constructDatastream(string $id, string $control_group = "M"): object;
     public function repository_service_ingestDatastream(object $dataStream): mixed;
     public function repository_service_getDatastream(string $datastreamID): object|bool;
 }
 
 /**
- * A RepositoryProcessorServiceInterface Adapter to directly access Tuque library functions.
+ * A RepositoryRecordProcessorServiceInterface Adapter to directly access Tuque library functions.
  * 
  * @codeCoverageIgnore
  */
-class FedoraRepositoryProcessorServiceAdapter implements RepositoryProcessorServiceInterface {
+class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordProcessorServiceInterface {
 
     // Object.php
     // abstract class AbstractFedoraObject extends AbstractObject
@@ -109,78 +101,6 @@ class FedoraRepositoryProcessorServiceAdapter implements RepositoryProcessorServ
     }
 
     /**
-     * Fetches the next PID from the repository.
-     * 
-     * @param string $nameSpace The namespace prefix.
-     * 
-     * @return string A PID string.
-     */
-    public function repository_service_getNextPid(string $nameSpace): string {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/FedoraApi.php#L949-L960
-        $numberOfPIDsToRequest = 1;
-        $ret = $this->api_m->getNextPid($nameSpace, $numberOfPIDsToRequest);
-
-        return $ret;
-    }
-
-    /**
-     * Constructs a NewFedoraObject object with a given PID.
-     * A NewFedoraObject object is a placeholder until it is fully ingested, 
-     * and then a FedoraRecord object is created.
-     * 
-     * @param string $pid A PID string to initialize a repository object.
-     * @param bool $create_uuid Indicates if the objects ID should contain a UUID.
-     * 
-     * @return object A NewFedoraObject object.
-     */
-    public function repository_service_constructObject(string $pid, bool $create_uuid = FALSE): object {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L37 (AbstractRepository class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L174-L186 (FedoraRepositoryProcessor class)
-        $ret = $this->repository->constructObject($pid, $create_uuid);
-
-        return $ret;
-    }
-
-    /**
-     * Ingests a NewFedoraObject object. 
-     * This creates a FedoraObject from the passed NewFedoraObject object.
-     * 
-     * @param object $fedoraObj A NewFedoraObject object.
-     * 
-     * @return object A FedoraObject object. 
-     */
-    public function repository_service_ingestObject(object $fedoraObj): object {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L50 (AbstractRepository class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L282-L302 (FedoraRepositoryProcessor class)
-        $ret = $this->repository->ingestObject($fedoraObj);
-
-        return $ret;
-    }
-
-    /**
-     * Retrieves an existing FedoraRecord object using a PID string.
-     * 
-     * @param string $pid A PID string to lookup.
-     * 
-     * @return object A FedoraRecord object.
-     * 
-     * @throws RepositoryProcessorServiceException if an existing FedoraRecord object can't be found by $pid.
-     */
-    public function repository_service_getObject(string $pid): object {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L61 (AbstractRepository class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L309-L323 (FedoraRepositoryProcessor class)
-        // INFO: getObject() throws a RepositoryException exception on error.
-        try {
-            $ret = $this->repository->getObject($pid);
-        } catch (RepositoryException | Exception $e) {
-            $errorMessage = "Couldn't get a FedoraRecord object with this PID: {$pid}. " . $e->getMessage();
-            throw new RepositoryProcessorServiceException($errorMessage);
-        }
-
-        return $ret;
-    }
-
-    /**
      * Constructs a AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      * This object is not ingested until ingestDatastream() is called.
      * The AbstractFedoraDatastream type returns depends on the calling AbstractFedoraObject object type.
@@ -248,7 +168,7 @@ class FedoraRepositoryProcessorServiceAdapter implements RepositoryProcessorServ
 /**
  * Manages a connection to a Fedora repository.
  */
-class FedoraRepositoryProcessor implements RepositoryProcessorInterface {
+class FedoraRepositoryRecordProcessor implements RepositoryRecordProcessorInterface {
 
     /**
      * Class constructor.
@@ -257,68 +177,6 @@ class FedoraRepositoryProcessor implements RepositoryProcessorInterface {
      */
     public function __construct(object $service) {
         $this->service = $service;
-    }
-
-    /**
-     * Fetches the next PID from the repository.
-     * 
-     * @param string $nameSpace The namespace prefix.
-     * 
-     * @return string A PID string.
-     */
-    public function getNextPid(string $nameSpace): string {
-        $result = $this->service->repository_service_getNextPid($nameSpace);
-
-        return $result;
-    }
-
-    /**
-     * Constructs a NewFedoraObject object with a given PID.
-     * A NewFedoraObject object is a placeholder until it is fully ingested, 
-     * and then a FedoraRecord object is created.
-     * 
-     * @param string $pid A PID string to initialize a repository object.
-     * @param bool $create_uuid Indicates if the objects ID should contain a UUID.
-     * 
-     * @return object A NewFedoraObject object.
-     */
-    public function constructObject(string $pid, bool $create_uuid = FALSE): object {
-        $result = $this->service->repository_service_constructObject($pid, $create_uuid);
-
-        return $result;
-    }
-
-    /**
-     * Retrieves an existing FedoraRecord object using a PID string.
-     * 
-     * @param string $pid A PID string to lookup.
-     * 
-     * @return object A FedoraRecord object.
-     * 
-     * @throws RepositoryProcessorException if an existing FedoraRecord object can't be found by $pid.
-     */
-    public function getObject(string $pid): object {
-        try {
-            $result = $this->service->repository_service_getObject($pid);
-        } catch(RepositoryProcessorServiceException $e) {
-            throw new RepositoryProcessorException($e->getMessage());
-        }
-
-        return $result;
-    }
-
-    /**
-     * Ingest a NewFedoraObject object. 
-     * This creates a FedoraObject from the passed NewFedoraObject object.
-     * 
-     * @param object $fedoraObj A NewFedoraObject object.
-     * 
-     * @return object A FedoraObject object. 
-     */
-    public function ingestObject(object $fedoraObj): object {
-        $result = $this->service->repository_service_ingestObject($fedoraObj);
-
-        return $result;
     }
 
     /**

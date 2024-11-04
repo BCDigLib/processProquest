@@ -82,7 +82,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                         $zipFileName,               // ETD short name
                         $customSettings,            // settings array
                         $zipFileName,               // name of ETD zip file
-                        $this->fedoraConnection,    // mock FedoraRepositoryProcessor object
+                        $this->fedoraConnection,    // mock FedoraRepositoryWrapper object
                         $this->ftpConnection,       // mock ProquestFTP object
                         $this->logger               // logger object
                     );
@@ -200,7 +200,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -240,7 +240,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -291,7 +291,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -337,7 +337,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -384,7 +384,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -427,7 +427,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -471,7 +471,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -514,7 +514,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -557,7 +557,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -601,10 +601,10 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -621,7 +621,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $mockFedoraRepositoryProcessorConnection,// mock FedoraRepositoryProcessor object
+                                $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -661,10 +661,10 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -681,7 +681,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $mockFedoraRepositoryProcessorConnection,// mock FedoraRepositoryProcessor object
+                                $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -732,7 +732,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -780,7 +780,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -829,7 +829,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -875,7 +875,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $this->fedoraConnection,        // mock FedoraRepositoryProcessor object
+                                $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -910,10 +910,10 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -930,7 +930,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $mockFedoraRepositoryProcessorConnection,// mock FedoraRepositoryProcessor object
+                                $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -959,17 +959,17 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
         // Set getObject() to throw an exception.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryProcessorException("FOO"));
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryProcessorException("FOO"));
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -986,7 +986,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $mockFedoraRepositoryProcessorConnection,// mock FedoraRepositoryProcessor object
+                                $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -1016,14 +1016,14 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
         // Set getObject() return multiple values.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getObject')->andReturnUsing(
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->andReturnUsing(
             function () {
                 static $counter = 0;
     
@@ -1040,9 +1040,9 @@ final class FedoraRecordProcessorTest extends TestCase {
                 }
             }
         );
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -1059,7 +1059,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $mockFedoraRepositoryProcessorConnection,// mock FedoraRepositoryProcessor object
+                                $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );
@@ -1095,19 +1095,19 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
         $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
 
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getObject')->andReturn($this->helper->createMockFedoraRecordProcessor());
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->andReturn($this->helper->createMockFedoraRecordProcessor());
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         // Manually assign this property that is assigned in the Tuque library, which isn't loaded for these tests.
-        $mockFedoraRepositoryProcessorConnection->FEDORA_RELS_EXT_URI = "info:fedora/fedora-system:def/relations-external";
+        $mockFedoraRepositoryWrapperConnection->FEDORA_RELS_EXT_URI = "info:fedora/fedora-system:def/relations-external";
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -1124,7 +1124,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
-                                $mockFedoraRepositoryProcessorConnection,// mock FedoraRepositoryProcessor object
+                                $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
                             );

@@ -140,7 +140,7 @@ try {
  * 
  */
 
-require_once 'src/RepositoryProcessor.php';
+require_once 'src/Repository.php';
 use \Processproquest\Repository as REPO;
 $fedoraUrl = $configurationSettings['fedora']['url'];
 $fedoraUsername = $configurationSettings['fedora']['username'];
@@ -148,7 +148,7 @@ $fedoraPassword = $configurationSettings['fedora']['password'];
 $tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
 
 try {
-    $repositoryService = new REPO\FedoraRepositoryProcessorServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
+    $repositoryService = new REPO\FedoraRepositoryServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
 } catch (Exception | RepositoryProcessorServiceException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
@@ -157,7 +157,7 @@ try {
 }
 
 try {
-    $FedoraRepositoryProcessor = new REPO\FedoraRepositoryProcessor($repositoryService);
+    $FedoraRepositoryWrapper = new REPO\FedoraRepositoryWrapper($repositoryService);
 } catch (Exception | RepositoryProcessorException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
@@ -179,7 +179,7 @@ use \Processproquest as PP;
 
 $process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
             ->setFTPConnection($ftpConnection)
-            ->setFedoraConnection($FedoraRepositoryProcessor);
+            ->setFedoraConnection($FedoraRepositoryWrapper);
 
 /**
  * 

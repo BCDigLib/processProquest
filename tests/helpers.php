@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 use \Mockery;
 
 require __DIR__ . "/../src/Processproquest.php";
-require __DIR__ . "/../src/RepositoryProcessor.php";
+require __DIR__ . "/../src/Repository.php";
 
 use Monolog\Level;
 use Monolog\Logger;
@@ -166,7 +166,7 @@ final class TestHelpers extends TestCase {
      * 
      * @param array $configurationSettings The settings to use.
      * 
-     * @return object A FedoraRepositoryProcessor object.
+     * @return object A FedoraRepositoryWrapper object.
      */
     public function createFedoraConnection($configurationSettings) {
         $fedoraURL      = $configurationSettings['fedora']['url'];
@@ -174,11 +174,11 @@ final class TestHelpers extends TestCase {
         $fedoraPassword = $configurationSettings['fedora']['password'];
         $tuqueLocation  = $configurationSettings['packages']['tuque'];
 
-        // Create FedoraRepositoryProcessorServiceAdapter object.
-        $repositoryService = new \Processproquest\Repository\FedoraRepositoryProcessorServiceAdapter($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
+        // Create FedoraRepositoryServiceAdapter object.
+        $repositoryService = new \Processproquest\Repository\FedoraRepositoryServiceAdapter($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
 
-        // Create FedoraRepositoryProcessor using the FedoraRepositoryProcessorServiceAdapter object.
-        $fedoraConnection = new \Processproquest\Repository\FedoraRepositoryProcessor($repositoryService);
+        // Create FedoraRepositoryWrapper using the FedoraRepositoryServiceAdapter object.
+        $fedoraConnection = new \Processproquest\Repository\FedoraRepositoryWrapper($repositoryService);
 
         return $fedoraConnection;
     }
@@ -202,22 +202,22 @@ final class TestHelpers extends TestCase {
     }
 
     /**
-     * Create a mock FedoraRepositoryProcessor object.
+     * Create a mock FedoraRepositoryWrapper object.
      * 
-     * @return object A mock FedoraRepositoryProcessor object.
+     * @return object A mock FedoraRepositoryWrapper object.
      */
     public function createMockFedoraConnection() {
-        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
-        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryProcessorConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        // Create a custom mock FedoraRepositoryWrapper connection object using the RepositoryInterface interface.
+        $mockFedoraRepositoryWrapperConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
-        return $mockFedoraRepositoryProcessorConnection;
+        return $mockFedoraRepositoryWrapperConnection;
     }
 
     /**
