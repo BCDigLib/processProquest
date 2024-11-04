@@ -38,7 +38,7 @@ final class ProcessproquestTest extends TestCase {
         $this->configurationSettings = $this->helper->readConfigurationFile($configurationFile);
         $this->logger = $this->helper->createLogger($this->configurationSettings);
         $this->debug = true;
-        $this->listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip'];
+        $this->listOfETDs = $this->helper->getListOfSampleETDs();
     }
 
     protected function tearDown(): void {

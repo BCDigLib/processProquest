@@ -36,10 +36,10 @@ final class FedoraRepositoryTest extends TestCase {
         $this->nextPIDNumber = "123456789";
 
         // Create a mock AbstractFedoraObject (FedoraObject|NewFedoraObject) object.
-        $this->mockAbstractFedoraObject = $this->generateMockAbstractFedoraObject();
+        $this->mockAbstractFedoraObject = $this->helper->generateMockAbstractFedoraObject();
 
         // Create a mock AbstractFedoraDatastream (FedoraDatastream|NewFedoraDatastream) object.
-        $this->mockAbstractFedoraDatastream = $this->generateMockAbstractFedoraDatastream();
+        $this->mockAbstractFedoraDatastream = $this->helper->generateMockAbstractFedoraDatastream();
     }
 
     protected function tearDown(): void {
@@ -50,32 +50,9 @@ final class FedoraRepositoryTest extends TestCase {
     }
 
     /**
-     * Create a mock AbstractFedoraDatastream (FedoraDatastream|NewFedoraDatastream) object.
-     * 
-     * TODO: place this method in helpers.php.
-     * 
-     * @return object A mock AbstractFedoraDatastream object.
-     */
-    protected function generateMockAbstractFedoraDatastream() {
-        $mockAbstractFedoraDatastreamObject = \Mockery::mock('AbstractFedoraDatastream')->makePartial();
-        $mockAbstractFedoraDatastreamObject->shouldReceive("setContentFromFile")->andReturn(null);
-
-        return $mockAbstractFedoraDatastreamObject;
-    }
-
-    /**
-     * Create a mock AbstractFedoraObject (FedoraObject|NewFedoraObject) object.
-     * 
-     * @return object A mock AbstractFedoraObject object.
-     */
-    protected function generateMockAbstractFedoraObject() {
-        $mockAbstractFedoraObject = \Mockery::mock('AbstractFedoraObject')->makePartial();
-
-        return $mockAbstractFedoraObject;
-    }
-
-    /**
      * Create a mock RepositoryService object.
+     * 
+     * TODO: move to helpers.php
      * 
      * @return object A mock RepositoryService object.
      */

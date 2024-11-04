@@ -13,14 +13,14 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Formatter\LineFormatter;
 
 final class TestHelpers extends TestCase {
-    protected $configurationSettings = [];
+    protected $configurationSettings = Array();
     protected $configurationFile = null;
-    protected $settings = [];
+    protected $settings = Array();
     protected $logger = null;
     protected $ftpConnection = null;
     protected $fedoraConnection = null;
     protected $debug = null;
-    //protected $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip'];
+    protected $listOfETDs = Array();
 
     // TODO: pass configurationFile as an argument
     public function __construct($name) {
@@ -28,6 +28,16 @@ final class TestHelpers extends TestCase {
         $this->configurationSettings = $this->readConfigurationFile($this->configurationFile);
         $this->logger = $this->createLogger($this->configurationSettings);
         $this->debug = true;
+        $this->listOfETDs = ['etdadmin_upload_001_normal.zip', 'etdadmin_upload_002_embargoed.zip'];
+    }
+
+    /**
+     * Getter method to get $listOfSampleETDs.
+     * 
+     * @return array $listOfETDs.
+     */
+    public function getListOfSampleETDs() {
+        return $this->listOfETDs;
     }
 
     /**
@@ -222,6 +232,29 @@ final class TestHelpers extends TestCase {
         $mockFedoraRecord->shouldReceive('ingestETD')->andReturn(true);
 
         return $mockFedoraRecord;
+    }
+
+    /**
+     * Create a mock AbstractFedoraDatastream (FedoraDatastream|NewFedoraDatastream) object.
+     * 
+     * @return object A mock AbstractFedoraDatastream object.
+     */
+    public function generateMockAbstractFedoraDatastream() {
+        $mockAbstractFedoraDatastreamObject = Mockery::mock('AbstractFedoraDatastream')->makePartial();
+        $mockAbstractFedoraDatastreamObject->shouldReceive("setContentFromFile")->andReturn(null);
+
+        return $mockAbstractFedoraDatastreamObject;
+    }
+
+    /**
+     * Create a mock AbstractFedoraObject (FedoraObject|NewFedoraObject) object.
+     * 
+     * @return object A mock AbstractFedoraObject object.
+     */
+    public function generateMockAbstractFedoraObject() {
+        $mockAbstractFedoraObject = Mockery::mock('AbstractFedoraObject')->makePartial();
+
+        return $mockAbstractFedoraObject;
     }
 
     /**
