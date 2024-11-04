@@ -213,9 +213,6 @@ final class TestHelpers extends TestCase {
         $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         return $mockFedoraRepositoryWrapperConnection;
     }
@@ -244,6 +241,7 @@ final class TestHelpers extends TestCase {
     public function generateMockAbstractFedoraDatastream() {
         $mockAbstractFedoraDatastreamObject = Mockery::mock('AbstractFedoraDatastream')->makePartial();
         $mockAbstractFedoraDatastreamObject->shouldReceive("setContentFromFile")->andReturn(null);
+        $mockAbstractFedoraDatastreamObject->shouldReceive("setContentFromString")->andReturn(null);
 
         return $mockAbstractFedoraDatastreamObject;
     }
@@ -259,9 +257,16 @@ final class TestHelpers extends TestCase {
         // See: https://github.com/Islandora/tuque/blob/1.x/FedoraRelationships.php#L628-L630
         $mockFedoraRelsExtObject->shouldReceive("add")->andReturn(null);
 
+        // Create a mock generateMockAbstractFedoraDatastream object.
+        $mockAbstractFedoraDatastreamObject = $this->generateMockAbstractFedoraDatastream();
+        
         $mockAbstractFedoraObject = Mockery::mock('AbstractFedoraObject')->makePartial();
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L228
         $mockAbstractFedoraObject->relationships = $mockFedoraRelsExtObject;
+        $mockAbstractFedoraObject->shouldReceive("getDatastream")->andReturn($mockAbstractFedoraDatastreamObject);
+        $mockAbstractFedoraObject->shouldReceive("constructDatastream")->andReturn($mockAbstractFedoraDatastreamObject);
+        // Either return true or $mockAbstractFedoraDatastreamObject 
+        $mockAbstractFedoraObject->shouldReceive("ingestDatastream")->andReturn(true);
 
         return $mockAbstractFedoraObject;
     }
