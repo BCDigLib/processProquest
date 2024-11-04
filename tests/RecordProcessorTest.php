@@ -894,7 +894,7 @@ final class FedoraRecordProcessorTest extends TestCase {
     // TODO: overload $this->settings['xslt']['creator'] with a bad XPath value to force a false value around line 613.
     // TODO: find how to force XSLTProcessor::importStylesheet() to return false (lines 408, 435)
 
-    //#[Test]
+    #[Test]
     #[TestDox('Checks the generateDatastreams() method with a record with supplements')]
     public function generateDatastreamsWithEmbargo(): void {
         // etdadmin_upload_003_supplemental.zip contains supplements.
@@ -943,7 +943,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $this->assertNotTrue($result, "Expected generateDatastreams() to return false");
     }
 
-    //#[Test]
+    #[Test]
     #[TestDox('Checks the generateDatastreams() method returns an Exception when the record can\'t be found')]
     public function generateDatastreamsGetObjectFail(): void {
         // etdadmin_upload_001_normal.zip is a valid ETD file.
@@ -967,9 +967,6 @@ final class FedoraRecordProcessorTest extends TestCase {
         $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryWrapperException("FOO"));
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -1000,7 +997,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $fedoraRecordProcessor->generateDatastreams();
     }
 
-    //#[Test]
+    #[Test]
     #[TestDox('Checks the generateDatastreams() method returns an Exception when the record ISLANDORA_BC_ROOT_PID_EMBARGO can\'t be found')]
     public function generateDatastreamsGetObjectFail2(): void {
         // etdadmin_upload_002_embargoed.zip has an embargo.
@@ -1040,9 +1037,6 @@ final class FedoraRecordProcessorTest extends TestCase {
                 }
             }
         );
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -1073,9 +1067,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $fedoraRecordProcessor->generateDatastreams();
     }
 
-
-
-    //#[Test]
+    #[Test]
     #[TestDox('Checks the generateDatastreams() method returns true on completion')]
     public function generateDatastreamsGetObjectFull(): void {
         // etdadmin_upload_001_normal.zip is a valid ETD file.
@@ -1101,10 +1093,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->andReturn($this->helper->createMockFedoraRecordProcessor());
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
 
         // Manually assign this property that is assigned in the Tuque library, which isn't loaded for these tests.
         $mockFedoraRepositoryWrapperConnection->FEDORA_RELS_EXT_URI = "info:fedora/fedora-system:def/relations-external";
@@ -1132,11 +1121,11 @@ final class FedoraRecordProcessorTest extends TestCase {
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
         $fedoraRecordProcessor->processETD();
-
-        // Expect an exception on the second call to getObject()
-        //$this->expectException(\Processproquest\Record\RecordProcessingException::class);
         $result = $fedoraRecordProcessor->generateDatastreams();
 
         $this->assertTrue($result, "Expected generateDatastreams() to return true");
     }
+
+    // TODO: run above test but DEBUG=false
+    // TODO: run above test but with etdadmin_upload_002-embargoed.zip test file
 }
