@@ -195,10 +195,10 @@ final class FedoraRepositoryTest extends TestCase {
         // Create a FedoraRepository object.
         $proquestFTPObject = new \Processproquest\Repository\FedoraRepository($mockRepositoryService);
 
-        $pid = "bc-ir:{$this->nextPIDNumber}";
+        //$pid = "bc-ir:{$this->nextPIDNumber}";
         $datastreamID = "ARCHIVE";
         // $repoObject = $proquestFTPObject->constructObject($pid);
-        $result = $proquestFTPObject->getDatastream($pid, $datastreamID);
+        $result = $proquestFTPObject->getDatastream($datastreamID);
         
         $this->assertIsObject($result, "Expected getDatastream() to return an object");
     }
