@@ -130,7 +130,7 @@ final class RepositoryTest extends TestCase {
         );
         $mockRepositoryService->shouldReceive('repository_service_constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
-        $mockRepositoryService->shouldReceive('repository_service_getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryProcessorServiceException("FOO"));
+        $mockRepositoryService->shouldReceive('repository_service_getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryServiceException("FOO"));
         $mockRepositoryService->shouldReceive('repository_service_constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
         $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->andReturn(true);
         $mockRepositoryService->shouldReceive('repository_service_getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
@@ -141,8 +141,8 @@ final class RepositoryTest extends TestCase {
         $pid = "bc-ir:{$this->nextPIDNumber}";
         // $repoObject = $proquestFTPObject->constructObject($pid);
 
-        // Expect an exception. getObject() throws \Processproquest\Repository\RepositoryProcessorException
-        $this->expectException(\Processproquest\Repository\RepositoryProcessorException::class);
+        // Expect an exception. getObject() throws \Processproquest\Repository\RepositoryWrapperException
+        $this->expectException(\Processproquest\Repository\RepositoryWrapperException::class);
         $result = $proquestFTPObject->getObject($pid);
     }
 
@@ -216,7 +216,7 @@ final class RepositoryTest extends TestCase {
         $mockRepositoryService->shouldReceive('repository_service_ingestObject')->andReturnArg(0);
         $mockRepositoryService->shouldReceive('repository_service_getObject')->andReturn($this->mockAbstractFedoraObject);
         $mockRepositoryService->shouldReceive('repository_service_constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->once()->andThrow(new \Processproquest\Repository\RepositoryProcessorServiceException("FOO"));
+        $mockRepositoryService->shouldReceive('repository_service_ingestDatastream')->once()->andThrow(new \Processproquest\Repository\RepositoryServiceException("FOO"));
         $mockRepositoryService->shouldReceive('repository_service_getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         // Create a FedoraRepositoryWrapper object.
@@ -225,8 +225,8 @@ final class RepositoryTest extends TestCase {
         $pid = "bc-ir:{$this->nextPIDNumber}";
         // $repoObject = $proquestFTPObject->constructObject($pid);
 
-        // Expect an exception. ingestDatastream() throws \Processproquest\Repository\RepositoryProcessorException
-        $this->expectException(\Processproquest\Repository\RepositoryProcessorException::class);
+        // Expect an exception. ingestDatastream() throws \Processproquest\Repository\RepositoryWrapperException
+        $this->expectException(\Processproquest\Repository\RepositoryWrapperException::class);
         $result = $proquestFTPObject->ingestDatastream($genericObject);
     }
 

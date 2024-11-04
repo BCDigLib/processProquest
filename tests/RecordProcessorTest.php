@@ -966,7 +966,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $mockFedoraRepositoryWrapperConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryProcessorException("FOO"));
+        $mockFedoraRepositoryWrapperConnection->shouldReceive('getObject')->once()->andThrow(new \Processproquest\Repository\RepositoryWrapperException("FOO"));
         $mockFedoraRepositoryWrapperConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('ingestDatastream')->andReturn(true);
         $mockFedoraRepositoryWrapperConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
@@ -1032,7 +1032,7 @@ final class FedoraRecordProcessorTest extends TestCase {
                         return $this->mockAbstractFedoraObject;
                         break;
                     case 1:
-                        throw new \Processproquest\Repository\RepositoryProcessorException("FOO");
+                        throw new \Processproquest\Repository\RepositoryWrapperException("FOO");
                         break;
                     default:
                         return $this->mockAbstractFedoraObject;

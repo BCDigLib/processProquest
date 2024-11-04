@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 namespace Processproquest\Repository;
 
-class RepositoryProcessorException extends \Exception {};
-class RepositoryProcessorServiceException extends \Exception {};
+class RepositoryWrapperException extends \Exception {};
+class RepositoryServiceException extends \Exception {};
 
 /**
  * Repository processor interface.
@@ -38,20 +38,20 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      * @param string $userName The repository user name.
      * @param string $userPassword The repository user password.
      * 
-     * @throws RepositoryProcessorServiceException if a connection to the Fedora repository can't be made.
+     * @throws RepositoryServiceException if a connection to the Fedora repository can't be made.
      */
     public function __construct(string $tuqueLibraryLocation, string $url, string $userName, string $userPassword) {
 
         // Check that the Tuque library exists.
         if ( (empty($tuqueLibraryLocation) === true) || (is_dir($tuqueLibraryLocation) === false) ) {
             $errorMessage = "Can't locate the Tuque library: Please check that the [packages]->tuque setting is valid.";
-            throw new RepositoryProcessorServiceException($errorMessage);
+            throw new RepositoryServiceException($errorMessage);
         }
 
         // Check that we have valid settings.
         if ( (empty($url) === true) || (empty($userName) === true) || (empty($userPassword) === true) ) {
             $errorMessage = "Can't connect to Fedora instance: One or more of the [fedora] settings aren't set or are invalid.";
-            throw new RepositoryProcessorServiceException($errorMessage);
+            throw new RepositoryServiceException($errorMessage);
         }
 
         // Load Islandora/Fedora Tuque library.
@@ -87,7 +87,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
             $this->api_m = $this->repository->api->m;
         } catch (RepositoryException | Exception $e) {
             $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
-            throw new RepositoryProcessorServiceException($errorMessage);
+            throw new RepositoryServiceException($errorMessage);
         }
     }
 
@@ -147,7 +147,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
      * 
      * @return object A FedoraRecord object.
      * 
-     * @throws RepositoryProcessorServiceException if an existing FedoraRecord object can't be found by $pid.
+     * @throws RepositoryServiceException if an existing FedoraRecord object can't be found by $pid.
      */
     public function repository_service_getObject(string $pid): object {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L61 (AbstractRepository class)
@@ -157,7 +157,7 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
             $ret = $this->repository->getObject($pid);
         } catch (RepositoryException | Exception $e) {
             $errorMessage = "Couldn't get a FedoraRecord object with this PID: {$pid}. " . $e->getMessage();
-            throw new RepositoryProcessorServiceException($errorMessage);
+            throw new RepositoryServiceException($errorMessage);
         }
 
         return $ret;
@@ -214,13 +214,13 @@ class FedoraRepositoryWrapper implements RepositoryInterface {
      * 
      * @return object A FedoraRecord object.
      * 
-     * @throws RepositoryProcessorException if an existing FedoraRecord object can't be found by $pid.
+     * @throws RepositoryWrapperException if an existing FedoraRecord object can't be found by $pid.
      */
     public function getObject(string $pid): object {
         try {
             $result = $this->service->repository_service_getObject($pid);
-        } catch(RepositoryProcessorServiceException $e) {
-            throw new RepositoryProcessorException($e->getMessage());
+        } catch(RepositoryServiceException $e) {
+            throw new RepositoryWrapperException($e->getMessage());
         }
 
         return $result;
