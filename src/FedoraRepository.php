@@ -10,11 +10,11 @@ class PPRepositoryServiceException extends \Exception {};
 interface RepositoryInterface {
     public function getNextPid(string $nameSpace): string;
     public function constructObject(string $pid, bool $create_uuid = FALSE): object;
-    public function getObject(string $pid): object;
     public function ingestObject(object $fedoraObj): object;
-    public function getDatastream(string $datastreamID): object|bool;
-    public function ingestDatastream(object $dataStream): mixed;
+    public function getObject(string $pid): object;
     public function constructDatastream(string $id, string $control_group = "M"): object;
+    public function ingestDatastream(object $dataStream): mixed;
+    public function getDatastream(string $datastreamID): object|bool;
 }
 
 /**
@@ -23,11 +23,11 @@ interface RepositoryInterface {
 interface RepositoryServiceInterface {
     public function repository_service_getNextPid(string $nameSpace): string;
     public function repository_service_constructObject(string $pid, bool $create_uuid = FALSE): object;
-    public function repository_service_getObject(string $pid): object;
     public function repository_service_ingestObject(object $fedoraObj): object;
-    public function repository_service_getDatastream(string $datastreamID): object|bool;
-    public function repository_service_ingestDatastream(object $dataStream): mixed;
+    public function repository_service_getObject(string $pid): object;
     public function repository_service_constructDatastream(string $id, string $control_group = "M"): object;
+    public function repository_service_ingestDatastream(object $dataStream): mixed;
+    public function repository_service_getDatastream(string $datastreamID): object|bool;
 }
 
 /**
@@ -138,6 +138,22 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     }
 
     /**
+     * Ingests a NewFedoraObject object. 
+     * This creates a FedoraObject from the passed NewFedoraObject object.
+     * 
+     * @param object $fedoraObj A NewFedoraObject object.
+     * 
+     * @return object A FedoraObject object. 
+     */
+    public function repository_service_ingestObject(object $fedoraObj): object {
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L50 (AbstractRepository class)
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L282-L302 (FedoraRepository class)
+        $ret = $this->repository->ingestObject($fedoraObj);
+
+        return $ret;
+    }
+
+    /**
      * Retrieves an existing FedoraRecord object using a PID string.
      * 
      * @param string $pid A PID string to lookup.
@@ -161,35 +177,20 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     }
 
     /**
-     * Ingests a NewFedoraObject object. 
-     * This creates a FedoraObject from the passed NewFedoraObject object.
-     * 
-     * @param object $fedoraObj A NewFedoraObject object.
-     * 
-     * @return object A FedoraObject object. 
-     */
-    public function repository_service_ingestObject(object $fedoraObj): object {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L50 (AbstractRepository class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L282-L302 (FedoraRepository class)
-        $ret = $this->repository->ingestObject($fedoraObj);
-
-        return $ret;
-    }
-
-    /**
-     * Gets an AbstractFedoraObject (FedoraRecord|NewFedoraRecord) object's datastream by ID.
+     * Constructs a AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
+     * This object is not ingested until ingestDatastream() is called.
      * The AbstractFedoraDatastream type returns depends on the calling AbstractFedoraObject object type.
      * 
-     * @param string $datastreamID The ID of the datastream to retrieve.
+     * @param string $id The identifier of the new datastream.
+     * @param string $control_group The control group the new datastream will be created in.
      * 
-     * @return object|bool Returns FALSE if the datastream could not be found. Otherwise it returns
-     *                     an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
+     * @return object an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      */
-    public function repository_service_getDatastream(string $datastreamID): object|bool {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L108 (AbstractObject|AbstractFedoraObject class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L590-L597 (NewFedoraObject class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L735-L743 (FedoraObject class)
-        $result = $this->repository->getDatastream($datastreamID);
+    public function repository_service_constructDatastream(string $id, string $control_group = "M"): object {
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L134 (AbstractObject|AbstractFedoraObject class)
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L448-L450 (NewFedoraObject class)
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L828-L830 (FedoraObject class)
+        $result = $this->repository->constructDatastream($id, $control_group);
 
         return $result;
     }
@@ -222,20 +223,19 @@ class FedoraRepositoryServiceAdapter implements RepositoryServiceInterface {
     }
 
     /**
-     * Constructs a AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
-     * This object is not ingested until ingestDatastream() is called.
+     * Gets an AbstractFedoraObject (FedoraRecord|NewFedoraRecord) object's datastream by ID.
      * The AbstractFedoraDatastream type returns depends on the calling AbstractFedoraObject object type.
      * 
-     * @param string $id The identifier of the new datastream.
-     * @param string $control_group The control group the new datastream will be created in.
+     * @param string $datastreamID The ID of the datastream to retrieve.
      * 
-     * @return object an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
+     * @return object|bool Returns FALSE if the datastream could not be found. Otherwise it returns
+     *                     an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      */
-    public function repository_service_constructDatastream(string $id, string $control_group = "M"): object {
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L134 (AbstractObject|AbstractFedoraObject class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L448-L450 (NewFedoraObject class)
-        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L828-L830 (FedoraObject class)
-        $result = $this->repository->constructDatastream($id, $control_group);
+    public function repository_service_getDatastream(string $datastreamID): object|bool {
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L108 (AbstractObject|AbstractFedoraObject class)
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L590-L597 (NewFedoraObject class)
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L735-L743 (FedoraObject class)
+        $result = $this->repository->getDatastream($datastreamID);
 
         return $result;
     }
@@ -318,6 +318,22 @@ class FedoraRepository implements RepositoryInterface {
     }
 
     /**
+     * Constructs a AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
+     * This object is not ingested until ingestDatastream() is called.
+     * The AbstractFedoraDatastream type returns depends on the calling AbstractFedoraObject object type.
+     * 
+     * @param string $id The identifier of the new datastream.
+     * @param string $control_group The control group the new datastream will be created in.
+     * 
+     * @return object an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
+     */
+    public function constructDatastream(string $id, string $control_group = "M"): object {
+        $result = $this->service->repository_service_constructDatastream($id, $control_group);
+
+        return $result;
+    }
+
+    /**
      * Gets an AbstractFedoraObject (FedoraRecord|NewFedoraRecord) object's datastream by ID.
      * The AbstractFedoraDatastream type returns depends on the calling AbstractFedoraObject object type.
      * 
@@ -348,22 +364,6 @@ class FedoraRepository implements RepositoryInterface {
         } catch(PPRepositoryServiceException $e) {
             throw new PPRepositoryException($e->getMessage());
         }
-
-        return $result;
-    }
-
-    /**
-     * Constructs a AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
-     * This object is not ingested until ingestDatastream() is called.
-     * The AbstractFedoraDatastream type returns depends on the calling AbstractFedoraObject object type.
-     * 
-     * @param string $id The identifier of the new datastream.
-     * @param string $control_group The control group the new datastream will be created in.
-     * 
-     * @return object an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
-     */
-    public function constructDatastream(string $id, string $control_group = "M"): object {
-        $result = $this->service->repository_service_constructDatastream($id, $control_group);
 
         return $result;
     }

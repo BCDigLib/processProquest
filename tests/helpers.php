@@ -199,11 +199,11 @@ final class TestHelpers extends TestCase {
         $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
-        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($genericObject);
-        $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);
         $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn(null);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($genericObject);
 
         return $mockFedoraRepositoryConnection;
     }
