@@ -1296,7 +1296,8 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
 
         // Use FOP (Formatting Objects Processor) to build PDF splash page.
         // Execute 'fop' command and check return code.
-        $command = "{$this->executable_fop} -c {$this->fop_config} -xml {$source} -xsl {$splashxslt} -pdf {$splashtemp}";
+        // Redirect all fop output to STDOUT.
+        $command = "{$this->executable_fop} -c {$this->fop_config} -xml {$source} -xsl {$splashxslt} -pdf {$splashtemp} 2>&1";
         // TODO: exec() Emits an E_WARNING if exec() is unable to execute the command.
         //       Throws a ValueError if command is empty or contains null bytes.
         exec($command, $output, $return);
