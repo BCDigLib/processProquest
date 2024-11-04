@@ -176,7 +176,7 @@ final class TestHelpers extends TestCase {
      * 
      * @return object A mock ProquestFTP object.
      */
-    public function createMockFTPConnection(array $listOfETDs = ['etdadmin_upload_100000.zip', 'etdadmin_upload_200000.zip']) {
+    public function createMockFTPConnection(array $listOfETDs = ['etdadmin_upload_001_normal.zip', 'etdadmin_upload_002_embargoed.zip']) {
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
         $mockProquestFTPConnection->shouldReceive('login')->andReturn(true);
