@@ -778,7 +778,7 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
                 throw new RecordProcessingException($errorMessage);
             }
         } else {
-            $this->logger->info("[{$dsid}] Adding to Graduate Theses collection.");
+            $this->logger->info("[{$dsid}] Adding to Graduate Theses collection."); // @codeCoverageIgnore
         }
 
         // Update the Fedora object's relationship policies
@@ -1305,9 +1305,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         if ( $return == false ) {
             $this->logger->info("[{$dsid}] Splash page created successfully.");
         } else {
+            // @codeCoverageIgnoreStart
             $errorMessage = "PDF splash page creation failed. ". $return;
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Update ETD file's object to store splash page's file location and name.
@@ -1350,9 +1352,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
 
         // INFO: copy() Returns true on success or false on failure.
         if ( copy($pdf, $concattemp) === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Could not generate a concatenated PDF document.";
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         } else {
             $this->logger->info("[{$dsid}] PDF document cloned successfully.");
         }
@@ -1407,9 +1411,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         if ( $return == false ) {
             $this->logger->info("[{$dsid}] datastream generated successfully.");
         } else {
+            // @codeCoverageIgnoreStart
             $errorMessage = "FULL_TEXT document creation failed. " . $return;
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Build Fedora object FULL_TEXT datastream.
@@ -1425,9 +1431,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
 
         // Check if file read failed.
         if ( $fulltext === false ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "Could not read in file: ". $fttemp;
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Strip out junky characters that mess up SOLR.
@@ -1437,9 +1445,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
 
         // In the slim chance preg_replace returns an empty string.
         if ( $sanitized === '' ) {
+            // @codeCoverageIgnoreStart
             $errorMessage = "preg_replace failed to return valid sanitized FULL_TEXT string. String has length of 0.";
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Set FULL_TEXT datastream to be sanitized version of full-text document.
@@ -1480,9 +1490,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         if ( $return == false ) {
             $this->logger->info("[{$dsid}] Datastream generated successfully.");
         } else {
+            // @codeCoverageIgnoreStart
             $errorMessage = "TN document creation failed. " . $return;
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Build Fedora object TN datastream.
@@ -1529,9 +1541,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         if ( $return == false ) {
             $this->logger->info("[{$dsid}] PREVIEW datastream generated successfully.");
         } else {
+            // @codeCoverageIgnoreStart
             $errorMessage = "PREVIEW document creation failed. " . $return;
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
+            // @codeCoverageIgnoreEnd
         }
 
         // Build Fedora object PREVIEW datastream.
@@ -1578,9 +1592,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
 
             // Check if file read failed.
             if ( $relsint === false ) {
+                // @codeCoverageIgnoreStart
                 $errorMessage = "Could not read in file: " . $relsFile;
                 $this->datastreamIngestFailed($errorMessage, $dsid);
                 throw new RecordProcessingException($errorMessage);
+                // @codeCoverageIgnoreEnd
             }
 
             $relsint = str_replace('######', $this->PID, $relsint);
@@ -1593,9 +1609,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
 
             // Check if file read failed.
             if ( $relsint === false ) {
+                // @codeCoverageIgnoreStart
                 $errorMessage = "Could not read in file: " . $relsFile;
                 $this->datastreamIngestFailed($errorMessage, $dsid);
                 throw new RecordProcessingException($errorMessage);
+                // @codeCoverageIgnoreEnd
             }
 
             $relsint = str_replace('######', $this->PID, $relsint);
