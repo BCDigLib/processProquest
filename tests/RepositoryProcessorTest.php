@@ -20,7 +20,7 @@ require_once(__DIR__ . "/helpers.php");
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "constructObject")]
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "ingestObject")]
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "getObject")]
-final class FedoraRepositoryTest extends TestCase {
+final class RepositoryProcessorTest extends TestCase {
 
     protected function setUp(): void {
         error_reporting(E_ALL & ~E_DEPRECATED);

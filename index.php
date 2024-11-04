@@ -140,7 +140,7 @@ try {
  * 
  */
 
-require_once 'src/FedoraRepository.php';
+require_once 'src/RepositoryProcessor.php';
 use \Processproquest\Repository as REPO;
 $fedoraUrl = $configurationSettings['fedora']['url'];
 $fedoraUsername = $configurationSettings['fedora']['username'];

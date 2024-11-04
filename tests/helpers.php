@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 use \Mockery;
 
 require __DIR__ . "/../src/Processproquest.php";
-require __DIR__ . "/../src/FedoraRepository.php";
+require __DIR__ . "/../src/RepositoryProcessor.php";
 
 use Monolog\Level;
 use Monolog\Logger;
