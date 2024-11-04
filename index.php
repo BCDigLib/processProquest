@@ -149,7 +149,7 @@ $tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
 
 try {
     $repositoryService = new REPO\FedoraRepositoryServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
-} catch (Exception | RepositoryProcessorServiceException $e) {
+} catch (Exception | RepositoryServiceException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
     // TODO: send email notification.
@@ -158,7 +158,7 @@ try {
 
 try {
     $FedoraRepositoryWrapper = new REPO\FedoraRepositoryWrapper($repositoryService);
-} catch (Exception | RepositoryProcessorException $e) {
+} catch (Exception | RepositoryWrapperException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
     // TODO: send email notification.
