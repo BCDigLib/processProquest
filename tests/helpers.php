@@ -21,6 +21,8 @@ final class TestHelpers extends TestCase {
     protected $fedoraConnection = null;
     protected $debug = null;
     protected $listOfETDs = Array();
+    protected $mockAbstractFedoraObject = null;
+    protected $mockAbstractFedoraDatastream = null;
 
     // TODO: pass configurationFile as an argument
     public function __construct($name) {
@@ -29,6 +31,8 @@ final class TestHelpers extends TestCase {
         $this->logger = $this->createLogger($this->configurationSettings);
         $this->debug = true;
         $this->listOfETDs = ['etdadmin_upload_001_normal.zip', 'etdadmin_upload_002_embargoed.zip'];
+        $this->mockAbstractFedoraObject = $this->generateMockAbstractFedoraObject();
+        $this->mockAbstractFedoraDatastream = $this->generateMockAbstractFedoraDatastream();
     }
 
     /**
@@ -203,17 +207,15 @@ final class TestHelpers extends TestCase {
      * @return object A mock FedoraRepository object.
      */
     public function createMockFedoraConnection() {
-        $genericObject = new \stdClass();
-
         // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
         $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
-        $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($genericObject);
+        $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($genericObject);
-        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn(null);
+        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
         $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($genericObject);
+        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
         return $mockFedoraRepositoryConnection;
     }
