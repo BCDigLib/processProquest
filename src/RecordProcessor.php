@@ -49,6 +49,7 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
     public $STATUS = "";
     public $INGESTED = false;
     public $DATASTREAMS_CREATED = [];
+    public $SPLASH = "";
     public $fop_config = "";
     public $executable_fop = "";
     public $executable_convert = "";
