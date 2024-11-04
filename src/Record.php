@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 namespace Processproquest\Repository;
 
-class RepositoryRecordProcessorException extends \Exception {};
-class RepositoryRecordProcessorServiceException extends \Exception {};
+class RecordWrapperException extends \Exception {};
+class RecordServiceException extends \Exception {};
 
 /**
  * Repository record processor interface.
  */
-interface RepositoryRecordProcessorInterface {
+interface RecordInterface {
     public function constructDatastream(string $id, string $control_group = "M"): object;
     public function ingestDatastream(object $dataStream): mixed;
     public function getDatastream(string $datastreamID): object|bool;
@@ -16,18 +16,18 @@ interface RepositoryRecordProcessorInterface {
 /**
  * Repository record processor service interface.
  */
-interface RepositoryRecordProcessorServiceInterface {
-    public function repository_service_constructDatastream(string $id, string $control_group = "M"): object;
-    public function repository_service_ingestDatastream(object $dataStream): mixed;
-    public function repository_service_getDatastream(string $datastreamID): object|bool;
+interface RecordServiceInterface {
+    public function record_service_constructDatastream(string $id, string $control_group = "M"): object;
+    public function record_service_ingestDatastream(object $dataStream): mixed;
+    public function record_service_getDatastream(string $datastreamID): object|bool;
 }
 
 /**
- * A RepositoryRecordProcessorServiceInterface Adapter to directly access Tuque library functions.
+ * A RecordServiceInterface Adapter to directly access Tuque library functions.
  * 
  * @codeCoverageIgnore
  */
-class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordProcessorServiceInterface {
+class FedoraRecordServiceAdapter implements RecordServiceInterface {
 
     // Object.php
     // abstract class AbstractFedoraObject extends AbstractObject
@@ -44,23 +44,13 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
      * Class constructor.
      * 
      * @param string $tuqueLibraryLocation The location of the Tuque library.
-     * @param string $url The repository url.
-     * @param string $userName The repository user name.
-     * @param string $userPassword The repository user password.
-     * 
-     * @throws RepositoryServiceException if a connection to the Fedora repository can't be made.
+     * @param object $fedoraConnection A FedoraRepositoryWrapper object to connection to the Fedora Repository.
      */
-    public function __construct(string $tuqueLibraryLocation, string $url, string $userName, string $userPassword) {
+    public function __construct(string $tuqueLibraryLocation, object $fedoraConnection) {
         // Check that the Tuque library exists.
         if ( (empty($tuqueLibraryLocation) === true) || (is_dir($tuqueLibraryLocation) === false) ) {
             $errorMessage = "Can't locate the Tuque library: Please check that the [packages]->tuque setting is valid.";
-            throw new RepositoryServiceException($errorMessage);
-        }
-
-        // Check that we have valid settings.
-        if ( (empty($url) === true) || (empty($userName) === true) || (empty($userPassword) === true) ) {
-            $errorMessage = "Can't connect to Fedora instance: One or more of the [fedora] settings aren't set or are invalid.";
-            throw new RepositoryServiceException($errorMessage);
+            throw new RecordServiceException($errorMessage);
         }
 
         // Load Islandora/Fedora Tuque library.
@@ -73,31 +63,7 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
         require_once "{$tuqueLibraryLocation}/Cache.php";
         require_once "{$tuqueLibraryLocation}/HttpConnection.php";
 
-        /**
-         * Make Fedora repository connection.
-         * 
-         * See: https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryConnection.php#L49-L61
-         * See: https://github.com/Islandora/tuque/blob/7.x-1.7/FedoraApi.php#L42-L56
-         * See: https://github.com/Islandora/tuque/blob/7.x-1.7/Repository.php#L158-L162
-         * 
-         * INFO: Tuque library exceptions defined here:
-         *       https://github.com/Islandora/tuque/blob/7.x-1.7/RepositoryException.php
-         * 
-         * INFO: Instantiating RepositoryConnection() throws a RepositoryException exception on error.
-         */
-        try {
-            $this->connection = new \RepositoryConnection($url, $userName, $userPassword);
-            // Instantiate a Tuque library FedoraApi class object.
-            $this->api = new \FedoraApi($this->connection);
-
-            // Instantiate a Tuque library FedoraRepository class object.
-            $this->repository = new \FedoraRepository($this->api, new \simpleCache());
-            
-            $this->api_m = $this->repository->api->m;
-        } catch (RepositoryException | Exception $e) {
-            $errorMessage = "Can't connect to Fedora instance: " . $e->getMessage();
-            throw new RepositoryServiceException($errorMessage);
-        }
+        $this->repository = $fedoraConnection;
     }
 
     /**
@@ -110,7 +76,7 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
      * 
      * @return object an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      */
-    public function repository_service_constructDatastream(string $id, string $control_group = "M"): object {
+    public function record_service_constructDatastream(string $id, string $control_group = "M"): object {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L134 (AbstractObject|AbstractFedoraObject class)
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L448-L450 (NewFedoraObject class)
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L828-L830 (FedoraObject class)
@@ -127,9 +93,9 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
      * 
      * @return mixed Return bool or AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      * 
-     * @throws RepositoryServiceException if the datastream already exists.
+     * @throws RecordServiceException if the datastream already exists.
      */
-    public function repository_service_ingestDatastream(object $dataStream): mixed {
+    public function record_service_ingestDatastream(object $dataStream): mixed {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L139 (AbstractObject|AbstractFedoraObject class)
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L558-L572 (NewFedoraObject class)
         //      returns true on success; false on error
@@ -140,7 +106,7 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
             $result = $this->repository->ingestDatastream();
         } catch (DatastreamExistsException | Exception $e) {
             $errorMessage = "Couldn't get a NewFedoraDatastream or FedoraObject datastream object with this PID: {$pid}. " . $e->getMessage();
-            throw new RepositoryServiceException($errorMessage);
+            throw new RecordServiceException($errorMessage);
         }
         
         return $result;
@@ -155,7 +121,7 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
      * @return object|bool Returns FALSE if the datastream could not be found. Otherwise it returns
      *                     an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      */
-    public function repository_service_getDatastream(string $datastreamID): object|bool {
+    public function record_service_getDatastream(string $datastreamID): object|bool {
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L108 (AbstractObject|AbstractFedoraObject class)
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L590-L597 (NewFedoraObject class)
         // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L735-L743 (FedoraObject class)
@@ -168,7 +134,7 @@ class FedoraRepositoryRecordProcessorServiceAdapter implements RepositoryRecordP
 /**
  * Manages a connection to a Fedora repository.
  */
-class FedoraRepositoryRecordProcessor implements RepositoryRecordProcessorInterface {
+class FedoraRecordWrapper implements RecordInterface {
 
     /**
      * Class constructor.
@@ -190,7 +156,7 @@ class FedoraRepositoryRecordProcessor implements RepositoryRecordProcessorInterf
      * @return object an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      */
     public function constructDatastream(string $id, string $control_group = "M"): object {
-        $result = $this->service->repository_service_constructDatastream($id, $control_group);
+        $result = $this->service->record_service_constructDatastream($id, $control_group);
 
         return $result;
     }
@@ -205,7 +171,7 @@ class FedoraRepositoryRecordProcessor implements RepositoryRecordProcessorInterf
      *                     an instantiated AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      */
     public function getDatastream(string $datastreamID): object|bool {
-        $result = $this->service->repository_service_getDatastream($datastreamID);
+        $result = $this->service->record_service_getDatastream($datastreamID);
 
         return $result;
     }
@@ -218,13 +184,13 @@ class FedoraRepositoryRecordProcessor implements RepositoryRecordProcessorInterf
      * 
      * @return mixed Return bool or AbstractFedoraDatastream (NewFedoraDatastream|FedoraDatastream) object.
      * 
-     * @throws RepositoryWrapperException if the datastream already exists.
+     * @throws RecordWrapperException if the datastream already exists.
      */
     public function ingestDatastream(object $dataStream): mixed {
         try {
-            $result = $this->service->repository_service_ingestDatastream($dataStream);
+            $result = $this->service->record_service_ingestDatastream($dataStream);
         } catch(RepositoryServiceException $e) {
-            throw new RepositoryWrapperException($e->getMessage());
+            throw new RecordWrapperException($e->getMessage());
         }
 
         return $result;
