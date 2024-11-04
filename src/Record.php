@@ -133,6 +133,8 @@ class FedoraRecordServiceAdapter implements RecordServiceInterface {
 
 /**
  * Manages a connection to a Fedora repository.
+ * 
+ * @codeCoverageIgnore
  */
 class FedoraRecordWrapper implements RecordInterface {
 
