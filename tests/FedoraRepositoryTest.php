@@ -20,9 +20,6 @@ require_once(__DIR__ . "/helpers.php");
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "constructObject")]
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "ingestObject")]
 #[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "getObject")]
-#[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "constructDatastream")]
-#[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "ingestDatastream")]
-#[CoversMethod(\Processproquest\Repository\FedoraRepository::class, "getDatastream")]
 final class FedoraRepositoryTest extends TestCase {
 
     protected function setUp(): void {

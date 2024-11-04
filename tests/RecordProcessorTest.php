@@ -17,6 +17,11 @@ require_once(__DIR__ . "/helpers.php");
 
 #[CoversClass(\Processproquest\Record\FedoraRecordProcessor::class)]
 #[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "setStatus")]
+#[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "downloadETD")]
+#[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "parseETD")]
+#[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "processETD")]
+#[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "generateDatastreams")]
+#[CoversMethod(\Processproquest\Record\FedoraRecordProcessor::class, "ingestETD")]
 final class FedoraRecordProcessorTest extends TestCase {
 
     protected function setUp(): void {
