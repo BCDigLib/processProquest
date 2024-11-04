@@ -254,7 +254,14 @@ final class TestHelpers extends TestCase {
      * @return object A mock AbstractFedoraObject object.
      */
     public function generateMockAbstractFedoraObject() {
+        // Create a mock FedoraRelsExt object.
+        $mockFedoraRelsExtObject = Mockery::mock('FedoraRelsExt')->makePartial();
+        // See: https://github.com/Islandora/tuque/blob/1.x/FedoraRelationships.php#L628-L630
+        $mockFedoraRelsExtObject->shouldReceive("add")->andReturn(null);
+
         $mockAbstractFedoraObject = Mockery::mock('AbstractFedoraObject')->makePartial();
+        // See: https://github.com/Islandora/tuque/blob/7.x-1.7/Object.php#L228
+        $mockAbstractFedoraObject->relationships = $mockFedoraRelsExtObject;
 
         return $mockAbstractFedoraObject;
     }

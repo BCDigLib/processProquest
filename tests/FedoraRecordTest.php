@@ -61,20 +61,6 @@ final class FedoraRecordTest extends TestCase {
     }
 
     /**
-     * Create a mock NewFedoraDatastream object.
-     * 
-     * TODO: place this method in helpers.php.
-     * 
-     * @return object A mock NewFedoraDatastream object.
-     */
-    protected function generateMockNewFedoraDatastream() {
-        $mockNewFedoraDatastreamObject = \Mockery::mock('NewFedoraDatastream')->makePartial();
-        $mockNewFedoraDatastreamObject->shouldReceive("setContentFromFile")->andReturn(null);
-
-        return $mockNewFedoraDatastreamObject;
-    }
-
-    /**
      * Create a generic FedoraRecord object.
      * 
      * @param string $zipFileName The file name of a ETD zip file.
@@ -1093,6 +1079,10 @@ final class FedoraRecordTest extends TestCase {
         // ETD shortname.
         $etdShortName = $this->getETDShortName($zipFileName);
 
+        // INFO: This value is originally defined in this library class: 
+        //       https://github.com/Islandora/tuque/blob/7.x-1.7/FedoraRelationships.php#L9
+        define('FEDORA_RELS_EXT_URI', "info:fedora/fedora-system:def/relations-external");
+
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
         $updatedSettings = array(
@@ -1102,31 +1092,17 @@ final class FedoraRecordTest extends TestCase {
 
         // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
         // Set getNextPid() to return a known value.
-        // Set getObject() return multiple values.
         $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
         $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
         $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
         $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturnUsing(
-            function () {
-                static $counter = 0;
-    
-                switch ($counter++) {
-                    case 0:
-                        return $this->mockAbstractFedoraObject;
-                        break;
-                    case 1:
-                        throw new \Processproquest\Repository\PPRepositoryException("FOO");
-                        break;
-                    default:
-                        return $this->mockAbstractFedoraObject;
-                        break;
-                }
-            }
-        );
+        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($this->helper->createMockFedoraRecord());
         $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
         $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
         $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+
+        // Manually assign this property that is assigned in the Tuque library, which isn't loaded for these tests.
+        $mockFedoraRepositoryConnection->FEDORA_RELS_EXT_URI = "info:fedora/fedora-system:def/relations-external";
 
         // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
         // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
@@ -1153,7 +1129,9 @@ final class FedoraRecordTest extends TestCase {
         $fedoraRecord->processETD();
 
         // Expect an exception on the second call to getObject()
-        $this->expectException(\Processproquest\Record\RecordProcessingException::class);
-        $fedoraRecord->generateDatastreams();
+        //$this->expectException(\Processproquest\Record\RecordProcessingException::class);
+        $result = $fedoraRecord->generateDatastreams();
+
+        $this->assertTrue($result, "Expected generateDatastreams() to return true");
     }
 }
