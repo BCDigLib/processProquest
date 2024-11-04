@@ -48,6 +48,19 @@ final class FedoraRecordTest extends TestCase {
     }
 
     /**
+     * Utility method to generate the ETD shortname from a zip file name.
+     * 
+     * @param string $zipFileName The zip file name.
+     * 
+     * @return string The shortned version of the zip file name sans extension.
+     */
+    protected function getETDShortName($zipFileName) {
+        $generastedETDShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+
+        return $generastedETDShortName;
+    }
+
+    /**
      * Create a mock NewFedoraDatastream object.
      * 
      * TODO: place this method in helpers.php.
@@ -172,7 +185,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -217,7 +230,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "fetchdir" key with the path to tests/files/.
@@ -263,7 +276,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -309,7 +322,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_003_supplemental.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -356,7 +369,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "not_a_real_zip_file.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -399,7 +412,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_004_empty.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -443,7 +456,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_005_bad_id.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -486,7 +499,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_006_no_xml.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -529,7 +542,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_007_no_pdf.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -585,7 +598,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -648,7 +661,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_002_embargoed.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -704,7 +717,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_003_supplemental.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -749,7 +762,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -798,7 +811,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -847,7 +860,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_008_no_oa.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -897,7 +910,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_003_supplemental.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -946,7 +959,7 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_001_normal.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
@@ -1003,7 +1016,82 @@ final class FedoraRecordTest extends TestCase {
         $zipFileName = "etdadmin_upload_002_embargoed.zip";
 
         // ETD shortname.
-        $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
+        $etdShortName = $this->getETDShortName($zipFileName);
+
+        // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
+        // Replace [ftp] "localdir" key with an empty string.
+        $updatedSettings = array(
+            "ftp" => array("fetchdir" => __DIR__ . "/files/"),
+        );
+        $newSettings = $this->helper->alterConfigurationSettings($updatedSettings);
+
+        // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
+        // Set getNextPid() to return a known value.
+        // Set getObject() return multiple values.
+        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
+        $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn($this->mockPID);
+        $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturnUsing(
+            function () {
+                static $counter = 0;
+    
+                switch ($counter++) {
+                    case 0:
+                        return $this->mockAbstractFedoraObject;
+                        break;
+                    case 1:
+                        throw new \Processproquest\Repository\PPRepositoryException("FOO");
+                        break;
+                    default:
+                        return $this->mockAbstractFedoraObject;
+                        break;
+                }
+            }
+        );
+        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+
+        // Create a custom mock ProquestFTP connection object using the FileStorageInterface interface.
+        // The getFile() method will directly copy the file into the working directory and pass that command's result back. 
+        $mockProquestFTPConnection = Mockery::mock(\Processproquest\FTP\FileStorageInterface::class)->makePartial();
+        $mockProquestFTPConnection->shouldReceive('getFile')->once()->andReturnUsing(
+            function($local_filename, $remote_filename) {
+                // Return the copy() function's return value.
+                return copy($remote_filename, $local_filename);
+            }
+        );
+
+        // Create a custom FedoraRecord object.
+        $fedoraRecord = new \Processproquest\Record\FedoraRecord(
+                                $etdShortName,                  // ETD short name
+                                $newSettings,                   // custom settings array
+                                $zipFileName,                   // name of ETD zip file
+                                $mockFedoraRepositoryConnection,// mock FedoraRepository object
+                                $mockProquestFTPConnection,     // custom mock ProquestFTP object
+                                $this->logger                   // logger object
+                            );
+
+        $fedoraRecord->downloadETD();
+        $fedoraRecord->parseETD();
+        $fedoraRecord->processETD();
+
+        // Expect an exception on the second call to getObject()
+        $this->expectException(\Processproquest\Record\RecordProcessingException::class);
+        $fedoraRecord->generateDatastreams();
+    }
+
+
+
+    #[Test]
+    #[TestDox('Checks the generateDatastreams() method returns true on completion')]
+    public function generateDatastreamsGetObjectFull(): void {
+        // etdadmin_upload_001_normal.zip is a valid ETD file.
+        $zipFileName = "etdadmin_upload_001_normal.zip";
+
+        // ETD shortname.
+        $etdShortName = $this->getETDShortName($zipFileName);
 
         // We will tell the mock ProquestFTP class to look for files in the tests/files/ directory.
         // Replace [ftp] "localdir" key with an empty string.
