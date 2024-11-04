@@ -14,7 +14,7 @@ require_once(__DIR__ . "/helpers.php");
 
 #[CoversClass(\Processproquest\Processproquest::class)]
 #[UsesClass(\Processproquest\FTP\ProquestFTP::class)]
-#[UsesClass(\Processproquest\Repository\FedoraRepository::class)]
+#[UsesClass(\Processproquest\Repository\FedoraRepositoryProcessor::class)]
 #[UsesClass(\Processproquest\Record\FedoraRecordProcessor::class)]
 #[CoversMethod(\Processproquest\Processproquest::class, "setFTPConnection")]
 #[CoversMethod(\Processproquest\Processproquest::class, "setFedoraConnection")]

@@ -148,8 +148,8 @@ $fedoraPassword = $configurationSettings['fedora']['password'];
 $tuqueLibraryLocation = $configurationSettings['packages']['tuque'];
 
 try {
-    $repositoryService = new REPO\FedoraRepositoryServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
-} catch (Exception | PPRepositoryServiceException $e) {
+    $repositoryService = new REPO\FedoraRepositoryProcessorServiceAdapter($tuqueLibraryLocation, $fedoraUrl, $fedoraUsername, $fedoraPassword);
+} catch (Exception | RepositoryProcessorServiceException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
     // TODO: send email notification.
@@ -157,8 +157,8 @@ try {
 }
 
 try {
-    $fedoraRepository = new REPO\FedoraRepository($repositoryService);
-} catch (Exception | PPRepositoryException $e) {
+    $FedoraRepositoryProcessor = new REPO\FedoraRepositoryProcessor($repositoryService);
+} catch (Exception | RepositoryProcessorException $e) {
     echo "ERROR: " . $e->getMessage() . "\n";
     echo "Exiting.\n";
     // TODO: send email notification.
@@ -179,7 +179,7 @@ use \Processproquest as PP;
 
 $process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
             ->setFTPConnection($ftpConnection)
-            ->setFedoraConnection($fedoraRepository);
+            ->setFedoraConnection($FedoraRepositoryProcessor);
 
 /**
  * 

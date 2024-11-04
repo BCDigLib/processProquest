@@ -759,7 +759,7 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         try {
             $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID);
             $collectionName = GRADUATE_THESES;
-        } catch (\Processproquest\Repository\PPRepositoryException $e) {
+        } catch (\Processproquest\Repository\RepositoryProcessorException $e) {
             $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
             $this->datastreamIngestFailed($errorMessage, $dsid);
             throw new RecordProcessingException($errorMessage);
@@ -771,7 +771,7 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
             try {
                 $parentObject = $this->fedoraConnection->getObject(ISLANDORA_BC_ROOT_PID_EMBARGO);
                 $this->logger->info("[{$dsid}] Adding to Graduate Theses (Restricted) collection.");
-            } catch (\Processproquest\Repository\PPRepositoryException $e) {
+            } catch (\Processproquest\Repository\RepositoryProcessorException $e) {
                 $errorMessage = "Could not fetch Fedora object '" . ISLANDORA_BC_ROOT_PID_EMBARGO . "'. Please check the Fedora connection. Fedora error: " . $e->getMessage();
                 $this->datastreamIngestFailed($errorMessage, $dsid);
                 throw new RecordProcessingException($errorMessage);
@@ -1006,7 +1006,7 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
             // Ingest datastream into Fedora object.
             try {
                 $this->fedoraConnection->ingestDatastream($datastreamObj);
-            } catch (\Processproquest\Repository\PPRepositoryException $e) {
+            } catch (\Processproquest\Repository\RepositoryProcessorException $e) {
                 $errorMessage = "{$datastreamName} datastream ingest failed: " . $e->getMessage();
                 array_push($this->CRITICAL_ERRORS, $errorMessage);
                 $this->logger->info("ERROR: {$errorMessage}");

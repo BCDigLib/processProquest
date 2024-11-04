@@ -166,7 +166,7 @@ final class TestHelpers extends TestCase {
      * 
      * @param array $configurationSettings The settings to use.
      * 
-     * @return object A FedoraRepository object.
+     * @return object A FedoraRepositoryProcessor object.
      */
     public function createFedoraConnection($configurationSettings) {
         $fedoraURL      = $configurationSettings['fedora']['url'];
@@ -174,11 +174,11 @@ final class TestHelpers extends TestCase {
         $fedoraPassword = $configurationSettings['fedora']['password'];
         $tuqueLocation  = $configurationSettings['packages']['tuque'];
 
-        // Create FedoraRepositoryServiceAdapter object.
-        $repositoryService = new \Processproquest\Repository\FedoraRepositoryServiceAdapter($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
+        // Create FedoraRepositoryProcessorServiceAdapter object.
+        $repositoryService = new \Processproquest\Repository\FedoraRepositoryProcessorServiceAdapter($tuqueLocation, $fedoraURL, $fedoraUsername, $fedoraPassword);
 
-        // Create FedoraRepository using the FedoraRepositoryServiceAdapter object.
-        $fedoraConnection = new \Processproquest\Repository\FedoraRepository($repositoryService);
+        // Create FedoraRepositoryProcessor using the FedoraRepositoryProcessorServiceAdapter object.
+        $fedoraConnection = new \Processproquest\Repository\FedoraRepositoryProcessor($repositoryService);
 
         return $fedoraConnection;
     }
@@ -202,22 +202,22 @@ final class TestHelpers extends TestCase {
     }
 
     /**
-     * Create a mock FedoraRepository object.
+     * Create a mock FedoraRepositoryProcessor object.
      * 
-     * @return object A mock FedoraRepository object.
+     * @return object A mock FedoraRepositoryProcessor object.
      */
     public function createMockFedoraConnection() {
-        // Create a custom mock FedoraRepository connection object using the RepositoryInterface interface.
-        $mockFedoraRepositoryConnection = Mockery::mock(\Processproquest\Repository\RepositoryInterface::class)->makePartial();
-        $mockFedoraRepositoryConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
-        $mockFedoraRepositoryConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryConnection->shouldReceive('ingestObject')->andReturnArg(0);
-        $mockFedoraRepositoryConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
-        $mockFedoraRepositoryConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
-        $mockFedoraRepositoryConnection->shouldReceive('ingestDatastream')->andReturn(true);
-        $mockFedoraRepositoryConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        // Create a custom mock FedoraRepositoryProcessor connection object using the RepositoryProcessorInterface interface.
+        $mockFedoraRepositoryProcessorConnection = Mockery::mock(\Processproquest\Repository\RepositoryProcessorInterface::class)->makePartial();
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('getNextPid')->andReturn("bc-ir:9999999");
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestObject')->andReturnArg(0);
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('getObject')->andReturn($this->mockAbstractFedoraObject);
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('constructDatastream')->andReturn($this->mockAbstractFedoraDatastream);
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('ingestDatastream')->andReturn(true);
+        $mockFedoraRepositoryProcessorConnection->shouldReceive('getDatastream')->andReturn($this->mockAbstractFedoraDatastream);
 
-        return $mockFedoraRepositoryConnection;
+        return $mockFedoraRepositoryProcessorConnection;
     }
 
     /**

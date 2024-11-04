@@ -47,7 +47,7 @@ class Processproquest {
 
     public $settings;                       // Object to store script settings
     public $debug;                          // Debug bool
-    protected $fedoraConnection = null;     // FedoraRepository object
+    protected $fedoraConnection = null;     // FedoraRepositoryProcessor object
     protected $ftpConnection = null;        // ProquestFTP object
     protected $allFedoraRecordProcessorObjects = []; // List of all FedoraRecordProcessorObject objects
     protected $logFile = "";                // Log file name
