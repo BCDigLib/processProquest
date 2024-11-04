@@ -1177,7 +1177,7 @@ final class FedoraRecordProcessorTest extends TestCase {
         $this->assertTrue($result, "Expected generateDatastreams() to return true");
     }
 
-    //#[Test]
+    #[Test]
     #[TestDox('Checks the generateDatastreams() method returns true on completion with DEBUG=false')]
     public function generateDatastreamsGetObjectFullDebugFalse(): void {
         // etdadmin_upload_001_normal.zip contains and embargo.
