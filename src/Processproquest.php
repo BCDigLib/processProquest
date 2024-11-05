@@ -504,7 +504,7 @@ class Processproquest {
     }
 
     /**
-     * Depricated.
+     * Deprecated.
      * This method processes a batch of ETD files. 
      * It calls on processFile() for each ETD to process.
      * 
