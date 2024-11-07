@@ -24,7 +24,7 @@ define('PROCESSPROQUEST_INI_FILE', 'processProquest.ini');
 
 // Parse getopt() script options.
 $configurationFile = PROCESSPROQUEST_INI_FILE;
-$dryrunOnly = false;
+$dryrunOption = false;
 $short_options = "hc:d";
 $long_options = ["help", "configuration-file", "dry-run"];
 $options = getopt($short_options, $long_options);
@@ -42,7 +42,7 @@ if(isset($options["c"]) || isset($options["configuration-file"])) {
 
 // Check if this is a dry-run.
 if(isset($options["d"]) || isset($options["dry-run"])) {
-    $dryrunOnly = true;
+    $dryrunOption = true;
 }
 
 // Load configuration settings.
@@ -66,24 +66,48 @@ $debugDefault = false;
 // Check debug value from $configurationSettings
 $debugConfiguration = null;
 if (isset($configurationSettings['script']['debug'])) {
+    echo "debugConfiguration is set\n";
     $debugConfiguration = $configurationSettings['script']['debug'];
+    if (strtolower($debugConfiguration) == "true" || $debugConfiguration === true) {
+        $debugConfiguration = true;
+    } elseif (strtolower($debugConfiguration) == "false" || $debugConfiguration === false) {
+        $debugConfiguration = false;
+    } else {
+        $debugConfiguration = null;
+    }
+    echo "debugConfiguration is: " . ($debugConfiguration? "true" : "false") . "\n";
+} else {
+    echo "debugConfiguration is NOT set\n";
 }
 
-// Fetch the env var PROCESSPROQUEST_DEBUG value if it exists
+// Fetch the env var PROCESSPROQUEST_DEBUG value if it exists, or null if it doesn't.
 $debugEnvVar = getenv('PROCESSPROQUEST_DEBUG');
+echo "debugEnvVar: {$debugEnvVar}\n";
+if (isset($debugEnvVar) === true || empty($debugEnvVar) === false) {
+    echo "debugEnvVar is set\n";
+    if ($debugEnvVar === true) {
+        $debugEnvVar = true;
+    } elseif ($debugEnvVar === false) {
+        $debugEnvVar = false;
+    } else {
+        $debugEnvVar = null;
+    }
+    echo "debugEnvVar is: " . ($debugEnvVar? "true" : "false") . "\n";
+} else {
+    echo "debugEnvVar is NOT set\n";
+}
 
 /*
- * Debug value is set in descending order:
- *  1) $debugEnvVar - PROCESSPROQUEST_DEBUG env var
+ * Debug value is set in order of importance:
+ *  1) $debugEnvVar - PROCESSPROQUEST_DEBUG environmental variable
  *  2) $debugConfiguration - [script] debug in configuration file
  *  3) $debugDefault
 */
-if ($debugEnvVar) {
-    $debug = boolval($debugEnvVar);
-} elseif ($debugConfiguration) {
+$debug = boolval($debugDefault);
+if ( isset($debugEnvVar) ) {
+    $debug = $debugEnvVar;
+} elseif ( isset($debugConfiguration) ) {
     $debug = boolval($debugConfiguration);
-} else {
-    $debug = boolval($debugDefault);
 }
 
 /**
@@ -112,8 +136,17 @@ if ( is_object($logger) === false ) {
 $dateFormatLogger = "Y-m-d H:i:s";
 
 // Default: "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n"
-if ($debug) {
-    $output = "[%datetime%] !DEBUG! %extra% %message% %context%\n";
+$outputStatus = "";
+$outputFlags = Array();
+if ($debug || $dryrunOption) {
+    if ($debug) {
+        array_push($outputFlags, "DEBUG");
+    }
+    if ($dryrunOption) {
+        array_push($outputFlags, "DRYRUN");
+    }
+    $outputStatus = "!" . implode("|", $outputFlags) . "!";
+    $output = "[%datetime%] $outputStatus > %extra% %message% %context%\n";
 } else {
     $output = "[%datetime%] > %extra% %message% %context%\n";
 }
@@ -192,15 +225,23 @@ try {
  * 
  * Requires an array with configuration settings, a logger object, and an optional debug value.
  * Can chain together additional setter functions to assign an FTP connection object,
- * and a FedoraConnection object.
+ * a FedoraConnection object, and a dry-run flag.
  */
 
 require_once 'src/Processproquest.php';
 use \Processproquest as PP;
 
-$process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger, $debug))
+$process = (new PP\Processproquest($configurationFile, $configurationSettings, $logger))
             ->setFTPConnection($ftpConnection)
-            ->setFedoraConnection($FedoraRepositoryWrapper);
+            ->setFedoraConnection($FedoraRepositoryWrapper)
+            ->setDebug($debug)
+            ->setDryrun($dryrunOption);
+
+// Display the initial status of the script.
+$process->initialStatus();
+
+// temp
+//exit();
 
 /**
  * 
@@ -233,7 +274,7 @@ foreach ($allETDs as $etdRecord) {
     try {
         // Create FedoraRecordProcessor object and process it.
         $fedoraRecordProcessor = $process->createFedoraRecordProcessorObject($etdRecord);
-        $process->processFile($fedoraRecordProcessor); // TODO: pass along the dry-run flag value
+        $process->processFile($fedoraRecordProcessor);
     } catch(PP\ProcessingException | \Exception $e) {
         $logger->error("ERROR: " . $e->getMessage());
         $logger->error("Error code: 1010");
