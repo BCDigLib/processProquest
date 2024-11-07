@@ -13,23 +13,44 @@ use Monolog\Formatter\LineFormatter;
 $fontpath = realpath('/usr/share/fonts/freesans-font/');
 putenv('GDFONTPATH='.$fontpath);
 
+/**
+ * 
+ * Parse script arguments and load the configuration file.
+ * 
+ */
+
 // Assign the default configuration file
 define('PROCESSPROQUEST_INI_FILE', 'processProquest.ini');
 
-// Only one optional argument is permitted.
-if (count($argv) > 2) {
+// Parse getopt() script options.
+$configurationFile = PROCESSPROQUEST_INI_FILE;
+$dryrunOnly = false;
+$short_options = "hc:d";
+$long_options = ["help", "configuration-file", "dry-run"];
+$options = getopt($short_options, $long_options);
+
+// Display usage message and leave.
+if(isset($options["h"]) || isset($options["help"])) {
     usage();
     exit(1);
 }
 
+// Load the configuration file.
+if(isset($options["c"]) || isset($options["configuration-file"])) {
+    $configurationFile = isset($options["c"]) ? $options["c"] : $options["configuration-file"];
+}
+
+// Check if this is a dry-run.
+if(isset($options["d"]) || isset($options["dry-run"])) {
+    $dryrunOnly = true;
+}
+
 // Load configuration settings.
-$configurationArray = getConfigurationSettings($argv);
-$configurationFile = $configurationArray['file'];
-$configurationSettings = $configurationArray['settings'];
+$configurationSettings = loadConfigurationSettings($configurationFile);
 
 // Exit if configuration file is invalid.
 if(is_null($configurationSettings)){
-    usage();
+    echo "\nPlease see the README.md file for additional information on how to set a custom configuration file.\n\n";
     exit(1);
 }
 
@@ -212,7 +233,7 @@ foreach ($allETDs as $etdRecord) {
     try {
         // Create FedoraRecordProcessor object and process it.
         $fedoraRecordProcessor = $process->createFedoraRecordProcessorObject($etdRecord);
-        $process->processFile($fedoraRecordProcessor);
+        $process->processFile($fedoraRecordProcessor); // TODO: pass along the dry-run flag value
     } catch(PP\ProcessingException | \Exception $e) {
         $logger->error("ERROR: " . $e->getMessage());
         $logger->error("Error code: 1010");
@@ -230,32 +251,32 @@ exit(1);
  * Output usage strings.
  */
 function usage() {
-    echo "Usage: php index.php [options]\n";
-    echo "  options:\n";
-    echo "    INI formatted configuration file. Default file name is 'processProquest.ini'\n";
-    echo "Example: php index.php my_custom_settings.ini\n";
-    echo "(See README.md for configuration file information)\n";
+    echo "processProquest\n\n";
+    echo "This script loads and processes ProQuest ETD files and ingests them into a Fedora/Islandora 7 instance.\n\n";
+    echo "Usage:\n";
+    echo "  php index.php\n";
+    echo "  php index.php [-c|--configuration] [-d|--dry-run]\n";
+    echo "  php index.php -h | --help\n\n";
+    echo "Options:\n";
+    echo "   -c --configuration Custom configuration file. This accepts an INI formatted file.";
+    echo " If left blank then the script will scan for a local file by the name of 'processProquest.ini'\n";
+    echo "   -r --dry-run       This runs through the script but prevents any Fedora records from being";
+    echo " ingested as a final workflow step.\n";
+    echo "   -h --help          This usage message.\n\n";
+    echo "See README.md for configuration file information.\n";
 }
 
 /**
- * Get a valid configuration file.
- * 
- * Load configuration file passed as an argument, or
- * load from a default filename if there isn't an argument found.
- * Also check if the file is valid.
+ * Load a valid configuration file.
  *
- * @param string $arguments The $argv array.
+ * @param string $configurationFile The name/path of the configuration file to load.
  * 
  * @return object|NULL Return the configuration settings or NULL on error.
  */
-function getConfigurationSettings($arguments) {
-    // Requires a single parameter containing the location of an initialization file.
-    if (isset($arguments[1])){
-        // Use the argument provided.
-        $configurationFile = $arguments[1];
-    } else {
-        // No optional second argument was found so use the default configuration file.
-        $configurationFile = PROCESSPROQUEST_INI_FILE;
+function loadConfigurationSettings($configurationFile) {
+    if (empty($configurationFile) === true) {
+        echo "ERROR: No configuration file was received.\n";
+        return null;
     }
 
     // Check if the validity of the configuration file.
@@ -268,15 +289,11 @@ function getConfigurationSettings($arguments) {
     $configurationSettings = parse_ini_file($configurationFile, true);
 
     if (empty($configurationSettings)) {
+        echo "ERROR: This file is malformed or did not contain any INI settings.";
         return NULL;
     }
 
-    $configurationArray = array(
-        "file" => $configurationFile,
-        "settings" => $configurationSettings
-    );
-
-    return $configurationArray;
+    return $configurationSettings;
 }
 
 /**
