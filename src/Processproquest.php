@@ -45,8 +45,9 @@ class ProcessingException extends \Exception {};
  */
 class Processproquest {
 
-    public $settings;                       // Object to store script settings
+    public $settings = Array();             // Object to store script settings
     public $debug;                          // Debug bool
+    public $dryrun = false;                 // Run this script as a dryrun
     protected $fedoraConnection = null;     // FedoraRepositoryWrapper object
     protected $ftpConnection = null;        // ProquestFTP object
     protected $allFedoraRecordProcessorObjects = []; // List of all FedoraRecordProcessorObject objects
@@ -99,10 +100,6 @@ class Processproquest {
             $this->logFileLocation = $url;
         }
         // @codeCoverageIgnoreEnd
-
-        $this->logger->info("STATUS: Starting processProquest script.");
-        $this->logger->info("STATUS: Running with DEBUG value: " . ($this->debug ? 'TRUE' : 'FALSE'));
-        $this->logger->info("STATUS: Using configuration file: {$this->configurationFile}");
     }
 
     /**
@@ -129,6 +126,20 @@ class Processproquest {
      */
     public function setDebug($debug) {
         $this->debug = $debug;
+
+        return $this;
+    }
+
+    /**
+     * Setter function to assign the dryrunOnly value.
+     * This uses a fluent interface API design.
+     * 
+     * @param boolean $dryrunOption The dry-run value.
+     * 
+     * @return object $this.
+     */
+    public function setDryrun($dryrunOption) {
+        $this->dryrun = $dryrunOption;
 
         return $this;
     }
@@ -586,6 +597,12 @@ class Processproquest {
             throw $e; // @codeCoverageIgnore
         }
 
+        // Don't ingest this record if the dryrun flag is true.
+        if ($this->dryrun === true) {
+            $this->logger->info("DRYRUN: Not ingesting this Fedora record.");
+            return true;
+        }
+
         // Ingest this record.
         try {
             $fedoraRecordProcessor->ingestETD();
@@ -680,6 +697,17 @@ class Processproquest {
         $message .= "\nThe full log file can be found at:\n{$this->logFileLocation}.\n";
 
         return $message;
+    }
+
+    /**
+     * Get the initial status of the script.
+     * 
+     * @codeCoverageIgnore
+     */
+    public function initialStatus() {
+        $this->logger->info("STATUS: Running with DEBUG value:  " . ($this->debug ? 'TRUE' : 'FALSE'));
+        $this->logger->info("STATUS: Running with DRYRUN value: " . ($this->dryrun ? 'TRUE' : 'FALSE'));
+        $this->logger->info("STATUS: Using configuration file: {$this->configurationFile}");
     }
 
     /**

@@ -284,10 +284,10 @@ final class TestHelpers extends TestCase {
         }
         $newObj = new \Processproquest\Processproquest(
                             $this->configurationFile,
-                            $customSettings, 
-                            $this->logger, 
-                            $this->debug
+                            $customSettings,
+                            $this->logger
                         );
+        $newObj->setDebug($this->debug);
 
         return $newObj;
     }

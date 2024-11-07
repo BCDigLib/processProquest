@@ -106,6 +106,22 @@ final class ProcessproquestTest extends TestCase {
     }
 
     #[Test]
+    #[TestDox('Checks the setDryrun() method')]
+    public function setDryrun(): void {
+        // Create Processproquest object.
+        $processObj = $this->helper->generateProcessproquestObject();
+
+        // Check that the dryrun property is set to false.
+        $this->assertFalse($processObj->dryrun, "Expected the default debug property to be false");
+
+        // Set the dryrun property to false.
+        $processObj->setDryrun(true);
+
+        // Check that the dryrun property is set to true.
+        $this->assertTrue($processObj->dryrun, "Expected the updated dryrun property to be true");
+    }
+
+    #[Test]
     #[TestDox('Checks the logIntoFTPServer() method returns successfully with valid credentials')]
     public function logIntoFTPServer(): void {
         // Create a mock ftpConnection object.
