@@ -38,6 +38,7 @@ final class ProcessproquestTest extends TestCase {
         $this->configurationSettings = $this->helper->readConfigurationFile($configurationFile);
         $this->logger = $this->helper->createLogger($this->configurationSettings);
         $this->debug = true;
+        $this->dryrun = false;
         $this->listOfETDs = $this->helper->getListOfSampleETDs();
     }
 
@@ -440,14 +441,16 @@ final class ProcessproquestTest extends TestCase {
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
         // Create custom FedoraRecordProcessor object.
-        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessorObject = (new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
             $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
             $this->logger                   // logger object
-        );
+        ))
+        ->setDebug($this->debug)
+        ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessorObject->STATUS = "ingested";
         $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = true;
@@ -479,14 +482,16 @@ final class ProcessproquestTest extends TestCase {
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
         // Create custom FedoraRecordProcessor object.
-        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessorObject = (new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
             $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
             $this->logger                   // logger object
-        );
+        ))
+        ->setDebug($this->debug)
+        ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessorObject->STATUS = "ingested";
         $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = false;
@@ -527,14 +532,16 @@ final class ProcessproquestTest extends TestCase {
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
         // Create FedoraRecordProcessor object.
-        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessorObject = (new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
-            $this->configurationSettings,                // settings
+            $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
             $this->logger                   // logger object
-        );
+        ))
+        ->setDebug($this->debug)
+        ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessorObject->STATUS = "ingested";
         $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = false;
@@ -571,14 +578,16 @@ final class ProcessproquestTest extends TestCase {
         $mockFedoraConnection = $this->helper->createMockFedoraConnection();
 
         // Create custom FedoraRecordProcessor object.
-        $fedoraRecordProcessorObject = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessorObject = (new \Processproquest\Record\FedoraRecordProcessor(
             "etdadmin_upload_100000",       // ID
-            $this->configurationSettings,                // settings
+            $this->configurationSettings,   // settings
             "etdadmin_upload_100000.zip",   // zip file name
             $mockFedoraConnection,          // Fedora connection object
             $mockFTPConnection,             // FTP connection object
             $this->logger                   // logger object
-        );
+        ))
+        ->setDebug($this->debug)
+        ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessorObject->STATUS = "ingested";
         $fedoraRecordProcessorObject->HAS_SUPPLEMENTS = false;

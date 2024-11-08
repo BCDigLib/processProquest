@@ -38,6 +38,9 @@ final class FedoraRecordProcessorTest extends TestCase {
         $this->nextPIDNumber = "123456789";
         $this->mockPID = "{$this->nameSpace}:{$this->nextPIDNumber}";
 
+        $this->debug = true;
+        $this->dryrun = false;
+
         $this->logger = $this->helper->createLogger($this->configurationSettings);
         $this->fedoraConnection = $this->helper->createMockFedoraConnection($this->configurationSettings);
         $this->ftpConnection = $this->helper->createMockFTPConnection();
@@ -81,14 +84,16 @@ final class FedoraRecordProcessorTest extends TestCase {
             $customSettings = $this->configurationSettings;
         }
         // Create a FedoraRecordProcessor object.
-        $fr = new \Processproquest\Record\FedoraRecordProcessor(
+        $fr = (new \Processproquest\Record\FedoraRecordProcessor(
                         $zipFileName,               // ETD short name
                         $customSettings,            // settings array
                         $zipFileName,               // name of ETD zip file
                         $this->fedoraConnection,    // mock FedoraRepositoryWrapper object
                         $this->ftpConnection,       // mock ProquestFTP object
                         $this->logger               // logger object
-                    );
+                ))
+                ->setDebug($this->debug)
+                ->setDryrun($this->dryrun);
 
         return $fr;
     }
@@ -199,14 +204,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $result = $fedoraRecordProcessor->downloadETD();
         
@@ -239,14 +246,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         $mockProquestFTPConnection->shouldReceive('getFile')->andReturn(false);
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         // Expect an exception.
         $this->expectException(\Exception::class);
@@ -290,14 +299,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $result = $fedoraRecordProcessor->parseETD();
@@ -336,14 +347,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $result = $fedoraRecordProcessor->parseETD();
@@ -383,14 +396,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
 
@@ -426,14 +441,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
 
@@ -470,14 +487,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
 
@@ -513,14 +532,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
 
@@ -556,14 +577,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
 
@@ -620,14 +643,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            //->setDebug(false)                   // Manually set DEBUG to false here.
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -680,14 +705,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -731,14 +758,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -779,14 +808,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         // Expect an exception.
         $this->expectException(\Exception::class);
@@ -828,14 +859,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         // Expect an exception.
         $this->expectException(\Exception::class);
@@ -874,14 +907,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $this->fedoraConnection,        // mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -929,14 +964,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -982,14 +1019,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1052,14 +1091,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1108,14 +1149,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1160,14 +1203,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1217,14 +1262,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1274,14 +1321,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1332,14 +1381,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1398,14 +1449,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
@@ -1462,14 +1515,16 @@ final class FedoraRecordProcessorTest extends TestCase {
         );
 
         // Create a custom FedoraRecordProcessor object.
-        $fedoraRecordProcessor = new \Processproquest\Record\FedoraRecordProcessor(
+        $fedoraRecordProcessor = (new \Processproquest\Record\FedoraRecordProcessor(
                                 $etdShortName,                  // ETD short name
                                 $newSettings,                   // custom settings array
                                 $zipFileName,                   // name of ETD zip file
                                 $mockFedoraRepositoryWrapperConnection,// mock FedoraRepositoryWrapper object
                                 $mockProquestFTPConnection,     // custom mock ProquestFTP object
                                 $this->logger                   // logger object
-                            );
+                            ))
+                            ->setDebug($this->debug)
+                            ->setDryrun($this->dryrun);
 
         $fedoraRecordProcessor->downloadETD();
         $fedoraRecordProcessor->parseETD();
