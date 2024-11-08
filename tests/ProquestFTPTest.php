@@ -111,10 +111,9 @@ final class ProquestFTPTest extends TestCase {
         // Create a ProquestFTP object.
         $proquestFTPObject = new \Processproquest\FTP\ProquestFTP($mockFTPService);
 
-        $fileName = "foo";
         $fromDir = "bar";
         $toDir = "baz";
-        $result = $proquestFTPObject->moveFile($fileName, $fromDir, $toDir);
+        $result = $proquestFTPObject->moveFile($fromDir, $toDir);
         
         $this->assertTrue($result, "Expected moveFile() to return true");
     }

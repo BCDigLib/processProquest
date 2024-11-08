@@ -9,7 +9,7 @@ class FTPConnectionException extends \Exception {};
 interface FileStorageInterface {
     public function connect(string $url): object|bool;
     public function login(string $userName, string $userPassword): bool;
-    public function moveFile(string $fileName, string $fromDir, string $toDir): bool;
+    public function moveFile(string $fromDir, string $toDir): bool;
     public function getFileList(string $dir): array;
     public function getFile(string $local_filename, string $remote_filename): bool;
     public function changeDir(string $dir): bool;
@@ -22,7 +22,7 @@ interface FTPServiceInterface {
     public function ftp_service_getURL(): string;
     public function ftp_service_connect(string $url): object|bool;
     public function ftp_service_login(string $userName, string $userPassword): bool;
-    public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir): bool;
+    public function ftp_service_moveFile(string $fromDir, string $toDir): bool;
     public function ftp_service_getFileList(string $dir): array;
     public function ftp_service_getFile(string $local_filename, string $remote_filename): bool;
     public function ftp_service_changeDir(string $dir): bool;
@@ -98,18 +98,17 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * Move a file.
      * Uses the built-in ftp_rename() function.
      * 
-     * @param string $fileName The name of the file to move.
      * @param string $fromDir Move the file from this location.
      * @param string $toDir Move the file into this location.
      * 
      * @return bool Success value.
      */
-    public function ftp_service_moveFile(string $fileName, string $fromDir, string $toDir): bool {
-        $filenameFullFromPath = "{$fromDir}/{$fileName}";
-        $filenameFullToPath = "{$toDir}/{$fileName}";
+    public function ftp_service_moveFile(string $fromDir, string $toDir): bool {
+        //$filenameFullFromPath = "{$fromDir}/{$fileName}";
+        //$filenameFullToPath = "{$toDir}/{$fileName}";
 
         // INFO: ftp_rename() returns true on success or false on failure.
-        return ftp_rename($this->ftpConnection, $filenameFullFromPath, $filenameFullToPath);
+        return ftp_rename($this->ftpConnection, $fromDir, $toDir);
     }
 
     /**
@@ -222,14 +221,13 @@ class ProquestFTP implements FileStorageInterface {
     /** 
      * Move a file.
      * 
-     * @param string $fileName The name of the file to move.
      * @param string $fromDir Move the file from this location.
      * @param string $toDir Move the file into this location.
      * 
      * @return bool Success value.
      */
-    public function moveFile(string $fileName, string $fromDir, string $toDir): bool {
-        $result = $this->service->ftp_service_moveFile($fileName, $fromDir, $toDir);
+    public function moveFile(string $fromDir, string $toDir): bool {
+        $result = $this->service->ftp_service_moveFile($fromDir, $toDir);
 
         return $result;
     }
