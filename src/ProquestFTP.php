@@ -104,9 +104,6 @@ class FTPServicePHPAdapter implements FTPServiceInterface {
      * @return bool Success value.
      */
     public function ftp_service_moveFile(string $fromDir, string $toDir): bool {
-        //$filenameFullFromPath = "{$fromDir}/{$fileName}";
-        //$filenameFullToPath = "{$toDir}/{$fileName}";
-
         // INFO: ftp_rename() returns true on success or false on failure.
         return ftp_rename($this->ftpConnection, $fromDir, $toDir);
     }
