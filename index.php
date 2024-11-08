@@ -63,51 +63,54 @@ if(is_null($configurationSettings)){
 // Debug is off by default.
 $debugDefault = false;
 
-// Check debug value from $configurationSettings
-$debugConfiguration = null;
-if (isset($configurationSettings['script']['debug'])) {
-    echo "debugConfiguration is set\n";
-    $debugConfiguration = $configurationSettings['script']['debug'];
+// Check $configurationSettings[script][debug] for a DEBUG value.
+$debugConfiguration = $configurationSettings['script']['debug'] ?? null;
+
+// If this value isn't set then DEBUG is null and we ignore it.
+if (isset($debugConfiguration) === false) {
+    $debugConfiguration = null;
+} else {
+    // Check for possible bool and string values.
     if (strtolower($debugConfiguration) == "true" || $debugConfiguration === true) {
         $debugConfiguration = true;
     } elseif (strtolower($debugConfiguration) == "false" || $debugConfiguration === false) {
         $debugConfiguration = false;
     } else {
+        // Set to null if anything else.
         $debugConfiguration = null;
     }
-    echo "debugConfiguration is: " . ($debugConfiguration? "true" : "false") . "\n";
-} else {
-    echo "debugConfiguration is NOT set\n";
 }
 
-// Fetch the env var PROCESSPROQUEST_DEBUG value if it exists, or null if it doesn't.
+// Fetch the env var PROCESSPROQUEST_DEBUG value with getenv(). 
+// This will return a string, or false if there is not value.
 $debugEnvVar = getenv('PROCESSPROQUEST_DEBUG');
-echo "debugEnvVar: {$debugEnvVar}\n";
-if (isset($debugEnvVar) === true || empty($debugEnvVar) === false) {
-    echo "debugEnvVar is set\n";
-    if ($debugEnvVar === true) {
+if ($debugEnvVar === false) {
+    $debugEnvVar = null;
+} else {
+    // Check for string values.
+    if (strtolower($debugEnvVar) === "true") {
         $debugEnvVar = true;
-    } elseif ($debugEnvVar === false) {
+    } elseif (strtolower($debugEnvVar) === "false") {
         $debugEnvVar = false;
     } else {
+        // Set to null if anything else.
         $debugEnvVar = null;
     }
-    echo "debugEnvVar is: " . ($debugEnvVar? "true" : "false") . "\n";
-} else {
-    echo "debugEnvVar is NOT set\n";
 }
 
 /*
- * Debug value is set in order of importance:
- *  1) $debugEnvVar - PROCESSPROQUEST_DEBUG environmental variable
- *  2) $debugConfiguration - [script] debug in configuration file
- *  3) $debugDefault
+ * Debug value is set in order of importance and will override those of lesser importance:
+ *  1) $debugEnvVar         - PROCESSPROQUEST_DEBUG environmental variable.
+ *  2) $debugConfiguration  - [script][debug] from the configuration file.
+ *  3) $debugDefault        - default value.
 */
-$debug = boolval($debugDefault);
+
 if ( isset($debugEnvVar) ) {
     $debug = $debugEnvVar;
 } elseif ( isset($debugConfiguration) ) {
-    $debug = boolval($debugConfiguration);
+    $debug = $debugConfiguration;
+} else {
+    $debug = $debugDefault;
 }
 
 /**
@@ -146,9 +149,9 @@ if ($debug || $dryrunOption) {
         array_push($outputFlags, "DRYRUN");
     }
     $outputStatus = "!" . implode("|", $outputFlags) . "!";
-    $output = "[%datetime%] $outputStatus > %extra% %message% %context%\n";
+    $output = "[%datetime%] $outputStatus >%extra% %message% %context%\n";
 } else {
-    $output = "[%datetime%] > %extra% %message% %context%\n";
+    $output = "[%datetime%] >%extra% %message% %context%\n";
 }
 
 // Create a log formatter.
@@ -239,9 +242,6 @@ $process = (new PP\Processproquest($configurationFile, $configurationSettings, $
 
 // Display the initial status of the script.
 $process->initialStatus();
-
-// temp
-//exit();
 
 /**
  * 
