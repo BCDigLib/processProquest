@@ -19,7 +19,8 @@ interface RecordProcessorInterface {
 class FedoraRecordProcessor implements RecordProcessorInterface {
     public $id = "";
     public $settings = [];
-    public $debug = "false";
+    public $debug = false;
+    public $dryrun = false;
     public $root_url = "";
     public $path = "";
     public $fetchDir = "";
@@ -96,6 +97,7 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         $this->logger = $recordLogger;
 
         // Parse settings array.
+        // TODO: don't pull debug from settings.
         $this->debug = boolval($this->settings['script']['debug']);
         $this->root_url = $this->settings["islandora"]["root_url"];
         $this->path = $this->settings["islandora"]["path"];
@@ -130,6 +132,34 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
      */
     public function setStatus(string $newStatus) {
         $this->STATUS = $newStatus;
+    }
+
+    /**
+     * Setter function to assign the debug value.
+     * This uses a fluent interface API design.
+     * 
+     * @param boolean $debug The debug value.
+     * 
+     * @return object $this.
+     */
+    public function setDebug($debug) {
+        $this->debug = $debug;
+
+        return $this;
+    }
+
+    /**
+     * Setter function to assign the dryrun value.
+     * This uses a fluent interface API design.
+     * 
+     * @param boolean $dryrunOption The dry-run value.
+     * 
+     * @return object $this.
+     */
+    public function setDryrun($dryrunOption) {
+        $this->dryrun = $dryrunOption;
+
+        return $this;
     }
 
     /**
@@ -555,11 +585,17 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
          * Prepend PID with locally defined Fedora namespace.
          * Ex: "bc-ir:" for BC.
          */
-        // DEBUG: generate random PID.
-        if ( $this->debug === true ) {
+        // Generate random PID when DEBUG or DRYRUN is true.
+        if ( $this->debug === true || $this->dryrun === true ) {
             // @codeCoverageIgnoreStart
             $pid = "bc-ir:" . rand(50000,100000) + 9000000;
-            $this->logger->info("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}");
+
+            if ( $this->debug === true ) {
+                $this->logger->info("DEBUG: Generating random PID for testing (NOT fetched from Fedora): {$pid}");
+            } else if ( $this->dryrun === true ){
+                $this->logger->info("DRYRUN: Generating random PID for testing (NOT fetched from Fedora): {$pid}");
+            }
+            
             // @codeCoverageIgnoreEnd
         } else {
             $pid = $this->fedoraConnection->getNextPid($this->settings['fedora']['namespace'], 1);
@@ -912,30 +948,9 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
         // Completed datastream completion
         $this->logger->info("Created all datastreams.");
 
-        /**
-         * Ingest full object into Fedora.
-         *
-         *
-         */
-
-        // DEBUG: ignore Fedora ingest.
-        if ( $this->debug === true ) {
-            $this->logger->info("DEBUG: Ignore ingesting object into Fedora."); // @codeCoverageIgnore
-        } else {
-            $this->fedoraConnection->ingestObject($this->fedoraObj);
-            $this->logger->info("Ingested Fedora object.");
-        }
-
-        $this->STATUS = "ingested";
-        $this->INGESTED = true;
-
         // Make sure we give every processing loop enough time to complete.
         usleep(30000); // 30 milliseconds
 
-        // Assign URL to this ETD
-        $this->RECORD_URL = "{$this->record_path}{$this->PID}";
-
-        // $this->logger->info("END Ingesting ETD file [{$i} of {$this->countTotalETDs}]");
         $this->logger->info(LOOP_DIVIDER);
         $this->logger->info("[END] Generating datastreams.");
         // $this->logger->info(SECTION_DIVIDER);
@@ -964,9 +979,11 @@ class FedoraRecordProcessor implements RecordProcessorInterface {
             return false;
         }
         
-        // DEBUG: ignore Fedora ingest.
+        // Ignore Fedora ingest if DEBUG or DRYRUN is true.
         if ( $this->debug === true ) {
             $this->logger->info("DEBUG: Ignore ingesting object into Fedora."); // @codeCoverageIgnore
+        } elseif ( $this->dryrun === true ) {
+            $this->logger->info("DRYRUN: Not ingesting this Fedora record."); // @codeCoverageIgnore
         } else {
             $this->fedoraConnection->ingestObject($this->fedoraObj);
             $this->logger->info("Ingested Fedora object.");
