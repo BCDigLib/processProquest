@@ -131,7 +131,7 @@ class Processproquest {
     }
 
     /**
-     * Setter function to assign the dryrunOnly value.
+     * Setter function to assign the dryrun value.
      * This uses a fluent interface API design.
      * 
      * @param boolean $dryrunOption The dry-run value.
@@ -336,7 +336,7 @@ class Processproquest {
             // @codeCoverageIgnoreEnd
 
             // INFO: moveFile() returns true on success or false on failure.
-            $ftpRes = $this->ftpConnection->moveFile($zipFileName, $ftpPathForETD, $moveFTPDir);
+            $ftpRes = $this->ftpConnection->moveFile($ftpPathForETD, $moveFTPDir);
             
             // Check if there was an error moving the ETD file on the FTP server.
             if ( $ftpRes === false ) {
@@ -457,14 +457,18 @@ class Processproquest {
     public function createFedoraRecordProcessorObject($zipFileName) {
         // Create a FedoraRecordProcessor object.
         $etdShortName = substr($zipFileName,0,strlen($zipFileName)-4);
-        $recordObj = new FR\FedoraRecordProcessor(
+        $recordObj = (new FR\FedoraRecordProcessor(
                             $etdShortName, 
                             $this->settings, 
                             $zipFileName, 
                             $this->fedoraConnection, 
                             $this->ftpConnection, 
                             $this->logger
-                        );
+                    ))
+                    ->setDebug($this->debug)
+                    ->setDryrun($this->dryrun);
+
+        // Set the status value.
         $recordObj->setStatus("scanned");
 
         // Append this record to out collection.
@@ -595,12 +599,6 @@ class Processproquest {
         } catch (\Processproquest\Record\RecordIngestException $e) {
             // Bubble up exception.
             throw $e; // @codeCoverageIgnore
-        }
-
-        // Don't ingest this record if the dryrun flag is true.
-        if ($this->dryrun === true) {
-            $this->logger->info("DRYRUN: Not ingesting this Fedora record.");
-            return true;
         }
 
         // Ingest this record.
